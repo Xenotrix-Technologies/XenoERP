@@ -244,8 +244,19 @@ LOGGING = {
     },
 }
 
-# Output emails to the console for local development (useful for password resets)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email Configuration (SMTP with Console fallback if credentials are not configured)
+EMAIL_BACKEND = env(
+    'EMAIL_BACKEND', 
+    default='django.core.mail.backends.smtp.EmailBackend' if env('EMAIL_HOST_USER', default='') else 'django.core.mail.backends.console.EmailBackend'
+)
+EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+EMAIL_USE_SSL = env.bool('EMAIL_USE_SSL', default=False)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=env('EMAIL_HOST_USER', default='noreply@xenocrm.com'))
+SERVER_EMAIL = env('SERVER_EMAIL', default=DEFAULT_FROM_EMAIL)
 
 # WhatsApp Business Meta Cloud API Settings
 WHATSAPP_CLOUD_API_TOKEN = env('WHATSAPP_CLOUD_API_TOKEN', default='EAAUDkJUZBQyMBSRMGlo5MUDObbvNk1LrO9mvmZBEHsDs09Of235bQoOJGX2oHInJwwqTjYSTuxjvCOHnf76p70JZBnZBTOpdfCLWOmabho7EXIvKLeIxFUiyyff09bMo29dRHRAivcakReol9RtlavZAK0JDjKgSgZAw5MkpEjRRZA8C245FuxMYPZAPvj91EU0RsEnTpIpEePS1yNV2T6oxkPELl0HI2ZBjQenSI10o3l9cCtJKMqrqlbCr0lvhUTmZBIlPBjHeEJLUl9PBt9I3zOdYCCubK1v4vOvwZDZD')
