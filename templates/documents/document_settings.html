@@ -40,21 +40,31 @@
                     <label class="block font-bold text-slate-700 mb-1">Phone Number *</label>
                     <input type="text" name="phone" value="{{ settings.phone }}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
                 </div>
-                <div class="sm:col-span-2">
+                <div>
                     <label class="block font-bold text-slate-700 mb-1">Company Website</label>
-                    <input type="url" name="website" value="{{ settings.website }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+                    <input type="url" name="website" value="{{ settings.website|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
                 </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Company Logo URL</label>
+                    <input type="url" name="logo_url" value="{{ settings.logo_url|default:'' }}" placeholder="https://example.com/logo.png" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+                </div>
+                {% if settings.logo_url %}
+                <div class="sm:col-span-2 bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-center gap-4">
+                    <span class="text-[11px] font-bold text-slate-500">Logo Preview:</span>
+                    <img src="{{ settings.logo_url }}" alt="Company Logo" class="h-10 max-w-[200px] object-contain rounded border border-slate-200 bg-white p-1">
+                </div>
+                {% endif %}
                 <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-700 mb-1">Registered Address *</label>
                     <textarea name="address" rows="2" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">{{ settings.address }}</textarea>
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">GSTIN Number</label>
-                    <input type="text" name="gstin" value="{{ settings.gstin }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
+                    <input type="text" name="gstin" value="{{ settings.gstin|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">PAN Number</label>
-                    <input type="text" name="pan" value="{{ settings.pan }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
+                    <input type="text" name="pan" value="{{ settings.pan|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
                 </div>
             </div>
         </div>
@@ -69,23 +79,23 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">Bank Name</label>
-                    <input type="text" name="bank_name" value="{{ settings.bank_name }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold">
+                    <input type="text" name="bank_name" value="{{ settings.bank_name|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold">
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">Account Beneficiary Name</label>
-                    <input type="text" name="account_name" value="{{ settings.account_name }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold">
+                    <input type="text" name="account_name" value="{{ settings.account_name|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold">
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">Account Number</label>
-                    <input type="text" name="account_number" value="{{ settings.account_number }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
+                    <input type="text" name="account_number" value="{{ settings.account_number|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">IFSC Code</label>
-                    <input type="text" name="ifsc_code" value="{{ settings.ifsc_code }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase">
+                    <input type="text" name="ifsc_code" value="{{ settings.ifsc_code|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase">
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">UPI ID</label>
-                    <input type="text" name="upi_id" value="{{ settings.upi_id }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
+                    <input type="text" name="upi_id" value="{{ settings.upi_id|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">Opening Bank Balance (₹)</label>
@@ -104,12 +114,12 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">Quotation Prefix</label>
-                    <input type="text" name="quotation_prefix" value="{{ settings.quotation_prefix }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-primary-700">
+                    <input type="text" name="quotation_prefix" value="{{ settings.quotation_prefix|default:'XT-QT' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-primary-700">
                     <p class="text-[10px] text-slate-400 mt-1">Example: XT-QT-2026-0001</p>
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">Agreement Prefix</label>
-                    <input type="text" name="agreement_prefix" value="{{ settings.agreement_prefix }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-primary-700">
+                    <input type="text" name="agreement_prefix" value="{{ settings.agreement_prefix|default:'XT-AGR' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-primary-700">
                     <p class="text-[10px] text-slate-400 mt-1">Example: XT-AGR-2026-0001</p>
                 </div>
                 <div>
@@ -120,13 +130,23 @@
                         <option value="EUR" {% if settings.default_currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
                     </select>
                 </div>
-                <div class="sm:col-span-3">
+                <div>
                     <label class="block font-bold text-slate-700 mb-1">Authorized Representative Name</label>
-                    <input type="text" name="authorized_person_name" value="{{ settings.authorized_person_name }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+                    <input type="text" name="authorized_person_name" value="{{ settings.authorized_person_name|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
                 </div>
+                <div class="sm:col-span-2">
+                    <label class="block font-bold text-slate-700 mb-1">Authorized Signature Image URL</label>
+                    <input type="url" name="authorized_signature_url" value="{{ settings.authorized_signature_url|default:'' }}" placeholder="https://example.com/signature.png" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+                </div>
+                {% if settings.authorized_signature_url %}
+                <div class="sm:col-span-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-center gap-4">
+                    <span class="text-[11px] font-bold text-slate-500">Signature Preview:</span>
+                    <img src="{{ settings.authorized_signature_url }}" alt="Authorized Signature" class="h-10 max-w-[200px] object-contain rounded border border-slate-200 bg-white p-1">
+                </div>
+                {% endif %}
                 <div class="sm:col-span-3">
                     <label class="block font-bold text-slate-700 mb-1">Document Footer Notice</label>
-                    <textarea name="footer_text" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">{{ settings.footer_text }}</textarea>
+                    <textarea name="footer_text" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">{{ settings.footer_text|default:'' }}</textarea>
                 </div>
             </div>
         </div>

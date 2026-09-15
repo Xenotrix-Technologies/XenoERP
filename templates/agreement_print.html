@@ -2,38 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Digital Marketing Service Agreement - {{ agreement.agreement_number }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>{{ agreement.service.name|default:"Service Agreement" }} - {{ agreement.agreement_number }} | {{ doc_settings.company_name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Great+Vibes&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 40px;
             color: #1e293b;
-            background-color: #ffffff;
+            background-color: #f8fafc;
             font-size: 13px;
             line-height: 1.6;
         }
         .container {
-            max-width: 800px;
+            max-width: 820px;
             margin: 0 auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
         
         /* Action Bar */
         .action-bar {
-            background-color: #f8fafc;
-            padding: 12px 24px;
+            background-color: #ffffff;
+            padding: 14px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-radius: 12px;
-            margin-bottom: 40px;
+            margin-bottom: 24px;
             border: 1px solid #e2e8f0;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            max-width: 820px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .action-bar span {
-            font-weight: 600;
-            color: #475569;
+            font-weight: 700;
+            color: #1e293b;
             font-size: 14px;
         }
         .btn-group {
@@ -50,6 +58,9 @@
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             transition: all 0.2s;
         }
         .btn:hover {
@@ -83,7 +94,7 @@
         .logo-box p {
             margin: 2px 0 0 0;
             color: #0053db;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -93,7 +104,7 @@
         }
         .agreement-title h2 {
             margin: 0;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 800;
             color: #0053db;
             text-transform: uppercase;
@@ -110,13 +121,13 @@
         /* Party details */
         .party-grid {
             display: grid;
-            grid-template-cols: 1fr 1fr;
-            gap: 40px;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
             margin-bottom: 30px;
             background-color: #f8fafc;
             border-radius: 12px;
             padding: 20px;
-            border: 1px solid #f1f5f9;
+            border: 1px solid #e2e8f0;
         }
         .party-card h3 {
             margin: 0 0 10px 0;
@@ -134,9 +145,9 @@
         /* Project specs */
         .project-meta-grid {
             display: grid;
-            grid-template-cols: repeat(4, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 15px;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             border-bottom: 1px solid #e2e8f0;
             padding-bottom: 20px;
         }
@@ -155,8 +166,9 @@
         
         /* Clauses styling */
         .section-clause {
-            margin-bottom: 30px;
+            margin-bottom: 26px;
             page-break-inside: avoid;
+            break-inside: avoid;
         }
         .section-clause h3 {
             font-size: 13px;
@@ -183,9 +195,9 @@
         .payment-summary-card {
             background-color: #f8fafc;
             border-radius: 12px;
-            border: 1px solid #f1f5f9;
-            padding: 20px;
-            margin-bottom: 30px;
+            border: 1px solid #e2e8f0;
+            padding: 16px 20px;
+            margin-bottom: 20px;
         }
         .payment-table {
             width: 100%;
@@ -206,28 +218,31 @@
         
         /* Signature Blocks */
         .signature-section {
-            margin-top: 50px;
+            margin-top: 40px;
             display: grid;
-            grid-template-cols: 1fr 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 60px;
             page-break-inside: avoid;
+            break-inside: avoid;
         }
         .sig-block {
             border-top: 1px solid #cbd5e1;
             padding-top: 15px;
         }
         .sig-block p {
-            margin: 6px 0;
+            margin: 4px 0;
             color: #475569;
         }
         .sig-line {
-            height: 40px;
-            margin-bottom: 10px;
+            height: 48px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-end;
         }
         
         /* Footer branding */
         .footer-version {
-            margin-top: 60px;
+            margin-top: 40px;
             border-top: 1px solid #e2e8f0;
             padding-top: 15px;
             display: flex;
@@ -235,41 +250,69 @@
             font-size: 10px;
             color: #94a3b8;
             page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        
+        @page {
+            size: A4 portrait;
+            margin: 15mm 15mm 15mm 15mm;
         }
         
         @media print {
             .action-bar {
-                display: none;
+                display: none !important;
             }
             body {
-                padding: 0;
+                padding: 0 !important;
+                margin: 0 !important;
+                background-color: #ffffff !important;
+                font-size: 12px;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .container {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            .party-grid, .payment-summary-card {
+                background-color: #f8fafc !important;
+                border: 1px solid #e2e8f0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .page-break {
                 page-break-before: always;
+                break-before: page;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Action Bar -->
-        <div class="action-bar">
-            <span>Agreement Preview: {{ agreement.agreement_number }}</span>
-            <div class="btn-group">
-                <a href="{% url 'agreements' %}" class="btn btn-secondary">Back to List</a>
-                <a href="{% url 'edit_agreement' agreement.id %}" class="btn btn-secondary">Edit Agreement</a>
-                <button onclick="window.print()" class="btn">Print / Save as PDF</button>
-            </div>
+    <!-- Action Bar -->
+    <div class="action-bar">
+        <span>Agreement Preview: {{ agreement.agreement_number }}</span>
+        <div class="btn-group">
+            <a href="{% url 'agreements' %}" class="btn btn-secondary">Back to List</a>
+            <a href="{% url 'edit_agreement' agreement.id %}" class="btn btn-secondary">Edit Agreement</a>
+            <button onclick="window.print()" class="btn">Print / Save as PDF</button>
         </div>
+    </div>
 
+    <div class="container">
         <!-- Header -->
         <div class="header">
             <div class="logo-box">
-                <h1>Xenotrix Technologies</h1>
-                <p>{{ agreement.service.name | default:"Service Agreement" }} Agreement</p>
+                {% if doc_settings.logo_url %}
+                <img src="{{ doc_settings.logo_url }}" alt="{{ doc_settings.company_name }}" style="max-height: 48px; object-fit: contain; margin-bottom: 6px;">
+                {% endif %}
+                <h1>{{ doc_settings.company_name }}</h1>
+                <p>{{ agreement.service.name|default:agreement.agreement_type|default:"Service Agreement" }}</p>
             </div>
             <div class="agreement-title">
-                <h2>Quotation</h2>
+                <h2>Service Agreement</h2>
                 <p>{{ agreement.agreement_number }}</p>
             </div>
         </div>
@@ -282,15 +325,15 @@
             </div>
             <div class="meta-item">
                 <h4>Start Date</h4>
-                <p>{{ agreement.start_date|date:"F d, Y" }}</p>
+                <p>{{ agreement.start_date|date:"F d, Y"|default:"-" }}</p>
             </div>
             <div class="meta-item">
                 <h4>End Date</h4>
-                <p>{{ agreement.end_date|date:"F d, Y" }}</p>
+                <p>{{ agreement.end_date|date:"F d, Y"|default:"-" }}</p>
             </div>
             <div class="meta-item">
                 <h4>Service Offered</h4>
-                <p>{{ agreement.service.name|default:"-" }}</p>
+                <p>{{ agreement.service.name|default:agreement.project_name|default:"Standard Service" }}</p>
             </div>
         </div>
 
@@ -298,34 +341,41 @@
         <div class="party-grid">
             <div class="party-card">
                 <h3>Service Provider:</h3>
-                <p><strong>Xenotrix Technologies</strong></p>
-                <p>Thiruvilwamala, Thrissur, Kerala 680594</p>
-                <p>+91 9995544316</p>
-                <p>xenotrixtech@gmail.com</p>
+                <p><strong>{{ doc_settings.company_name }}</strong></p>
+                <p>{{ doc_settings.address }}</p>
+                {% if doc_settings.phone %}<p>Phone: {{ doc_settings.phone }}</p>{% endif %}
+                {% if doc_settings.email %}<p>Email: {{ doc_settings.email }}</p>{% endif %}
+                {% if doc_settings.gstin %}<p><strong>GSTIN:</strong> {{ doc_settings.gstin }}</p>{% endif %}
+                {% if doc_settings.pan %}<p><strong>PAN:</strong> {{ doc_settings.pan }}</p>{% endif %}
             </div>
             <div class="party-card">
                 <h3>Client Information:</h3>
                 <p><strong>{{ agreement.client_name }}</strong></p>
                 {% if agreement.company_name %}<p>{{ agreement.company_name }}</p>{% endif %}
-                {% if agreement.client_email %}<p>{{ agreement.client_email }}</p>{% endif %}
-                {% if agreement.client_phone %}<p>{{ agreement.client_phone }}</p>{% endif %}
+                {% if agreement.client_email %}<p>Email: {{ agreement.client_email }}</p>{% endif %}
+                {% if agreement.client_phone %}<p>Phone: {{ agreement.client_phone }}</p>{% endif %}
                 {% if agreement.client_address %}<p>{{ agreement.client_address }}</p>{% endif %}
+                {% if agreement.gstin %}<p><strong>GSTIN:</strong> {{ agreement.gstin }}</p>{% endif %}
             </div>
         </div>
 
         <!-- Scope of Services -->
         <div class="section-clause">
             <h3>1. Scope of Services</h3>
-            <p>Xenotrix Technologies will supply the following services for the duration of this agreement:</p>
+            <p>{{ doc_settings.company_name }} will supply the following services for the duration of this agreement:</p>
+            {% if agreement.scope_of_work %}
+            <div style="white-space: pre-line; color: #334155; margin-bottom: 10px;">{{ agreement.scope_of_work }}</div>
+            {% else %}
             <ul>
                 {% for service in agreement.services.all %}
                 <li>
                     <strong>{{ service.title }}:</strong> {{ service.description|default:"Standard campaign deployment." }}
                 </li>
                 {% empty %}
-                <li>Social Media Optimization and Search Engine Optimization.</li>
+                <li>Scope and deliverables executed as agreed upon in quotation specifications.</li>
                 {% endfor %}
             </ul>
+            {% endif %}
             {% if agreement.posts_count > 0 or agreement.campaigns_count > 0 %}
             <p style="margin-top: 15px; font-weight: 600;">Monthly Deliverables Allocation:</p>
             <ul>
@@ -343,24 +393,28 @@
         <div class="section-clause">
             <h3>2. Key Deliverables</h3>
             <p>The Service Provider agrees to deliver the following items to the Client:</p>
+            {% if agreement.deliverables_text %}
+            <div style="white-space: pre-line; color: #334155; margin-bottom: 10px;">{{ agreement.deliverables_text }}</div>
+            {% else %}
             <ul>
                 {% for del in agreement.deliverables.all %}
                 <li>{{ del.title }}</li>
                 {% empty %}
-                <li>Monthly campaign metrics reports.</li>
+                <li>Monthly campaign metrics reports, operational deliverables, and performance updates.</li>
                 {% endfor %}
             </ul>
+            {% endif %}
         </div>
 
         <!-- Client Responsibilities -->
         <div class="section-clause">
             <h3>3. Client Responsibilities</h3>
-            <p>To ensure high quality campaign performance, the Client agrees to be responsible for:</p>
+            <p>To ensure high quality campaign and project execution, the Client agrees to be responsible for:</p>
             <ul>
                 {% for resp in agreement.responsibilities.all %}
                 <li>{{ resp.responsibility }}</li>
                 {% empty %}
-                <li>Timely reviews, digital assets provisioning, and billing details.</li>
+                <li>Timely reviews, digital assets provisioning, domain/server credentials, and billing clearances.</li>
                 {% endfor %}
             </ul>
         </div>
@@ -443,33 +497,65 @@
             <h3>4. Payment Terms & Billing</h3>
             <div class="payment-summary-card">
                 <table class="payment-table">
+                    {% if agreement.total_value > 0 %}
+                    <tr>
+                        <td><strong>Total Agreement Value</strong></td>
+                        <td class="val">₹{{ agreement.total_value|floatformat:2 }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if agreement.monthly_fee > 0 %}
                     <tr>
                         <td>Monthly Retainer Fee</td>
                         <td class="val">₹{{ agreement.monthly_fee|floatformat:2 }}</td>
                     </tr>
+                    {% endif %}
+                    {% if agreement.advance_payment > 0 %}
                     <tr>
                         <td>Advance Deposit Payment</td>
                         <td class="val">₹{{ agreement.advance_payment|floatformat:2 }}</td>
                     </tr>
+                    {% endif %}
+                    {% if agreement.payment_cycle %}
                     <tr>
                         <td>Billing Cycle</td>
                         <td style="text-align: right; font-weight: 600;">{{ agreement.payment_cycle }}</td>
                     </tr>
+                    {% endif %}
+                    {% if agreement.payment_method %}
                     <tr>
                         <td>Accepted Payment Method</td>
                         <td style="text-align: right; font-weight: 600;">{{ agreement.payment_method }}</td>
                     </tr>
+                    {% endif %}
                 </table>
             </div>
-            <p>Monthly retainers will be billed at the beginning of each cycle and must be cleared within 7 business days.</p>
+            {% if agreement.payment_terms_text %}
+            <div style="white-space: pre-line; color: #334155; margin-bottom: 10px;">{{ agreement.payment_terms_text }}</div>
+            {% else %}
+            <p>Invoices will be issued in accordance with agreed milestones and must be settled within 7 business days from invoice presentation.</p>
+            {% endif %}
         </div>
 
-        <div class="page-break"></div>
+        {% if doc_settings.bank_name or doc_settings.upi_id %}
+        <!-- Bank & Payment Details -->
+        <div class="section-clause">
+            <h3>Bank & Remittance Details</h3>
+            <div class="payment-summary-card">
+                <table class="payment-table">
+                    {% if doc_settings.account_name %}<tr><td style="width: 40%;"><strong>Beneficiary Name</strong></td><td style="text-align: right; font-weight: 600;">{{ doc_settings.account_name }}</td></tr>{% endif %}
+                    {% if doc_settings.bank_name %}<tr><td><strong>Bank Name</strong></td><td style="text-align: right; font-weight: 600;">{{ doc_settings.bank_name }}</td></tr>{% endif %}
+                    {% if doc_settings.account_number %}<tr><td><strong>Account Number</strong></td><td style="text-align: right; font-family: monospace; font-weight: 700;">{{ doc_settings.account_number }}</td></tr>{% endif %}
+                    {% if doc_settings.ifsc_code %}<tr><td><strong>IFSC Code</strong></td><td style="text-align: right; font-family: monospace; font-weight: 700;">{{ doc_settings.ifsc_code }}</td></tr>{% endif %}
+                    {% if doc_settings.upi_id %}<tr><td><strong>UPI ID</strong></td><td style="text-align: right; font-family: monospace; font-weight: 700; color: #0053db;">{{ doc_settings.upi_id }}</td></tr>{% endif %}
+                </table>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Revisions -->
-        <div class="section-clause" style="margin-top: 20px;">
+        <div class="section-clause">
             <h3>5. Revisions Policy</h3>
-            <p>The Client is entitled to a maximum of <strong>{{ agreement.revisions }} revisions</strong> per asset or campaign schedule. Any subsequent revisions or complete project redirections will be subject to additional consultancy fees billed at standard hourly rates.</p>
+            <p>The Client is entitled to a maximum of <strong>{{ agreement.revisions|default:3 }} revisions</strong> per asset or project milestone. Any subsequent revisions or complete project redirections will be subject to additional consultancy fees billed at standard hourly rates.</p>
         </div>
 
         <!-- Confidentiality -->
@@ -487,26 +573,26 @@
         <!-- Termination -->
         <div class="section-clause">
             <h3>8. Termination Policy</h3>
-            <p>This agreement can be terminated by either party upon submitting a written notice of at least <strong>{{ agreement.notice_period }} days</strong> prior to the next billing date. In the event of early termination, all unpaid active retainers must be cleared in full immediately.</p>
+            <p>This agreement can be terminated by either party upon submitting a written notice of at least <strong>{{ agreement.notice_period|default:30 }} days</strong> prior to the next billing date. In the event of early termination, all unpaid active retainers and milestone dues must be cleared in full immediately.</p>
         </div>
 
         <!-- Performance Disclaimer -->
         <div class="section-clause">
             <h3>9. Performance Disclaimer</h3>
-            <p>While Xenotrix Technologies uses industry-leading digital marketing techniques, the Client acknowledges that ad click rates, keyword ranks, and consumer conversions depend heavily on search engine algorithms, platform policies, and market forces. Hence, no specific traffic metrics or sales gains are guaranteed.</p>
+            <p>While {{ doc_settings.company_name }} uses industry-leading digital marketing techniques and technical practices, the Client acknowledges that ad click rates, keyword ranks, and consumer conversions depend heavily on search engine algorithms, platform policies, and market forces. Hence, no specific traffic metrics or sales gains are guaranteed.</p>
         </div>
 
         <!-- Governing Law -->
         <div class="section-clause">
             <h3>10. Governing Law</h3>
-            <p>This agreement shall be interpreted, governed, and enforced in accordance with the national and state business laws of the jurisdiction in which the Service Provider maintains its head headquarters.</p>
+            <p>This agreement shall be interpreted, governed, and enforced in accordance with {{ agreement.governing_law|default:"the laws of the jurisdiction in which the Service Provider maintains its headquarters" }}.</p>
         </div>
 
         <!-- Notes -->
         {% if agreement.notes %}
         <div class="section-clause">
             <h3>Special Notes / Addenda</h3>
-            <p>{{ agreement.notes }}</p>
+            <p style="white-space: pre-line;">{{ agreement.notes }}</p>
         </div>
         {% endif %}
 
@@ -517,25 +603,40 @@
             
             <div class="signature-section">
                 <div class="sig-block">
-                    <div class="sig-line"></div>
-                    <p><strong>Xenotrix Technologies</strong></p>
-                    <p>Authorized Signature</p>
-                    <p>Date: ________________________</p>
+                    <div class="sig-line">
+                        {% if doc_settings.authorized_signature_url %}
+                        <img src="{{ doc_settings.authorized_signature_url }}" style="max-height: 44px; object-fit: contain;" alt="Signature">
+                        {% else %}
+                        <span style="font-family: 'Great Vibes', cursive; font-size: 26px; color: #0053db;">{{ doc_settings.authorized_person_name }}</span>
+                        {% endif %}
+                    </div>
+                    <p><strong>{{ doc_settings.company_name }}</strong></p>
+                    <p>{{ doc_settings.authorized_person_name|default:"Authorized Signature" }}</p>
+                    <p>Date: {% now "F d, Y" %}</p>
                 </div>
                 <div class="sig-block">
-                    <div class="sig-line"></div>
+                    <div class="sig-line">
+                        {% if agreement.status == 'Signed' and agreement.signature_data %}
+                            {% if agreement.signature_type == 'draw' %}
+                            <img src="{{ agreement.signature_data }}" style="max-height: 44px; object-fit: contain;" alt="Client Signature">
+                            {% else %}
+                            <span style="font-family: 'Great Vibes', cursive; font-size: 26px; color: #0f172a;">{{ agreement.signature_data }}</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
                     <p><strong>{{ agreement.client_name }}</strong></p>
                     <p>Client Signature</p>
-                    <p>Date: ________________________</p>
+                    <p>Date: {% if agreement.signed_at %}{{ agreement.signed_at|date:"F d, Y" }}{% else %}________________________{% endif %}</p>
                 </div>
             </div>
         </div>
 
         <!-- Footer -->
         <div class="footer-version">
-            <span>Doc ID: {{ agreement.agreement_number }} | Version: 1.2</span>
+            <span>Doc ID: {{ agreement.agreement_number }} | {{ doc_settings.footer_text|default:"All rights reserved." }}</span>
             <span>Generated: {% now "Y-m-d H:i:s" %}</span>
         </div>
     </div>
 </body>
 </html>
+

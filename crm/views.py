@@ -915,9 +915,12 @@ def delete_agreement_view(request, agreement_id):
 def agreement_print_view(request, agreement_id):
     org = request.user.profile.organization
     agreement = get_object_or_404(Agreement, id=agreement_id, organization=org)
+    from .document_views import get_or_create_document_settings
+    doc_settings = get_or_create_document_settings(org)
     return render(request, 'agreement_print.html', {
         'agreement': agreement,
-        'organization': org
+        'organization': org,
+        'doc_settings': doc_settings
     })
 
 
