@@ -48,7 +48,8 @@ from content_tracker.models import (
 from finance.models import (
     FinancePaymentMethod, FinanceExpenseCategory, FinancePaymentStatus, FinanceCommissionType,
     Income, Expense, DeletedIncome, DeletedExpense, PartnerPayout,
-    DocumentSettings, DocumentTemplate, Quotation, QuotationItem, QuotationPackage, QuotationDomainOption,
+    DocumentSettings, DocumentTemplate, Quotation, QuotationSection, QuotationItem, QuotationPackage, QuotationDomainOption,
     QuotationPaymentStage, QuotationTerm, QuotationExclusion, QuotationActivity, QuotationVersion,
     InvoiceStatus, Invoice, InvoiceItem
 )
+
