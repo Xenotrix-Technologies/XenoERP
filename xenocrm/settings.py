@@ -34,8 +34,8 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-8hy1oc1j-%q^tw30p=az*gml
 DEBUG = env('DEBUG', default=True)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
-ALLOWED_HOSTS.extend(['.onrender.com', 'xeno.xenotrix.in', 'www.xeno.xenotrix.in', 'localhost', '127.0.0.1'])
-if '*' in ALLOWED_HOSTS or env.bool('ALLOW_ALL_HOSTS', default=False):
+ALLOWED_HOSTS.extend(['.onrender.com', 'xeno.xenotrix.in', 'www.xeno.xenotrix.in', 'localhost', '127.0.0.1', 'testserver'])
+if DEBUG or '*' in ALLOWED_HOSTS or env.bool('ALLOW_ALL_HOSTS', default=False):
     ALLOWED_HOSTS = ['*']
 
 RENDER_EXTERNAL_HOSTNAME = env('RENDER_EXTERNAL_HOSTNAME', default=None)
