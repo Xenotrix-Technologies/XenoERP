@@ -170,6 +170,25 @@ class DocumentSettings(models.Model):
     next_quotation_number = models.IntegerField(default=1)
     next_agreement_number = models.IntegerField(default=1)
     
+    LOGO_CHOICES = [
+        ('asset', 'Default Xenotrix Logo (static/images/xenotrix.png)'),
+        ('upload', 'Uploaded Logo File'),
+        ('url', 'Custom Logo URL'),
+    ]
+    SEAL_CHOICES = [
+        ('asset', 'Default Company Seal (static/images/seal.png)'),
+        ('upload', 'Uploaded Seal File'),
+        ('url', 'Custom Seal URL'),
+        ('none', 'No Seal'),
+    ]
+
+    logo_choice = models.CharField(max_length=20, choices=LOGO_CHOICES, default='asset')
+    logo_file = models.FileField(upload_to='branding/', blank=True, null=True)
+    seal_choice = models.CharField(max_length=20, choices=SEAL_CHOICES, default='asset')
+    seal_url = models.URLField(max_length=1000, blank=True, null=True)
+    seal_file = models.FileField(upload_to='branding/', blank=True, null=True)
+    signature_file = models.FileField(upload_to='branding/', blank=True, null=True)
+    
     footer_text = models.TextField(default='Thank you for choosing Xenotrix Technologies. For any queries, contact info@xenotrix.in.')
     authorized_person_name = models.CharField(max_length=255, default='Authorized Signatory')
     authorized_signature_url = models.URLField(max_length=1000, blank=True, null=True)
@@ -182,6 +201,38 @@ class DocumentSettings(models.Model):
 
     def __str__(self):
         return f"Document Settings - {self.company_name}"
+
+    @property
+    def effective_logo_url(self):
+        if self.logo_choice == 'upload' and self.logo_file:
+            return self.logo_file.url
+        elif self.logo_choice == 'url' and self.logo_url:
+            return self.logo_url
+        elif self.logo_url:
+            return self.logo_url
+        return '/static/images/xenotrix.png'
+
+    @property
+    def effective_seal_url(self):
+        if self.seal_choice == 'none':
+            return None
+        elif self.seal_choice == 'upload' and self.seal_file:
+            return self.seal_file.url
+        elif self.seal_choice == 'url' and self.seal_url:
+            return self.seal_url
+        elif self.seal_url:
+            return self.seal_url
+        elif self.seal_choice == 'asset':
+            return '/static/images/seal.png'
+        return '/static/images/seal.png'
+
+    @property
+    def effective_signature_url(self):
+        if self.signature_file:
+            return self.signature_file.url
+        if self.authorized_signature_url:
+            return self.authorized_signature_url
+        return None
 
 
 class DocumentTemplate(models.Model):

@@ -1218,8 +1218,21 @@ def document_settings_view(request):
         settings_obj.footer_text = request.POST.get('footer_text', settings_obj.footer_text)
         settings_obj.authorized_person_name = request.POST.get('authorized_person_name', settings_obj.authorized_person_name)
 
+        settings_obj.logo_choice = request.POST.get('logo_choice', settings_obj.logo_choice)
         settings_obj.logo_url = request.POST.get('logo_url', '').strip() or None
+        if request.FILES.get('logo_file'):
+            settings_obj.logo_file = request.FILES.get('logo_file')
+            settings_obj.logo_choice = 'upload'
+
+        settings_obj.seal_choice = request.POST.get('seal_choice', settings_obj.seal_choice)
+        settings_obj.seal_url = request.POST.get('seal_url', '').strip() or None
+        if request.FILES.get('seal_file'):
+            settings_obj.seal_file = request.FILES.get('seal_file')
+            settings_obj.seal_choice = 'upload'
+
         settings_obj.authorized_signature_url = request.POST.get('authorized_signature_url', '').strip() or None
+        if request.FILES.get('signature_file'):
+            settings_obj.signature_file = request.FILES.get('signature_file')
 
         settings_obj.save()
         return redirect('document_settings')
