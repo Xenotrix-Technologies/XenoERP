@@ -1,21 +1,19 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{% if quotation %}Edit Quotation {{ quotation.quotation_number }}{% else %}Create Quotation{% endif %} | XenoCRM{% endblock %}
+{% block title %}{% if quotation %}Edit Quotation {{ quotation.quotation_number }}{% else %}Create Quotation{% endif %} | XenoERP{% endblock %}
 
 {% block extra_head %}
 <style>
 @media print {
-    /* Hide CRM header, sidebar, top bar, and form builder left panel */
     header, aside, nav, .no-print, 
     #quotationBuilderApp > div:first-child, 
     .quotation-builder-left-panel,
     #sidebar-overlay, #quick-create-modal,
-    #serviceSelectModal, #packageSelectModal {
+    #quickClientModal {
         display: none !important;
     }
     
-    /* Make live A4 preview container 100% full-width for printing */
     .quotation-builder-right-panel {
         display: block !important;
         width: 100% !important;
@@ -57,105 +55,115 @@
 
 {% block content %}
 <div class="h-screen flex flex-col bg-slate-100 overflow-hidden" id="quotationBuilderApp">
-    <!-- Header Bar (Hidden in Print) -->
+    <!-- Header Navigation & Action Bar -->
     <div class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between z-10 flex-shrink-0 no-print">
         <div class="flex items-center gap-3">
             <a href="{% url 'quotation_list' %}" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all" title="Back to Quotations">
                 <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </a>
             <div>
-                <h1 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <span>{% if quotation %}Edit {{ quotation.quotation_number }}{% else %}New Quotation Builder{% endif %}</span>
-                    <span class="text-xs px-2 py-0.5 bg-primary-50 text-primary-700 font-bold rounded-full border border-primary-200 font-mono" id="qNumHeader">
+                <h1 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                    <span>{% if quotation %}Edit {{ quotation.quotation_number }}{% else %}Quotation Generator{% endif %}</span>
+                    <span class="text-xs px-2.5 py-0.5 bg-blue-50 text-blue-700 font-bold rounded-full border border-blue-200 font-mono" id="qNumHeader">
                         {% if quotation %}{{ quotation.quotation_number }}{% else %}{{ default_q_num }}{% endif %}
                     </span>
                 </h1>
-                <p class="text-xs text-slate-500">Configure line items, pricing options, packages, terms, and live preview.</p>
+                <p class="text-xs text-slate-500">Create data-driven proposals with dynamic sections, items, and live A4 document preview.</p>
             </div>
         </div>
 
-        <div class="flex items-center gap-3">
-            <button type="button" onclick="saveQuotation('Draft')" class="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all">
+        <div class="flex items-center gap-2.5">
+            <button type="button" onclick="saveQuotation('Draft')" class="px-3.5 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all">
                 <i data-lucide="save" class="w-4 h-4 text-slate-500"></i>
-                <span>Save Draft</span>
+                <span class="hidden sm:inline">Save Draft</span>
             </button>
-            <button type="button" onclick="window.print()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all">
+            <button type="button" onclick="window.print()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all">
                 <i data-lucide="printer" class="w-4 h-4"></i>
                 <span>Print / PDF</span>
             </button>
-            <button type="button" onclick="saveQuotation('Sent')" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-sm shadow-primary-500/20 transition-all">
+            <button type="button" onclick="saveQuotation('Sent')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm shadow-blue-500/20 transition-all">
                 <i data-lucide="send" class="w-4 h-4"></i>
                 <span>Save & Send</span>
             </button>
         </div>
     </div>
 
-    <!-- Main Workspace: Split Screen -->
+    <!-- Split Workspace -->
     <div class="flex-1 flex overflow-hidden">
-        <!-- LEFT PANEL: Form Builder -->
+        <!-- LEFT PANEL: Dynamic Builder Form -->
         <div class="quotation-builder-left-panel w-full lg:w-1/2 p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-6 border-r border-slate-200/80 bg-slate-50/50">
 
-            <!-- Step 1: Client / Lead Selection -->
+            <!-- Section 1: Client / Customer Selection -->
             <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs flex items-center justify-center font-bold">1</span>
+                        <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span>
                         Client & Contact Information
                     </h3>
-                    <select id="leadSelect" onchange="onLeadSelect(this)" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 font-medium focus:ring-primary-500">
-                        <option value="">-- Select Existing Lead / Client --</option>
-                        {% for l in leads %}
-                        <option value="{{ l.id }}" {% if selected_lead and selected_lead.id == l.id %}selected{% elif quotation and quotation.lead_id == l.id %}selected{% endif %}
-                            data-name="{{ l.name }}" data-company="{{ l.company }}" data-email="{{ l.email }}" data-phone="{{ l.phone_number }}" data-address="{{ l.location }}" data-gstin="">
-                            {% if l.company %}{{ l.company }}{% else %}{{ l.name }}{% endif %}
-                        </option>
-                        {% endfor %}
-                    </select>
+                    <div class="flex items-center gap-2">
+                        <select id="leadSelect" onchange="onLeadSelect(this)" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 font-medium focus:ring-blue-500 max-w-[200px] truncate">
+                            <option value="">-- Select Existing Client / Lead --</option>
+                            {% for l in leads %}
+                            <option value="{{ l.id }}" {% if selected_lead and selected_lead.id == l.id %}selected{% elif quotation and quotation.lead_id == l.id %}selected{% endif %}
+                                data-name="{{ l.name }}" data-company="{{ l.company }}" data-email="{{ l.email }}" data-phone="{{ l.phone_number }}" data-altphone="{{ l.alt_phone_number|default:'' }}" data-address="{{ l.location }}" data-gstin="">
+                                {% if l.company %}{{ l.company }} ({{ l.name }}){% else %}{{ l.name }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" onclick="openQuickClientModal()" class="px-2.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-xs font-bold transition-all flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>New Client</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Client Name *</label>
-                        <input type="text" id="client_name" value="{% if quotation %}{{ quotation.client_name }}{% elif selected_lead %}{{ selected_lead.company|default:selected_lead.name }}{% endif %}" placeholder="e.g. Acme Corp / John Doe" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl font-semibold text-slate-800">
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Client Name / Company Name *</label>
+                        <input type="text" id="client_name" value="{% if quotation %}{{ quotation.client_name }}{% elif selected_lead %}{{ selected_lead.company|default:selected_lead.name }}{% endif %}" placeholder="e.g. Client Name / Company" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:bg-white">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Company Name</label>
-                        <input type="text" id="company_name" value="{% if quotation %}{{ quotation.company_name }}{% elif selected_lead %}{{ selected_lead.company }}{% endif %}" placeholder="e.g. Acme Pvt Ltd" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800">
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Company / Organization</label>
+                        <input type="text" id="company_name" value="{% if quotation %}{{ quotation.company_name }}{% elif selected_lead %}{{ selected_lead.company }}{% endif %}" placeholder="e.g. Company Pvt Ltd" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Contact Person</label>
+                        <input type="text" id="contact_person" value="{% if quotation %}{{ quotation.contact_person }}{% elif selected_lead %}{{ selected_lead.name }}{% endif %}" placeholder="e.g. John Doe (Director)" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white">
                     </div>
                     <div>
                         <label class="block text-[11px] font-bold text-slate-600 mb-1">Email Address</label>
-                        <input type="email" id="email" value="{% if quotation %}{{ quotation.email }}{% elif selected_lead %}{{ selected_lead.email }}{% endif %}" placeholder="e.g. client@example.com" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800">
+                        <input type="email" id="email" value="{% if quotation %}{{ quotation.email }}{% elif selected_lead %}{{ selected_lead.email }}{% endif %}" placeholder="e.g. contact@client.com" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white">
                     </div>
                     <div>
                         <label class="block text-[11px] font-bold text-slate-600 mb-1">Phone Number</label>
-                        <input type="text" id="phone" value="{% if quotation %}{{ quotation.phone }}{% elif selected_lead %}{{ selected_lead.phone_number }}{% endif %}" placeholder="e.g. +91 98765 43210" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800">
+                        <input type="text" id="phone" value="{% if quotation %}{{ quotation.phone }}{% elif selected_lead %}{{ selected_lead.phone_number }}{% endif %}" placeholder="e.g. +91 98765 43210" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">GSTIN Number (Optional)</label>
+                        <input type="text" id="gstin" value="{% if quotation %}{{ quotation.gstin }}{% endif %}" placeholder="e.g. 36AAAAA0000A1Z5" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl font-mono text-slate-800 focus:bg-white">
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Billing Address</label>
-                        <textarea id="address" rows="2" placeholder="Billing Address..." oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800">{% if quotation %}{{ quotation.address }}{% elif selected_lead %}{{ selected_lead.location }}{% endif %}</textarea>
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">GSTIN Number</label>
-                        <input type="text" id="gstin" value="{% if quotation %}{{ quotation.gstin }}{% endif %}" placeholder="GSTIN (optional)" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl font-mono text-slate-800">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Salesperson / Prepared By</label>
-                        <input type="text" id="salesperson" value="{% if quotation %}{{ quotation.salesperson }}{% else %}{{ profile.user.get_full_name|default:profile.user.username|default:doc_settings.authorized_person_name }}{% endif %}" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800">
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Address / Location</label>
+                        <textarea id="address" rows="2" placeholder="Full Client Address..." oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800 focus:bg-white">{% if quotation %}{{ quotation.address }}{% elif selected_lead %}{{ selected_lead.location }}{% endif %}</textarea>
                     </div>
                 </div>
             </div>
 
-            <!-- Step 2: Quotation Metadata -->
+            <!-- Section 2: Quotation Metadata -->
             <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
                 <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                    <span class="w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs flex items-center justify-center font-bold">2</span>
-                    Quotation Information & Template
+                    <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span>
+                    Quotation Header & Details
                 </h3>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Quotation Number</label>
-                        <input type="text" id="quotation_number" value="{% if quotation %}{{ quotation.quotation_number }}{% else %}{{ default_q_num }}{% endif %}" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-primary-700">
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Quotation Number *</label>
+                        <input type="text" id="quotation_number" value="{% if quotation %}{{ quotation.quotation_number }}{% else %}{{ default_q_num }}{% endif %}" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-blue-700">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Project / Requirement Title</label>
+                        <input type="text" id="project_title" value="{% if quotation %}{{ quotation.project_title }}{% else %}Project Proposal & Quotation{% endif %}" placeholder="e.g. Website Development & Growth Strategy" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800">
                     </div>
                     <div>
                         <label class="block text-[11px] font-bold text-slate-600 mb-1">Quotation Date</label>
@@ -168,25 +176,31 @@
                     <div>
                         <label class="block text-[11px] font-bold text-slate-600 mb-1">Currency</label>
                         <select id="currency" onchange="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold">
-                            <option value="INR" {% if quotation %}{% if quotation.currency == 'INR' %}selected{% endif %}{% elif doc_settings.default_currency == 'INR' %}selected{% endif %}>INR (₹)</option>
-                            <option value="USD" {% if quotation %}{% if quotation.currency == 'USD' %}selected{% endif %}{% elif doc_settings.default_currency == 'USD' %}selected{% endif %}>USD ($)</option>
-                            <option value="EUR" {% if quotation %}{% if quotation.currency == 'EUR' %}selected{% endif %}{% elif doc_settings.default_currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
-                            <option value="AED" {% if quotation %}{% if quotation.currency == 'AED' %}selected{% endif %}{% elif doc_settings.default_currency == 'AED' %}selected{% endif %}>AED (AED)</option>
+                            <option value="INR" {% if quotation and quotation.currency == 'INR' %}selected{% elif doc_settings.default_currency == 'INR' %}selected{% endif %}>INR (₹)</option>
+                            <option value="USD" {% if quotation and quotation.currency == 'USD' %}selected{% elif doc_settings.default_currency == 'USD' %}selected{% endif %}>USD ($)</option>
+                            <option value="EUR" {% if quotation and quotation.currency == 'EUR' %}selected{% elif doc_settings.default_currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                            <option value="AED" {% if quotation and quotation.currency == 'AED' %}selected{% elif doc_settings.default_currency == 'AED' %}selected{% endif %}>AED (AED)</option>
+                            <option value="GBP" {% if quotation and quotation.currency == 'GBP' %}selected{% elif doc_settings.default_currency == 'GBP' %}selected{% endif %}>GBP (£)</option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Prepared By / Signatory</label>
+                        <input type="text" id="salesperson" value="{% if quotation %}{{ quotation.salesperson }}{% else %}{{ profile.user.get_full_name|default:profile.user.username|default:doc_settings.authorized_person_name }}{% endif %}" oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800">
                     </div>
                     <div>
                         <label class="block text-[11px] font-bold text-slate-600 mb-1">Template Style</label>
                         <select id="template_style" onchange="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800">
-                            <option value="default" selected>Standard Corporate</option>
-                            <option value="corporate">Professional Clean</option>
-                            <option value="minimal">Minimalist</option>
+                            <option value="default" {% if not quotation or quotation.template_style == 'default' %}selected{% endif %}>Xenotrix Standard</option>
+                            <option value="corporate" {% if quotation and quotation.template_style == 'corporate' %}selected{% endif %}>Professional Corporate</option>
+                            <option value="minimal" {% if quotation and quotation.template_style == 'minimal' %}selected{% endif %}>Minimalist Clean</option>
+                            <option value="modern" {% if quotation and quotation.template_style == 'modern' %}selected{% endif %}>Modern Visual</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-[11px] font-bold text-slate-600 mb-1">Payment Preset</label>
                         <select id="preset_payment_terms" onchange="applyPaymentPreset(this.value)" class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800">
-                            <option value="30_40_30" selected>30% Advance / 40% Second / 30% Final</option>
-                            <option value="50_50">50% Advance / 50% Completion</option>
+                            <option value="50_50" selected>50% Advance / 50% Completion</option>
+                            <option value="30_40_30">30% Advance / 40% Review / 30% Delivery</option>
                             <option value="100_upfront">100% Upfront Advance</option>
                             <option value="monthly">Monthly Advance Billing</option>
                         </select>
@@ -194,17 +208,66 @@
                 </div>
             </div>
 
-            <!-- Step 3: Line Items & Pricing Editor -->
+            <!-- Section 3: Dynamic Sections Controller (Add / Remove / Reorder) -->
             <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs flex items-center justify-center font-bold">3</span>
+                        <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">3</span>
+                        Dynamic Proposal Sections
+                    </h3>
+                </div>
+
+                <!-- Section Toggles & Content Blocks -->
+                <div class="space-y-4" id="dynamicSectionsContainer">
+                    <!-- Project Objective Block -->
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2" id="sec_box_objective">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="toggle_sec_objective" checked onchange="updatePreview()" class="rounded text-blue-600">
+                                <label for="toggle_sec_objective" class="text-xs font-bold text-slate-800 cursor-pointer">Project Objective / Scope of Work</label>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-medium">Header & Description</span>
+                        </div>
+                        <textarea id="objective_text" rows="2" placeholder="Describe project goals, overview, and requirements..." oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-700">{% if quotation %}{{ quotation.objective_text|default:'' }}{% endif %}</textarea>
+                    </div>
+
+                    <!-- Deliverables Summary Block -->
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2" id="sec_box_deliverables">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="toggle_sec_deliverables" checked onchange="updatePreview()" class="rounded text-blue-600">
+                                <label for="toggle_sec_deliverables" class="text-xs font-bold text-slate-800 cursor-pointer">Deliverables Summary</label>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-medium">Deliverables / Features</span>
+                        </div>
+                        <textarea id="deliverables_summary_text" rows="2" placeholder="High-level breakdown of key deliverables..." oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-700">{% if quotation %}{{ quotation.deliverables_summary_text|default:'' }}{% endif %}</textarea>
+                    </div>
+
+                    <!-- What Success Looks Like Block -->
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2" id="sec_box_success">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="toggle_sec_success" checked onchange="updatePreview()" class="rounded text-blue-600">
+                                <label for="toggle_sec_success" class="text-xs font-bold text-slate-800 cursor-pointer">What Success Looks Like (Expected Outcomes)</label>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-medium">Business Impact & KPIs</span>
+                        </div>
+                        <textarea id="success_metrics_text" rows="2" placeholder="Key outcomes, turnaround times, quality assurances..." oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-700">{% if quotation %}{{ quotation.success_metrics_text|default:'' }}{% endif %}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Dynamic Services & Line Items -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">4</span>
                         Services & Line Items
                     </h3>
                     <div class="flex items-center gap-2">
                         {% if services %}
-                        <select id="quickServiceSelect" onchange="addPredefinedService(this)" class="text-xs bg-primary-50 border border-primary-200 rounded-xl px-2.5 py-1 text-primary-800 font-semibold cursor-pointer">
-                            <option value="">+ Add Service...</option>
+                        <select id="quickServiceSelect" onchange="addCatalogService(this)" class="text-xs bg-blue-50 border border-blue-200 rounded-xl px-2.5 py-1 text-blue-800 font-semibold cursor-pointer max-w-[180px] truncate">
+                            <option value="">+ Add From Catalog...</option>
                             {% for s in services %}
                             <option value="{{ s.id }}" data-name="{{ s.name }}" data-price="{{ s.price }}" data-desc="{{ s.description|default:'' }}" data-cycle="{{ s.billing_cycle|default:'one_time' }}">
                                 {{ s.name }} (₹{{ s.price|floatformat:0 }})
@@ -212,97 +275,102 @@
                             {% endfor %}
                         </select>
                         {% endif %}
-                        <button type="button" onclick="addItemRow()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all">
+                        <button type="button" onclick="addNewItemRow()" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-all">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                             <span>+ Custom Item</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Line Items Table -->
-                <div class="space-y-3" id="lineItemsContainer">
-                    <!-- Dynamic Item Rows populated by JS -->
-                </div>
-            </div>
-
-            <!-- Step 4: Service Packages (Optional Quick Add) -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs flex items-center justify-center font-bold">4</span>
-                        Service Packages
-                    </h3>
-                    <button type="button" onclick="openPackageSelectModal()" class="px-3 py-1.5 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-xl text-xs font-semibold transition-all">
-                        + Select Package
-                    </button>
+                <!-- Dynamic Item Rows -->
+                <div class="space-y-3.5" id="lineItemsContainer">
+                    <!-- Populated dynamically via JS -->
                 </div>
 
-                <div id="selectedPackageBox" class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between {% if not quotation.packages.exists %}hidden{% endif %}">
-                    <div>
-                        <span class="text-xs font-bold text-slate-800" id="pkgNameDisplay">Starter Growth Package</span>
-                        <p class="text-[11px] text-slate-500" id="pkgDescDisplay">10 Posts, 8 Ad Creatives, Social Media Management, Monthly Reports</p>
-                    </div>
-                    <div class="text-right flex items-center gap-3">
-                        <span class="text-sm font-extrabold text-primary-600" id="pkgPriceDisplay">₹18,000 / Mo</span>
-                        <button type="button" onclick="removeSelectedPackage()" class="text-rose-500 hover:text-rose-700 text-xs font-bold">✕</button>
+                <!-- Overall Pricing, Discounts & Taxes -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Overall Discount & Tax (GST)</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Quotation Discount Type</label>
+                            <select id="quotation_discount_type" onchange="updatePreview()" class="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
+                                <option value="fixed" {% if quotation and quotation.discount_type == 'fixed' %}selected{% endif %}>Fixed Amount</option>
+                                <option value="percentage" {% if quotation and quotation.discount_type == 'percentage' %}selected{% endif %}>Percentage (%)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Discount Value</label>
+                            <input type="number" step="0.01" id="quotation_discount_val" value="{% if quotation %}{% if quotation.discount_type == 'percentage' %}{{ quotation.discount_rate }}{% else %}{{ quotation.discount_amount }}{% endif %}{% else %}0{% endif %}" oninput="updatePreview()" class="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Applicable GST / Tax Rate (%)</label>
+                            <input type="number" step="0.01" id="quotation_tax_rate" value="{% if quotation %}{{ quotation.tax_rate }}{% else %}0{% endif %}" placeholder="e.g. 18 for 18% GST" oninput="updatePreview()" class="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-800">
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Step 5: Domain Options -->
+            <!-- Section 5: Payment Milestones & Commercial Terms -->
             <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs flex items-center justify-center font-bold">5</span>
-                        Domain Name Options
+                        <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">5</span>
+                        Development & Delivery Schedule (Milestones)
                     </h3>
-                    <button type="button" onclick="addDomainOptionRow()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">
-                        + Add Domain Choice
+                    <button type="button" onclick="addPaymentStageRow()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">
+                        + Add Milestone
                     </button>
                 </div>
 
-                <div id="domainOptionsContainer" class="space-y-2">
-                    <!-- Domain choices inserted by JS -->
-                </div>
+                <div id="paymentStagesContainer" class="space-y-2"></div>
             </div>
 
-            <!-- Step 6: Terms, Conditions & Exclusions -->
+            <!-- Section 6: Commercial Terms & Exclusions -->
             <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
                 <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                    <span class="w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs flex items-center justify-center font-bold">6</span>
-                    Terms & Exclusions
+                    <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">6</span>
+                    Commercial Terms & Exclusions
                 </h3>
 
                 <div>
-                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Exclusions & Extra Charges</label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-[11px] font-bold text-slate-700">Third-Party Charges & Exclusions</label>
+                        <button type="button" onclick="addExclusionRow()" class="text-xs text-blue-600 font-bold hover:underline">+ Add Exclusion</button>
+                    </div>
                     <div id="exclusionsContainer" class="space-y-2 mb-2"></div>
-                    <button type="button" onclick="addExclusionRow()" class="text-xs text-primary-600 font-semibold hover:underline">+ Add Exclusion Item</button>
                 </div>
 
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Terms & Conditions Clauses</label>
+                <div class="pt-2 border-t border-slate-100">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-[11px] font-bold text-slate-700">Commercial Terms & Conditions</label>
+                        <button type="button" onclick="addTermRow()" class="text-xs text-blue-600 font-bold hover:underline">+ Add Clause</button>
+                    </div>
                     <div id="termsContainer" class="space-y-2 mb-2"></div>
-                    <button type="button" onclick="addTermRow()" class="text-xs text-primary-600 font-semibold hover:underline">+ Add Clause</button>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100">
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Declaration / Formal Acceptance Text</label>
+                    <textarea id="declaration_text" rows="2" placeholder="Declaration statement of acceptance..." oninput="updatePreview()" class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800">{% if quotation %}{{ quotation.declaration_text|default:'' }}{% else %}We hereby accept the quotation proposal, deliverables, commercial terms, and milestone payment schedule detailed above.{% endif %}</textarea>
                 </div>
             </div>
 
         </div>
 
-        <!-- RIGHT PANEL: Live Interactive A4 Quotation Preview -->
-        <div class="quotation-builder-right-panel hidden lg:block lg:w-1/2 p-6 bg-slate-200/60 overflow-y-auto custom-scrollbar flex items-center justify-center">
-            <div id="a4PreviewPaper" class="w-[210mm] min-h-[297mm] bg-white shadow-2xl rounded-sm p-10 font-sans text-slate-800 space-y-6 relative border border-slate-300">
+        <!-- RIGHT PANEL: Live Interactive A4 Document Preview -->
+        <div class="quotation-builder-right-panel hidden lg:block lg:w-1/2 p-6 bg-slate-200/70 overflow-y-auto custom-scrollbar flex items-start justify-center">
+            <div id="a4PreviewPaper" class="w-[210mm] min-h-[297mm] bg-white shadow-2xl rounded-sm p-8 sm:p-10 font-sans text-slate-800 space-y-6 relative border border-slate-300">
                 
-                <!-- Header Branding -->
-                <div class="flex justify-between items-start border-b-2 border-primary-600 pb-6 print-avoid-break">
+                <!-- 1. Header Branding (Xenotrix Technologies Reference Structure) -->
+                <div class="flex justify-between items-start border-b-2 border-blue-600 pb-5 print-avoid-break">
                     <div class="space-y-1">
                         {% if doc_settings.logo_url %}
-                        <img src="{{ doc_settings.logo_url }}" alt="{{ doc_settings.company_name }}" class="h-10 max-w-[200px] object-contain mb-2">
+                        <img src="{{ doc_settings.logo_url }}" alt="{{ doc_settings.company_name }}" class="h-9 max-w-[180px] object-contain mb-1.5">
                         {% endif %}
-                        <h2 class="text-2xl font-black tracking-tight text-primary-700" id="prev_company_name">{{ doc_settings.company_name }}</h2>
+                        <h2 class="text-xl font-black tracking-tight text-blue-900" id="prev_company_name">{{ doc_settings.company_name }}</h2>
                         {% if doc_settings.address %}
-                        <p class="text-[11px] text-slate-600 font-medium leading-relaxed max-w-md" id="prev_company_address">{{ doc_settings.address }}</p>
+                        <p class="text-[11px] text-slate-600 font-medium leading-relaxed max-w-sm" id="prev_company_address">{{ doc_settings.address }}</p>
                         {% endif %}
-                        <div class="text-[10px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 pt-0.5" id="prev_company_contact">
+                        <div class="text-[10px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 pt-0.5">
                             {% if doc_settings.gstin %}<span><strong>GSTIN:</strong> {{ doc_settings.gstin }}</span>{% endif %}
                             {% if doc_settings.pan %}<span>• <strong>PAN:</strong> {{ doc_settings.pan }}</span>{% endif %}
                             {% if doc_settings.phone %}<span>• <strong>Phone:</strong> {{ doc_settings.phone }}</span>{% endif %}
@@ -311,43 +379,63 @@
                         </div>
                     </div>
                     <div class="text-right flex-shrink-0 ml-4">
-                        <span class="inline-block px-3.5 py-1 bg-primary-600 text-white font-extrabold text-xs tracking-widest rounded uppercase">QUOTATION</span>
+                        <span class="inline-block px-3 py-1 bg-blue-600 text-white font-black text-xs tracking-widest rounded-md uppercase shadow-xs">QUOTATION</span>
                         <p class="text-xs font-mono font-bold text-slate-900 mt-2" id="prev_q_num">{% if quotation %}{{ quotation.quotation_number }}{% else %}{{ default_q_num }}{% endif %}</p>
-                        <p class="text-[10px] text-slate-500 mt-1">Date: <span id="prev_date" class="font-semibold text-slate-700">{{ today_date }}</span></p>
-                        <p class="text-[10px] text-slate-500">Valid Until: <span id="prev_valid" class="font-semibold text-slate-700">{{ valid_date }}</span></p>
+                        <p class="text-[10px] text-slate-500 mt-1">Date: <span id="prev_date" class="font-bold text-slate-800">{{ today_date }}</span></p>
+                        <p class="text-[10px] text-slate-500">Valid Until: <span id="prev_valid" class="font-bold text-slate-800">{{ valid_date }}</span></p>
                     </div>
                 </div>
 
-                <!-- Prepared For / Prepared By -->
-                <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/80 text-xs print-avoid-break">
+                <!-- Requirement / Project Title Banner -->
+                <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100 print-avoid-break">
+                    <span class="text-[9px] font-bold uppercase text-blue-700 tracking-wider block">PROJECT REQUIREMENT / SCOPE</span>
+                    <h3 class="text-sm font-black text-slate-900 mt-0.5" id="prev_project_title">{% if quotation %}{{ quotation.project_title }}{% else %}Project Proposal & Quotation{% endif %}</h3>
+                </div>
+
+                <!-- 2. Prepared For (Client) & Prepared By (Sales Rep) Grid -->
+                <div class="grid grid-cols-2 gap-4 bg-slate-50/80 p-4 rounded-xl border border-slate-200/80 text-xs print-avoid-break">
                     <div>
                         <span class="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1">PREPARED FOR</span>
                         <h4 class="font-bold text-slate-900 text-sm" id="prev_client">{% if quotation %}{{ quotation.client_name }}{% elif selected_lead %}{{ selected_lead.company|default:selected_lead.name }}{% else %}Client Name{% endif %}</h4>
-                        <p class="text-[11px] text-slate-700 font-medium mt-0.5" id="prev_company">{% if quotation %}{{ quotation.company_name }}{% elif selected_lead %}{{ selected_lead.company }}{% endif %}</p>
-                        <p class="text-[10px] text-slate-500 mt-1" id="prev_contact">
+                        <p class="text-[11px] text-slate-700 font-semibold mt-0.5" id="prev_company">{% if quotation %}{{ quotation.company_name }}{% elif selected_lead %}{{ selected_lead.company }}{% endif %}</p>
+                        <p class="text-[10px] text-slate-600 mt-1" id="prev_contact">
                             {% if quotation %}{{ quotation.email }}{% if quotation.phone %} | {{ quotation.phone }}{% endif %}{% elif selected_lead %}{{ selected_lead.email }}{% if selected_lead.phone_number %} | {{ selected_lead.phone_number }}{% endif %}{% endif %}
                         </p>
+                        <p class="text-[10px] text-slate-500 mt-0.5" id="prev_address">{% if quotation %}{{ quotation.address }}{% elif selected_lead %}{{ selected_lead.location }}{% endif %}</p>
                         <p class="text-[10px] text-slate-400 font-mono mt-0.5" id="prev_gstin">{% if quotation and quotation.gstin %}GSTIN: {{ quotation.gstin }}{% endif %}</p>
                     </div>
                     <div class="text-right">
-                        <span class="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1">SALES REPRESENTATIVE</span>
+                        <span class="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1">PREPARED BY</span>
                         <p class="font-bold text-slate-900 text-sm" id="prev_salesperson">{% if quotation %}{{ quotation.salesperson }}{% else %}{{ profile.user.get_full_name|default:profile.user.username|default:doc_settings.authorized_person_name }}{% endif %}</p>
                         <p class="text-[11px] text-slate-700 font-medium mt-0.5">{{ doc_settings.company_name }}</p>
-                        <p class="text-[10px] text-slate-500 mt-0.5">{{ doc_settings.email }}</p>
+                        {% if doc_settings.email %}<p class="text-[10px] text-slate-500 mt-0.5">{{ doc_settings.email }}</p>{% endif %}
                         {% if doc_settings.phone %}<p class="text-[10px] text-slate-400">{{ doc_settings.phone }}</p>{% endif %}
                     </div>
                 </div>
 
-                <!-- Line Items Table -->
+                <!-- 3. Project Objective (If enabled) -->
+                <div id="prev_sec_objective" class="print-avoid-break">
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5 border-l-4 border-blue-600 pl-2">Our Objective</h4>
+                    <p class="text-[11px] text-slate-600 leading-relaxed" id="prev_objective_text"></p>
+                </div>
+
+                <!-- 4. Deliverables Summary (If enabled) -->
+                <div id="prev_sec_deliverables" class="print-avoid-break">
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5 border-l-4 border-blue-600 pl-2">Deliverables Summary</h4>
+                    <p class="text-[11px] text-slate-600 leading-relaxed" id="prev_deliverables_text"></p>
+                </div>
+
+                <!-- 5. Services & Pricing Table -->
                 <div class="print-avoid-break">
-                    <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 border-l-4 border-primary-600 pl-2">Services & Deliverables</h5>
-                    <table class="w-full text-left text-xs border-collapse">
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 border-l-4 border-blue-600 pl-2">Project Investment & Services</h4>
+                    <table class="w-full text-left text-xs border-collapse border border-slate-200">
                         <thead>
-                            <tr class="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] border-y border-slate-200">
-                                <th class="py-2.5 px-3">Service / Description</th>
+                            <tr class="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200">
+                                <th class="py-2.5 px-3">Service / Deliverable Description</th>
                                 <th class="py-2.5 px-3 text-center">Type</th>
                                 <th class="py-2.5 px-3 text-center">Qty</th>
-                                <th class="py-2.5 px-3 text-right">Unit Price</th>
+                                <th class="py-2.5 px-3 text-right">Price</th>
+                                <th class="py-2.5 px-3 text-right">Discount</th>
                                 <th class="py-2.5 px-3 text-right">Total</th>
                             </tr>
                         </thead>
@@ -357,107 +445,92 @@
                     </table>
                 </div>
 
-                <!-- Optional Services (If Any) -->
-                <div id="prev_optional_box" class="hidden print-avoid-break">
-                    <h5 class="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 border-l-4 border-amber-500 pl-2">Optional Services (Not Included in Grand Total)</h5>
-                    <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-200 text-xs space-y-1.5">
-                        <div id="prev_optional_list" class="space-y-1"></div>
-                    </div>
-                </div>
-
-                <!-- Included Package Box (If Any) -->
-                <div id="prev_package_box" class="hidden print-avoid-break">
-                    <h5 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2 border-l-4 border-indigo-600 pl-2">Included Service Package</h5>
-                    <div class="bg-indigo-50/50 p-3.5 rounded-xl border border-indigo-200 text-xs flex justify-between items-start">
-                        <div>
-                            <h6 class="font-bold text-indigo-950" id="prev_pkg_name">Starter Growth Package</h6>
-                            <p class="text-slate-600 text-[11px] mt-0.5" id="prev_pkg_desc">Social Media Management & Creative Production</p>
-                        </div>
-                        <div class="text-right font-mono font-bold text-indigo-900 text-xs" id="prev_pkg_price">₹18,000/Mo</div>
-                    </div>
-                </div>
-
-                <!-- Domain Options (If Any) -->
-                <div id="prev_domain_box" class="hidden print-avoid-break">
-                    <h5 class="text-xs font-bold text-blue-900 uppercase tracking-wider mb-2 border-l-4 border-blue-600 pl-2">Domain Name Options</h5>
-                    <div id="prev_domain_list" class="bg-blue-50/60 p-3.5 rounded-xl border border-blue-200 space-y-1 text-xs"></div>
-                </div>
-
-                <!-- Totals Breakdown & Payment Schedule -->
-                <div class="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200 print-avoid-break">
+                <!-- 6. Totals Breakdown Card -->
+                <div class="grid grid-cols-2 gap-6 pt-3 border-t border-slate-200 print-avoid-break">
                     <div>
-                        <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1.5">Payment Milestones</h5>
-                        <div id="prev_payment_stages" class="space-y-1.5 text-xs"></div>
+                        <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1.5">Payment Milestones Schedule</h5>
+                        <div id="prev_payment_stages" class="space-y-1 text-xs"></div>
                     </div>
-                    <div class="space-y-1.5 text-xs text-right">
+                    <div class="space-y-1.5 text-xs text-right bg-slate-50/60 p-3.5 rounded-xl border border-slate-200/80">
                         <div class="flex justify-between text-slate-600">
                             <span>Subtotal:</span>
-                            <span id="prev_subtotal" class="font-semibold font-mono">₹0.00</span>
+                            <span id="prev_subtotal" class="font-semibold font-mono">0.00</span>
                         </div>
-                        <div class="flex justify-between text-slate-600">
+                        <div class="flex justify-between text-slate-600" id="prev_discount_row">
                             <span>Discount:</span>
-                            <span id="prev_discount" class="font-semibold font-mono">₹0.00</span>
+                            <span id="prev_discount" class="font-semibold font-mono">0.00</span>
                         </div>
-                        <div class="flex justify-between text-slate-600">
-                            <span>Tax:</span>
-                            <span id="prev_tax" class="font-semibold font-mono">₹0.00</span>
+                        <div class="flex justify-between text-slate-600" id="prev_tax_row">
+                            <span id="prev_tax_label">Applicable Tax (GST):</span>
+                            <span id="prev_tax" class="font-semibold font-mono">0.00</span>
                         </div>
-                        <div class="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-slate-200">
+                        <div class="flex justify-between text-sm font-extrabold text-slate-900 pt-2 border-t border-slate-200">
                             <span>Grand Total:</span>
-                            <span id="prev_grand_total" class="text-primary-700 font-mono">₹0.00</span>
+                            <span id="prev_grand_total" class="text-blue-700 font-mono text-base">0.00</span>
                         </div>
-                        <div id="prev_recurring_row" class="text-[11px] text-primary-600 font-bold hidden pt-1">
-                            Recurring: <span id="prev_recurring_val">₹0.00/Month</span>
+                        <div id="prev_recurring_row" class="text-[11px] text-blue-600 font-bold hidden pt-1">
+                            Recurring: <span id="prev_recurring_val">0.00/Month</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Bank Account Details from DocumentSettings -->
+                <!-- 7. What Success Looks Like (If enabled) -->
+                <div id="prev_sec_success" class="print-avoid-break">
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5 border-l-4 border-blue-600 pl-2">What Success Looks Like</h4>
+                    <p class="text-[11px] text-slate-600 leading-relaxed" id="prev_success_text"></p>
+                </div>
+
+                <!-- 8. Bank Account & UPI Details -->
                 {% if doc_settings.bank_name or doc_settings.upi_id %}
                 <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 text-xs space-y-1.5 print-avoid-break">
                     <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                        <i data-lucide="landmark" class="w-3.5 h-3.5 text-primary-600"></i>
+                        <i data-lucide="landmark" class="w-3.5 h-3.5 text-blue-600"></i>
                         Bank Account & Payment Transfer Details
                     </h5>
-                    <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-600">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] text-slate-600">
                         {% if doc_settings.bank_name %}<div><strong>Bank:</strong> {{ doc_settings.bank_name }}</div>{% endif %}
                         {% if doc_settings.account_name %}<div><strong>Beneficiary:</strong> {{ doc_settings.account_name }}</div>{% endif %}
                         {% if doc_settings.account_number %}<div><strong>A/C No:</strong> <span class="font-mono">{{ doc_settings.account_number }}</span></div>{% endif %}
                         {% if doc_settings.ifsc_code %}<div><strong>IFSC:</strong> <span class="font-mono">{{ doc_settings.ifsc_code }}</span></div>{% endif %}
-                        {% if doc_settings.upi_id %}<div><strong>UPI ID:</strong> <span class="font-mono text-primary-700">{{ doc_settings.upi_id }}</span></div>{% endif %}
+                        {% if doc_settings.upi_id %}<div><strong>UPI ID:</strong> <span class="font-mono text-blue-700 font-bold">{{ doc_settings.upi_id }}</span></div>{% endif %}
                     </div>
                 </div>
                 {% endif %}
 
-                <!-- Exclusions -->
+                <!-- 9. Exclusions & Third-Party Charges -->
                 <div id="prev_exclusions_box" class="print-avoid-break">
-                    <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1">Exclusions & Extra Charges</h5>
+                    <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1 border-l-4 border-slate-400 pl-2">Third-Party Charges & Exclusions</h5>
                     <ul id="prev_exclusions_list" class="list-disc pl-4 text-[10px] text-slate-600 space-y-0.5"></ul>
                 </div>
 
-                <!-- Terms & Conditions -->
+                <!-- 10. Commercial Terms & Conditions -->
                 <div class="print-avoid-break">
-                    <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1">Terms & Conditions</h5>
+                    <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1 border-l-4 border-slate-400 pl-2">Commercial Terms & Conditions</h5>
                     <ol id="prev_terms_list" class="list-decimal pl-4 text-[10px] text-slate-600 space-y-0.5"></ol>
                 </div>
 
-                <!-- Footer Signatures -->
+                <!-- 11. Declaration & Acceptance Block -->
+                <div id="prev_declaration_box" class="p-3 bg-slate-50/70 rounded-xl border border-slate-200 text-[10px] text-slate-600 leading-relaxed print-avoid-break">
+                    <p id="prev_declaration_text"></p>
+                </div>
+
+                <!-- 12. Signatures Block -->
                 <div class="pt-6 border-t border-slate-200 flex justify-between items-end text-xs print-avoid-break">
                     <div>
                         <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Client Acceptance</p>
                         <div class="h-10 border-b border-dashed border-slate-300 w-44 mt-1"></div>
-                        <p class="text-[10px] text-slate-500 mt-1">Signature & Date</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Signature & Company Seal</p>
                     </div>
                     <div class="text-right">
                         <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">For {{ doc_settings.company_name }}</p>
-                        <div class="h-10 border-b border-dashed border-slate-300 w-44 ml-auto mt-1 flex items-end justify-end pb-1 font-serif italic text-primary-700 text-sm font-semibold">
+                        <div class="h-10 border-b border-dashed border-slate-300 w-44 ml-auto mt-1 flex items-end justify-end pb-1 font-serif italic text-blue-800 text-sm font-semibold">
                             {{ doc_settings.authorized_person_name }}
                         </div>
                         <p class="text-[10px] text-slate-500 mt-1">Authorized Signatory</p>
                     </div>
                 </div>
 
-                <!-- Footer Note from DocumentSettings -->
+                <!-- 13. Footer Note -->
                 {% if doc_settings.footer_text %}
                 <div class="pt-3 border-t border-slate-100 text-center text-[10px] text-slate-400 print-avoid-break">
                     <p>{{ doc_settings.footer_text }}</p>
@@ -469,171 +542,246 @@
     </div>
 </div>
 
-<!-- Package Selection Modal -->
-<div id="packageSelectModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden no-print">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200">
+<!-- Quick Client Create Modal -->
+<div id="quickClientModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <i data-lucide="package" class="w-4 h-4 text-primary-600"></i>
-                Select Service Package Preset
+                <i data-lucide="user-plus" class="w-4 h-4 text-blue-600"></i>
+                Quick Create Client in CRM
             </h3>
-            <button type="button" onclick="closePackageSelectModal()" class="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+            <button type="button" onclick="closeQuickClientModal()" class="text-slate-400 hover:text-slate-700 text-sm">✕</button>
         </div>
 
-        <div class="space-y-3 text-xs max-h-96 overflow-y-auto">
-            <div onclick="selectPackagePreset('Starter Growth Package', 18000, 'Monthly', '10 Posts, 8 Ad Creatives, Social Media Management, Monthly Reports')" class="p-3.5 rounded-xl border border-slate-200 hover:border-primary-500 hover:bg-primary-50/30 cursor-pointer transition-all">
-                <div class="flex justify-between items-center font-bold text-slate-900">
-                    <span>Starter Growth Package</span>
-                    <span class="text-primary-700 font-mono">₹18,000 / Month</span>
+        <form id="quickClientForm" onsubmit="submitQuickClient(event)" class="space-y-3 text-xs">
+            <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Company / Organization Name *</label>
+                <input type="text" id="qc_company" placeholder="e.g. Acme Innovations" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Contact Person Name</label>
+                <input type="text" id="qc_name" placeholder="e.g. Jane Doe" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Email</label>
+                    <input type="email" id="qc_email" placeholder="client@example.com" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800">
                 </div>
-                <p class="text-slate-500 text-[11px] mt-1">10 Posts, 8 Ad Creatives, Social Media Management, Content Strategy & Monthly Reports</p>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Phone</label>
+                    <input type="text" id="qc_phone" placeholder="+91 98765 43210" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800">
+                </div>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Billing Address</label>
+                <textarea id="qc_location" rows="2" placeholder="Full Address & City..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800"></textarea>
             </div>
 
-            <div onclick="selectPackagePreset('Professional Scale Package', 32000, 'Monthly', '20 Posts, 15 Ad Creatives, Complete Ads Management, SEO & Analytics')" class="p-3.5 rounded-xl border border-slate-200 hover:border-primary-500 hover:bg-primary-50/30 cursor-pointer transition-all">
-                <div class="flex justify-between items-center font-bold text-slate-900">
-                    <span>Professional Scale Package</span>
-                    <span class="text-primary-700 font-mono">₹32,000 / Month</span>
-                </div>
-                <p class="text-slate-500 text-[11px] mt-1">20 Posts, 15 Ad Creatives, Meta & Google Ads Management, SEO Optimization & Bi-Weekly Analytics</p>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onclick="closeQuickClientModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    <span>Save & Select</span>
+                </button>
             </div>
-
-            <div onclick="selectPackagePreset('Enterprise Omni-Channel', 55000, 'Monthly', 'Full Digital Dominance, Video Production, Influencer Coordination, Dedicated Account Manager')" class="p-3.5 rounded-xl border border-slate-200 hover:border-primary-500 hover:bg-primary-50/30 cursor-pointer transition-all">
-                <div class="flex justify-between items-center font-bold text-slate-900">
-                    <span>Enterprise Omni-Channel Package</span>
-                    <span class="text-primary-700 font-mono">₹55,000 / Month</span>
-                </div>
-                <p class="text-slate-500 text-[11px] mt-1">Full Digital Dominance, Reels/Shorts Video Production, Influencer Coordination & 24/7 Dedicated Account Manager</p>
-            </div>
-        </div>
-
-        <div class="flex justify-end pt-2">
-            <button type="button" onclick="closePackageSelectModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs">Close</button>
-        </div>
+        </form>
     </div>
 </div>
 
+<!-- JavaScript Data Models & Interactive Logic -->
 <script>
-    let selectedPackage = {% if quotation and quotation.packages.first %}{
-        package_name: "{{ quotation.packages.first.package_name|escapejs }}",
-        price: {{ quotation.packages.first.price|default:0 }},
-        billing_frequency: "{{ quotation.packages.first.billing_frequency|escapejs }}",
-        description: "{{ quotation.packages.first.description|escapejs }}"
-    }{% else %}null{% endif %};
-
-    {% if quotation %}
+    // Initial dynamic line items
     let lineItems = [
-        {% for item in quotation.items.all %}
-        { title: "{{ item.title|escapejs }}", description: "{{ item.description|escapejs }}", pricing_type: "{{ item.pricing_type|escapejs }}", quantity: {{ item.quantity|default:1 }}, unit: "{{ item.unit|escapejs }}", unit_price: {{ item.unit_price|default:0 }}, discount: {{ item.discount|default:0 }}, tax_rate: {{ item.tax_rate|default:0 }}, is_optional: {% if item.is_optional %}true{% else %}false{% endif %} }{% if not forloop.last %},{% endif %}
-        {% endfor %}
+        {% if quotation %}
+            {% for item in quotation.items.all %}
+            {
+                title: "{{ item.title|escapejs }}",
+                description: "{{ item.description|default:''|escapejs }}",
+                deliverables: "{{ item.deliverables|default:''|escapejs }}",
+                features: "{{ item.features|default:''|escapejs }}",
+                notes: "{{ item.notes|default:''|escapejs }}",
+                pricing_type: "{{ item.pricing_type|default:'fixed'|escapejs }}",
+                quantity: {{ item.quantity|default:1 }},
+                unit: "{{ item.unit|default:'Item'|escapejs }}",
+                unit_price: {{ item.unit_price|default:0 }},
+                discount_type: "{{ item.discount_type|default:'fixed'|escapejs }}",
+                discount: {{ item.discount|default:0 }},
+                tax_rate: {{ item.tax_rate|default:0 }},
+                is_optional: {% if item.is_optional %}true{% else %}false{% endif %}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        {% endif %}
     ];
 
-    let domainOptions = [
-        {% for dom in quotation.domain_options.all %}
-        { domain_name: "{{ dom.domain_name|escapejs }}", period: "{{ dom.period|escapejs }}", price: {{ dom.price|default:0 }}, is_recommended: {% if dom.is_recommended %}true{% else %}false{% endif %}, is_selected: {% if dom.is_selected %}true{% else %}false{% endif %} }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ];
-
+    // Initial Payment Stages
     let paymentStages = [
-        {% for stage in quotation.payment_stages.all %}
-        { stage_name: "{{ stage.stage_name|escapejs }}", percentage: {{ stage.percentage|default:0 }}, amount: {{ stage.amount|default:0 }}, due_date: "{{ stage.due_date|date:'Y-m-d'|default:'' }}", description: "{{ stage.description|escapejs }}" }{% if not forloop.last %},{% endif %}
-        {% endfor %}
+        {% if quotation and quotation.payment_stages.exists %}
+            {% for stage in quotation.payment_stages.all %}
+            {
+                stage_name: "{{ stage.stage_name|escapejs }}",
+                percentage: {{ stage.percentage|default:0 }},
+                amount: {{ stage.amount|default:0 }},
+                due_date: "{{ stage.due_date|date:'Y-m-d'|default:'' }}",
+                description: "{{ stage.description|default:''|escapejs }}"
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        {% else %}
+            { stage_name: '50% Advance Payment', percentage: 50, amount: 0, due_date: '', description: 'Upon signing & project commencement' },
+            { stage_name: '50% Project Completion', percentage: 50, amount: 0, due_date: '', description: 'Upon final milestone & handover' }
+        {% endif %}
     ];
 
+    // Initial Terms & Conditions Clauses
     let terms = [
-        {% for t in quotation.terms.all %}
-        "{{ t.content|escapejs }}"{% if not forloop.last %},{% endif %}
-        {% endfor %}
+        {% if quotation and quotation.terms.exists %}
+            {% for t in quotation.terms.all %}
+            "{{ t.content|escapejs }}"{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        {% else %}
+            "This quotation proposal is valid for 10 calendar days from the date of issue.",
+            "All milestone payments shall be settled as per the agreed Development & Delivery schedule.",
+            "Any out-of-scope modifications or additional requirements will be billed separately."
+        {% endif %}
     ];
 
+    // Initial Exclusions
     let exclusions = [
-        {% for ex in quotation.exclusions.all %}
-        { service_name: "{{ ex.service_name|escapejs }}", charges_description: "{{ ex.charges_description|escapejs }}" }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ];
-    {% else %}
-    let lineItems = [
-        { title: 'Digital Marketing & Content Strategy', description: 'Social Media Management, Ad creatives & Brand Awareness', pricing_type: 'monthly', quantity: 1, unit: 'Month', unit_price: 18000, discount: 0, tax_rate: 0, is_optional: false },
-        { title: 'Responsive Website Development', description: 'Professional modern business website with lead forms', pricing_type: 'one_time', quantity: 1, unit: 'Project', unit_price: 25000, discount: 0, tax_rate: 0, is_optional: false }
-    ];
-
-    let domainOptions = [
-        { domain_name: 'examplebrand.in', period: '3-Year Registration', price: 1799, is_recommended: true, is_selected: true }
-    ];
-
-    let paymentStages = [
-        { stage_name: '30% Advance Payment', percentage: 30, amount: 0, due_date: '', description: 'Upon signing proposal' },
-        { stage_name: '40% Second Milestone', percentage: 40, amount: 0, due_date: '', description: 'Upon design review approval' },
-        { stage_name: '30% Final Payment', percentage: 30, amount: 0, due_date: '', description: 'Before final project delivery' }
+        {% if quotation and quotation.exclusions.exists %}
+            {% for ex in quotation.exclusions.all %}
+            {
+                service_name: "{{ ex.service_name|escapejs }}",
+                charges_description: "{{ ex.charges_description|escapejs }}"
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        {% else %}
+            { service_name: "Third-Party APIs / Paid Plugins / External Licences", charges_description: "Billed at actuals directly to client" },
+            { service_name: "Paid Digital Advertising Spend", charges_description: "Paid directly by client into their ad accounts" }
+        {% endif %}
     ];
 
-    let terms = [
-        "This quotation is valid for 10 days from issue date.",
-        "Payment will strictly follow the agreed milestone schedule.",
-        "Any additional scope requested outside this proposal will be billed separately."
-    ];
+    // Helper Currency Formatter
+    function getCurrencySymbol() {
+        const curr = document.getElementById('currency').value || 'INR';
+        if (curr === 'INR') return '₹';
+        if (curr === 'USD') return '$';
+        if (curr === 'EUR') return '€';
+        if (curr === 'GBP') return '£';
+        return curr + ' ';
+    }
 
-    let exclusions = [
-        { service_name: 'Paid Ad Spend', charges_description: 'Billed directly on client ad account' },
-        { service_name: 'Third-Party Paid APIs / Plugins', charges_description: 'Charged at actual costs' }
-    ];
-    {% endif %}
+    function formatMoney(amount) {
+        const sym = getCurrencySymbol();
+        const num = parseFloat(amount) || 0;
+        return sym + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
 
+    // Line Items Operations
     function renderItemRows() {
         const container = document.getElementById('lineItemsContainer');
         container.innerHTML = '';
 
+        if (lineItems.length === 0) {
+            container.innerHTML = `
+                <div class="p-6 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-white space-y-2">
+                    <p class="text-xs font-semibold text-slate-500">No services or items added yet.</p>
+                    <button type="button" onclick="addNewItemRow()" class="px-3.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-xs font-bold transition-all">
+                        + Add First Service Item
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
         lineItems.forEach((item, idx) => {
             const row = document.createElement('div');
             row.className = 'p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5';
+            
+            const lineBase = (parseFloat(item.quantity) || 1) * (parseFloat(item.unit_price) || 0);
+            let lineDisc = parseFloat(item.discount) || 0;
+            if (item.discount_type === 'percentage') {
+                lineDisc = (lineBase * lineDisc) / 100;
+            }
+            const lineTotal = Math.max(0, lineBase - lineDisc);
+
             row.innerHTML = `
                 <div class="flex items-center justify-between gap-2">
-                    <input type="text" value="${item.title}" oninput="lineItems[${idx}].title=this.value; updatePreview();" placeholder="Service Title" class="flex-1 text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-800">
+                    <input type="text" value="${item.title}" oninput="lineItems[${idx}].title=this.value; updatePreview();" placeholder="Service / Product Name *" class="flex-1 text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-900 focus:ring-1 focus:ring-blue-500">
                     <select onchange="lineItems[${idx}].pricing_type=this.value; updatePreview();" class="text-[11px] px-2 py-1.5 bg-white border border-slate-200 rounded-lg font-semibold text-slate-700">
-                        <option value="fixed" ${item.pricing_type==='fixed'?'selected':''}>Fixed Price</option>
-                        <option value="monthly" ${item.pricing_type==='monthly'?'selected':''}>Monthly (/Mo)</option>
-                        <option value="yearly" ${item.pricing_type==='yearly'?'selected':''}>Yearly (/Yr)</option>
+                        <option value="fixed" ${item.pricing_type==='fixed'?'selected':''}>Fixed</option>
+                        <option value="monthly" ${item.pricing_type==='monthly'?'selected':''}>Monthly</option>
+                        <option value="yearly" ${item.pricing_type==='yearly'?'selected':''}>Yearly</option>
                         <option value="one_time" ${item.pricing_type==='one_time'?'selected':''}>One-time</option>
                     </select>
                     <label class="flex items-center gap-1 text-[11px] font-bold text-slate-600 cursor-pointer">
                         <input type="checkbox" ${item.is_optional?'checked':''} onchange="lineItems[${idx}].is_optional=this.checked; updatePreview();" class="rounded text-amber-500">
                         <span>Optional</span>
                     </label>
-                    <button type="button" onclick="lineItems.splice(${idx},1); renderItemRows(); updatePreview();" class="text-rose-500 hover:text-rose-700 p-1">
+                    <button type="button" onclick="lineItems.splice(${idx},1); renderItemRows(); updatePreview();" class="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50" title="Delete Item">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </div>
-                <textarea rows="1" oninput="lineItems[${idx}].description=this.value; updatePreview();" placeholder="Description / Scope of Work..." class="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-600">${item.description||''}</textarea>
-                <div class="grid grid-cols-4 gap-2 text-xs">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <textarea rows="1" oninput="lineItems[${idx}].description=this.value; updatePreview();" placeholder="Short scope / description..." class="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-600">${item.description||''}</textarea>
+                    <textarea rows="1" oninput="lineItems[${idx}].deliverables=this.value; updatePreview();" placeholder="Detailed deliverables (comma or bullet points)..." class="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-600">${item.deliverables||''}</textarea>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
                     <div>
-                        <span class="text-[10px] text-slate-400 font-semibold">Qty</span>
-                        <input type="number" step="0.5" value="${item.quantity}" oninput="lineItems[${idx}].quantity=parseFloat(this.value)||0; updatePreview();" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg font-medium">
+                        <span class="text-[10px] text-slate-500 font-semibold block mb-0.5">Qty</span>
+                        <input type="number" step="0.5" value="${item.quantity}" oninput="lineItems[${idx}].quantity=parseFloat(this.value)||0; renderItemRows(); updatePreview();" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg font-medium">
                     </div>
                     <div>
-                        <span class="text-[10px] text-slate-400 font-semibold">Unit</span>
+                        <span class="text-[10px] text-slate-500 font-semibold block mb-0.5">Unit</span>
                         <input type="text" value="${item.unit}" oninput="lineItems[${idx}].unit=this.value; updatePreview();" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg">
                     </div>
                     <div>
-                        <span class="text-[10px] text-slate-400 font-semibold">Price (₹)</span>
-                        <input type="number" step="0.01" value="${item.unit_price}" oninput="lineItems[${idx}].unit_price=parseFloat(this.value)||0; updatePreview();" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg font-bold">
+                        <span class="text-[10px] text-slate-500 font-semibold block mb-0.5">Price</span>
+                        <input type="number" step="0.01" value="${item.unit_price}" oninput="lineItems[${idx}].unit_price=parseFloat(this.value)||0; renderItemRows(); updatePreview();" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg font-bold">
                     </div>
                     <div>
-                        <span class="text-[10px] text-slate-400 font-semibold">Total (₹)</span>
-                        <div class="px-2 py-1 bg-slate-100 rounded-lg font-bold font-mono text-slate-800 text-right">₹${((item.quantity||1)*(item.unit_price||0)).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <span class="text-[10px] text-slate-500 font-semibold block mb-0.5">Discount</span>
+                        <div class="flex gap-1">
+                            <input type="number" step="0.01" value="${item.discount}" oninput="lineItems[${idx}].discount=parseFloat(this.value)||0; renderItemRows(); updatePreview();" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg">
+                            <select onchange="lineItems[${idx}].discount_type=this.value; renderItemRows(); updatePreview();" class="px-1 text-[10px] bg-white border border-slate-200 rounded-lg font-bold">
+                                <option value="fixed" ${item.discount_type==='fixed'?'selected':''}>₹</option>
+                                <option value="percentage" ${item.discount_type==='percentage'?'selected':''}>%</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-span-2 sm:col-span-1">
+                        <span class="text-[10px] text-slate-500 font-semibold block mb-0.5">Total</span>
+                        <div class="px-2 py-1 bg-slate-100 rounded-lg font-bold font-mono text-slate-900 text-right">${formatMoney(lineTotal)}</div>
                     </div>
                 </div>
             `;
             container.appendChild(row);
         });
+
         if (window.lucide) lucide.createIcons();
     }
 
-    function addItemRow() {
-        lineItems.push({ title: 'New Service Item', description: '', pricing_type: 'fixed', quantity: 1, unit: 'Item', unit_price: 1000, discount: 0, tax_rate: 0, is_optional: false });
+    function addNewItemRow() {
+        lineItems.push({
+            title: '',
+            description: '',
+            deliverables: '',
+            features: '',
+            notes: '',
+            pricing_type: 'fixed',
+            quantity: 1,
+            unit: 'Item',
+            unit_price: 0,
+            discount_type: 'fixed',
+            discount: 0,
+            tax_rate: 0,
+            is_optional: false
+        });
         renderItemRows();
         updatePreview();
     }
 
-    function addPredefinedService(selectEl) {
+    function addCatalogService(selectEl) {
         const opt = selectEl.options[selectEl.selectedIndex];
         if (!opt || !opt.value) return;
 
@@ -645,10 +793,14 @@
         lineItems.push({
             title: name,
             description: desc,
-            pricing_type: cycle === 'monthly' ? 'monthly' : 'one_time',
+            deliverables: '',
+            features: '',
+            notes: '',
+            pricing_type: cycle === 'monthly' ? 'monthly' : 'fixed',
             quantity: 1,
             unit: cycle === 'monthly' ? 'Month' : 'Item',
             unit_price: price,
+            discount_type: 'fixed',
             discount: 0,
             tax_rate: 0,
             is_optional: false
@@ -659,52 +811,56 @@
         updatePreview();
     }
 
-    function renderDomainRows() {
-        const container = document.getElementById('domainOptionsContainer');
+    // Payment Stages
+    function renderPaymentStages() {
+        const container = document.getElementById('paymentStagesContainer');
         container.innerHTML = '';
-        domainOptions.forEach((dom, idx) => {
+        paymentStages.forEach((stg, idx) => {
             const div = document.createElement('div');
-            div.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs';
+            div.className = 'flex items-center gap-2 text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200';
             div.innerHTML = `
-                <input type="text" value="${dom.domain_name}" oninput="domainOptions[${idx}].domain_name=this.value; updatePreview();" class="flex-1 px-2 py-1 bg-white border border-slate-200 rounded-lg font-mono font-semibold">
-                <input type="number" value="${dom.price}" oninput="domainOptions[${idx}].price=parseFloat(this.value)||0; updatePreview();" class="w-24 px-2 py-1 bg-white border border-slate-200 rounded-lg font-bold">
-                <label class="text-[10px] font-bold text-blue-600 flex items-center gap-1 cursor-pointer">
-                    <input type="checkbox" ${dom.is_recommended?'checked':''} onchange="domainOptions[${idx}].is_recommended=this.checked; updatePreview();" class="rounded">
-                    <span>Rec</span>
-                </label>
-                <button type="button" onclick="domainOptions.splice(${idx},1); renderDomainRows(); updatePreview();" class="text-rose-500 p-1">✕</button>
+                <input type="text" value="${stg.stage_name}" oninput="paymentStages[${idx}].stage_name=this.value; updatePreview();" placeholder="Stage Name" class="flex-1 px-2.5 py-1 bg-white border border-slate-200 rounded-lg font-bold text-slate-800">
+                <input type="number" value="${stg.percentage}" oninput="paymentStages[${idx}].percentage=parseFloat(this.value)||0; updatePreview();" placeholder="%" class="w-16 px-2 py-1 bg-white border border-slate-200 rounded-lg text-right font-mono font-bold">
+                <span class="text-[11px] font-bold text-slate-500">%</span>
+                <input type="text" value="${stg.description||''}" oninput="paymentStages[${idx}].description=this.value; updatePreview();" placeholder="Due / Milestone Note" class="w-1/3 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-600">
+                <button type="button" onclick="paymentStages.splice(${idx},1); renderPaymentStages(); updatePreview();" class="text-rose-500 hover:text-rose-700 p-1">✕</button>
             `;
             container.appendChild(div);
         });
     }
 
-    function addDomainOptionRow() {
-        domainOptions.push({ domain_name: 'newdomain.in', period: '3-Year Registration', price: 1799, is_recommended: false, is_selected: false });
-        renderDomainRows();
+    function addPaymentStageRow() {
+        paymentStages.push({ stage_name: 'Next Milestone', percentage: 20, amount: 0, due_date: '', description: 'Upon approval' });
+        renderPaymentStages();
         updatePreview();
     }
 
-    function renderExclusions() {
-        const container = document.getElementById('exclusionsContainer');
-        container.innerHTML = '';
-        exclusions.forEach((ex, idx) => {
-            const div = document.createElement('div');
-            div.className = 'flex items-center gap-2 text-xs';
-            div.innerHTML = `
-                <input type="text" value="${ex.service_name}" oninput="exclusions[${idx}].service_name=this.value; updatePreview();" placeholder="Service" class="w-1/2 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg font-semibold">
-                <input type="text" value="${ex.charges_description}" oninput="exclusions[${idx}].charges_description=this.value; updatePreview();" placeholder="Charges / Note" class="w-1/2 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg">
-                <button type="button" onclick="exclusions.splice(${idx},1); renderExclusions(); updatePreview();" class="text-rose-500">✕</button>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function addExclusionRow() {
-        exclusions.push({ service_name: "Additional Feature", charges_description: "At actual cost" });
-        renderExclusions();
+    function applyPaymentPreset(preset) {
+        if (preset === '50_50') {
+            paymentStages = [
+                { stage_name: '50% Advance Deposit', percentage: 50, amount: 0, due_date: '', description: 'Upon project commencement' },
+                { stage_name: '50% Project Completion', percentage: 50, amount: 0, due_date: '', description: 'Upon final milestone & delivery' }
+            ];
+        } else if (preset === '30_40_30') {
+            paymentStages = [
+                { stage_name: '30% Advance Deposit', percentage: 30, amount: 0, due_date: '', description: 'Upon signing proposal' },
+                { stage_name: '40% Second Milestone', percentage: 40, amount: 0, due_date: '', description: 'Upon design review approval' },
+                { stage_name: '30% Final Handover', percentage: 30, amount: 0, due_date: '', description: 'Before live launch' }
+            ];
+        } else if (preset === '100_upfront') {
+            paymentStages = [
+                { stage_name: '100% Upfront Advance', percentage: 100, amount: 0, due_date: '', description: 'Full payment on signing' }
+            ];
+        } else if (preset === 'monthly') {
+            paymentStages = [
+                { stage_name: '100% Monthly Advance Billing', percentage: 100, amount: 0, due_date: '', description: 'Due 1st of every month' }
+            ];
+        }
+        renderPaymentStages();
         updatePreview();
     }
 
+    // Terms
     function renderTerms() {
         const container = document.getElementById('termsContainer');
         container.innerHTML = '';
@@ -712,178 +868,244 @@
             const div = document.createElement('div');
             div.className = 'flex items-center gap-2 text-xs';
             div.innerHTML = `
-                <span class="font-bold text-slate-400">${idx+1}.</span>
-                <input type="text" value="${t}" oninput="terms[${idx}]=this.value; updatePreview();" class="flex-1 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg">
-                <button type="button" onclick="terms.splice(${idx},1); renderTerms(); updatePreview();" class="text-rose-500">✕</button>
+                <span class="font-bold text-slate-400 w-4">${idx+1}.</span>
+                <input type="text" value="${t}" oninput="terms[${idx}]=this.value; updatePreview();" class="flex-1 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700">
+                <button type="button" onclick="terms.splice(${idx},1); renderTerms(); updatePreview();" class="text-rose-500 hover:text-rose-700 px-1">✕</button>
             `;
             container.appendChild(div);
         });
     }
 
     function addTermRow() {
-        terms.push("Additional services will be charged separately.");
+        terms.push("Additional services outside this proposal will be estimated and billed separately.");
         renderTerms();
         updatePreview();
     }
 
-    function applyPaymentPreset(preset) {
-        if (preset === '30_40_30') {
-            paymentStages = [
-                { stage_name: '30% Advance Payment', percentage: 30, amount: 0, due_date: '', description: 'Upon signing proposal' },
-                { stage_name: '40% Second Milestone', percentage: 40, amount: 0, due_date: '', description: 'Upon milestone review' },
-                { stage_name: '30% Final Payment', percentage: 30, amount: 0, due_date: '', description: 'Before project delivery' }
-            ];
-        } else if (preset === '50_50') {
-            paymentStages = [
-                { stage_name: '50% Advance Deposit', percentage: 50, amount: 0, due_date: '', description: 'Upon project commencement' },
-                { stage_name: '50% Project Completion', percentage: 50, amount: 0, due_date: '', description: 'Upon project completion' }
-            ];
-        } else if (preset === '100_upfront') {
-            paymentStages = [
-                { stage_name: '100% Full Upfront Advance', percentage: 100, amount: 0, due_date: '', description: 'Full payment on signing' }
-            ];
-        } else if (preset === 'monthly') {
-            paymentStages = [
-                { stage_name: '100% Monthly Advance Billing', percentage: 100, amount: 0, due_date: '', description: 'Due 1st of every month' }
-            ];
-        }
+    // Exclusions
+    function renderExclusions() {
+        const container = document.getElementById('exclusionsContainer');
+        container.innerHTML = '';
+        exclusions.forEach((ex, idx) => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2 text-xs';
+            div.innerHTML = `
+                <input type="text" value="${ex.service_name}" oninput="exclusions[${idx}].service_name=this.value; updatePreview();" placeholder="Exclusion Title" class="w-1/2 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-800">
+                <input type="text" value="${ex.charges_description}" oninput="exclusions[${idx}].charges_description=this.value; updatePreview();" placeholder="Charges Note" class="w-1/2 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-600">
+                <button type="button" onclick="exclusions.splice(${idx},1); renderExclusions(); updatePreview();" class="text-rose-500 hover:text-rose-700 px-1">✕</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function addExclusionRow() {
+        exclusions.push({ service_name: "Additional Custom Scope", charges_description: "At actual approved costs" });
+        renderExclusions();
         updatePreview();
     }
 
-    function openPackageSelectModal() {
-        document.getElementById('packageSelectModal').classList.remove('hidden');
+    // Quick Client Modal
+    function openQuickClientModal() {
+        document.getElementById('quickClientModal').classList.remove('hidden');
     }
 
-    function closePackageSelectModal() {
-        document.getElementById('packageSelectModal').classList.add('hidden');
+    function closeQuickClientModal() {
+        document.getElementById('quickClientModal').classList.add('hidden');
     }
 
-    function selectPackagePreset(name, price, freq, desc) {
-        selectedPackage = { package_name: name, price: price, billing_frequency: freq, description: desc };
-        document.getElementById('pkgNameDisplay').innerText = name;
-        document.getElementById('pkgDescDisplay').innerText = desc;
-        document.getElementById('pkgPriceDisplay').innerText = `₹${price.toLocaleString('en-IN')} / ${freq}`;
-        document.getElementById('selectedPackageBox').classList.remove('hidden');
-        closePackageSelectModal();
+    function submitQuickClient(e) {
+        e.preventDefault();
+        const payload = {
+            company: document.getElementById('qc_company').value,
+            name: document.getElementById('qc_name').value,
+            email: document.getElementById('qc_email').value,
+            phone_number: document.getElementById('qc_phone').value,
+            location: document.getElementById('qc_location').value
+        };
+
+        fetch('{% url "quotation_quick_create_client" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('leadSelect');
+                const opt = document.createElement('option');
+                opt.value = data.lead.id;
+                opt.text = `${data.lead.company} (${data.lead.name})`;
+                opt.setAttribute('data-company', data.lead.company);
+                opt.setAttribute('data-name', data.lead.name);
+                opt.setAttribute('data-email', data.lead.email);
+                opt.setAttribute('data-phone', data.lead.phone);
+                opt.setAttribute('data-altphone', data.lead.alt_phone);
+                opt.setAttribute('data-address', data.lead.address);
+                opt.selected = true;
+                select.appendChild(opt);
+
+                document.getElementById('client_name').value = data.lead.company || data.lead.name;
+                document.getElementById('company_name').value = data.lead.company;
+                document.getElementById('contact_person').value = data.lead.name;
+                document.getElementById('email').value = data.lead.email;
+                document.getElementById('phone').value = data.lead.phone;
+                document.getElementById('address').value = data.lead.address;
+
+                closeQuickClientModal();
+                updatePreview();
+            } else {
+                alert('Error creating client: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(err => alert('Network error: ' + err));
+    }
+
+    function onLeadSelect(selectEl) {
+        const opt = selectEl.options[selectEl.selectedIndex];
+        if (!opt || !opt.value) return;
+
+        const company = opt.getAttribute('data-company') || '';
+        const name = opt.getAttribute('data-name') || '';
+        const email = opt.getAttribute('data-email') || '';
+        const phone = opt.getAttribute('data-phone') || '';
+        const address = opt.getAttribute('data-address') || '';
+
+        document.getElementById('client_name').value = company || name;
+        document.getElementById('company_name').value = company;
+        document.getElementById('contact_person').value = name;
+        if (email) document.getElementById('email').value = email;
+        if (phone) document.getElementById('phone').value = phone;
+        if (address) document.getElementById('address').value = address;
+
         updatePreview();
     }
 
-    function removeSelectedPackage() {
-        selectedPackage = null;
-        document.getElementById('selectedPackageBox').classList.add('hidden');
-        updatePreview();
-    }
-
+    // Real-Time Live Preview Sync
     function updatePreview() {
-        document.getElementById('prev_q_num').innerText = document.getElementById('quotation_number').value || '{{ default_q_num }}';
-        document.getElementById('qNumHeader').innerText = document.getElementById('quotation_number').value || '{{ default_q_num }}';
+        const qNum = document.getElementById('quotation_number').value || '{{ default_q_num }}';
+        document.getElementById('prev_q_num').innerText = qNum;
+        document.getElementById('qNumHeader').innerText = qNum;
+
+        document.getElementById('prev_project_title').innerText = document.getElementById('project_title').value || 'Project Proposal & Quotation';
         document.getElementById('prev_date').innerText = document.getElementById('date').value || '';
         document.getElementById('prev_valid').innerText = document.getElementById('valid_until').value || '';
-        document.getElementById('prev_client').innerText = document.getElementById('client_name').value || 'Client Name';
+        
+        const clientVal = document.getElementById('client_name').value || 'Client Name';
+        document.getElementById('prev_client').innerText = clientVal;
         document.getElementById('prev_company').innerText = document.getElementById('company_name').value || '';
         
         const em = document.getElementById('email').value || '';
         const ph = document.getElementById('phone').value || '';
         document.getElementById('prev_contact').innerText = em + (em && ph ? ' | ' : '') + ph;
+        document.getElementById('prev_address').innerText = document.getElementById('address').value || '';
 
         const gst = document.getElementById('gstin').value;
         document.getElementById('prev_gstin').innerText = gst ? 'GSTIN: ' + gst : '';
         document.getElementById('prev_salesperson').innerText = document.getElementById('salesperson').value || '{{ doc_settings.authorized_person_name }}';
 
-        // Calculate Totals & Populate Items Table
+        // Section texts
+        const objText = document.getElementById('objective_text').value.trim();
+        const showObj = document.getElementById('toggle_sec_objective').checked && objText.length > 0;
+        document.getElementById('prev_sec_objective').style.display = showObj ? 'block' : 'none';
+        document.getElementById('prev_objective_text').innerText = objText;
+
+        const delText = document.getElementById('deliverables_summary_text').value.trim();
+        const showDel = document.getElementById('toggle_sec_deliverables').checked && delText.length > 0;
+        document.getElementById('prev_sec_deliverables').style.display = showDel ? 'block' : 'none';
+        document.getElementById('prev_deliverables_text').innerText = delText;
+
+        const sucText = document.getElementById('success_metrics_text').value.trim();
+        const showSuc = document.getElementById('toggle_sec_success').checked && sucText.length > 0;
+        document.getElementById('prev_sec_success').style.display = showSuc ? 'block' : 'none';
+        document.getElementById('prev_success_text').innerText = sucText;
+
+        const decText = document.getElementById('declaration_text').value.trim();
+        document.getElementById('prev_declaration_box').style.display = decText ? 'block' : 'none';
+        document.getElementById('prev_declaration_text').innerText = decText;
+
+        // Render Table & Calculate Totals
         const itemsTable = document.getElementById('prev_items_table');
         itemsTable.innerHTML = '';
 
         let subtotal = 0;
+        let itemDiscountsTotal = 0;
         let monthlyTotal = 0;
 
         lineItems.filter(i => !i.is_optional).forEach(item => {
-            const lineTot = (item.quantity || 1) * (item.unit_price || 0);
-            subtotal += lineTot;
-            if (item.pricing_type === 'monthly') monthlyTotal += lineTot;
+            const qty = parseFloat(item.quantity) || 1;
+            const price = parseFloat(item.unit_price) || 0;
+            const lineBase = qty * price;
+
+            let disc = parseFloat(item.discount) || 0;
+            if (item.discount_type === 'percentage') {
+                disc = (lineBase * disc) / 100;
+            }
+            const lineTotal = Math.max(0, lineBase - disc);
+
+            subtotal += lineBase;
+            itemDiscountsTotal += disc;
+            if (item.pricing_type === 'monthly') monthlyTotal += lineTotal;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td class="py-2.5 px-3">
-                    <p class="font-bold text-slate-900">${item.title}</p>
+                <td class="py-2 px-3 border border-slate-200">
+                    <p class="font-bold text-slate-900">${item.title || 'Service'}</p>
                     ${item.description ? `<p class="text-[10px] text-slate-500 mt-0.5">${item.description}</p>` : ''}
+                    ${item.deliverables ? `<p class="text-[9.5px] text-blue-800 mt-0.5 font-medium leading-relaxed"><strong>Deliverables:</strong> ${item.deliverables}</p>` : ''}
                 </td>
-                <td class="py-2.5 px-3 text-center uppercase text-[10px] font-semibold text-slate-600">${item.pricing_type}</td>
-                <td class="py-2.5 px-3 text-center">${item.quantity} ${item.unit}</td>
-                <td class="py-2.5 px-3 text-right font-mono">₹${(item.unit_price||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                <td class="py-2.5 px-3 text-right font-bold font-mono">₹${lineTot.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td class="py-2 px-2 text-center uppercase text-[10px] font-semibold text-slate-600 border border-slate-200">${item.pricing_type}</td>
+                <td class="py-2 px-2 text-center border border-slate-200 font-mono">${qty} ${item.unit}</td>
+                <td class="py-2 px-3 text-right font-mono border border-slate-200">${formatMoney(price)}</td>
+                <td class="py-2 px-3 text-right font-mono text-slate-500 border border-slate-200">${disc > 0 ? '-' + formatMoney(disc) : '-'}</td>
+                <td class="py-2 px-3 text-right font-bold font-mono text-slate-900 border border-slate-200">${formatMoney(lineTotal)}</td>
             `;
             itemsTable.appendChild(tr);
         });
 
-        // Add Package to preview if active
-        if (selectedPackage) {
-            document.getElementById('prev_package_box').classList.remove('hidden');
-            document.getElementById('prev_pkg_name').innerText = selectedPackage.package_name;
-            document.getElementById('prev_pkg_desc').innerText = selectedPackage.description;
-            document.getElementById('prev_pkg_price').innerText = `₹${selectedPackage.price.toLocaleString('en-IN')} / ${selectedPackage.billing_frequency}`;
-            subtotal += selectedPackage.price;
-            if (selectedPackage.billing_frequency === 'Monthly') monthlyTotal += selectedPackage.price;
-        } else {
-            document.getElementById('prev_package_box').classList.add('hidden');
+        if (lineItems.length === 0) {
+            itemsTable.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-slate-400 text-xs border border-slate-200">No services added. Add services from the left panel.</td></tr>`;
         }
 
-        document.getElementById('prev_subtotal').innerText = '₹' + subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        document.getElementById('prev_grand_total').innerText = '₹' + subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        // Overall Quotation Discount & Tax
+        const qDiscType = document.getElementById('quotation_discount_type').value;
+        const qDiscVal = parseFloat(document.getElementById('quotation_discount_val').value) || 0;
+        let totalDiscount = itemDiscountsTotal;
+
+        if (qDiscType === 'percentage' && qDiscVal > 0) {
+            totalDiscount += ((subtotal - itemDiscountsTotal) * qDiscVal) / 100;
+        } else if (qDiscVal > 0 && qDiscVal !== itemDiscountsTotal) {
+            totalDiscount = Math.max(itemDiscountsTotal, qDiscVal);
+        }
+
+        const taxRate = parseFloat(document.getElementById('quotation_tax_rate').value) || 0;
+        const taxableAmount = Math.max(0, subtotal - totalDiscount);
+        const totalTax = (taxableAmount * taxRate) / 100;
+        const grandTotal = Math.max(0, taxableAmount + totalTax);
+
+        document.getElementById('prev_subtotal').innerText = formatMoney(subtotal);
+        document.getElementById('prev_discount').innerText = '-' + formatMoney(totalDiscount);
+        document.getElementById('prev_tax_label').innerText = taxRate > 0 ? `Applicable Tax (${taxRate}% GST):` : 'Applicable Tax (GST):';
+        document.getElementById('prev_tax').innerText = formatMoney(totalTax);
+        document.getElementById('prev_grand_total').innerText = formatMoney(grandTotal);
 
         if (monthlyTotal > 0) {
             document.getElementById('prev_recurring_row').classList.remove('hidden');
-            document.getElementById('prev_recurring_val').innerText = '₹' + monthlyTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '/Month';
+            document.getElementById('prev_recurring_val').innerText = formatMoney(monthlyTotal) + '/Month';
         } else {
             document.getElementById('prev_recurring_row').classList.add('hidden');
         }
 
-        // Optional Box
-        const optItems = lineItems.filter(i => i.is_optional);
-        const optBox = document.getElementById('prev_optional_box');
-        const optList = document.getElementById('prev_optional_list');
-        if (optItems.length > 0) {
-            optBox.classList.remove('hidden');
-            optList.innerHTML = '';
-            optItems.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-center text-amber-900 font-medium py-0.5';
-                div.innerHTML = `
-                    <span>• <strong>${item.title}</strong> ${item.description ? `- <span class="text-amber-700 font-normal">${item.description}</span>` : ''}</span>
-                    <span class="font-bold font-mono">₹${((item.quantity||1)*(item.unit_price||0)).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                `;
-                optList.appendChild(div);
-            });
-        } else {
-            optBox.classList.add('hidden');
-        }
-
-        // Domain Options
-        const domBox = document.getElementById('prev_domain_box');
-        const domList = document.getElementById('prev_domain_list');
-        if (domainOptions.length > 0) {
-            domBox.classList.remove('hidden');
-            domList.innerHTML = '';
-            domainOptions.forEach(dom => {
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-center';
-                div.innerHTML = `
-                    <span>○ <strong>${dom.domain_name}</strong> (${dom.period}) ${dom.is_recommended?'<span class="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ml-1">RECOMMENDED</span>':''}</span>
-                    <span class="font-bold font-mono text-blue-900">₹${(dom.price||0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                `;
-                domList.appendChild(div);
-            });
-        } else {
-            domBox.classList.add('hidden');
-        }
-
-        // Payment Stages
+        // Milestones
         const pmtContainer = document.getElementById('prev_payment_stages');
         pmtContainer.innerHTML = '';
         paymentStages.forEach(stg => {
+            const stgAmt = Math.round(grandTotal * (stg.percentage / 100));
             const div = document.createElement('div');
             div.className = 'flex justify-between text-slate-700 bg-slate-50 px-2 py-1 rounded border border-slate-200/60';
-            div.innerHTML = `<span>${stg.stage_name} (${stg.percentage}%)</span> <span class="font-bold font-mono">₹${Math.round(subtotal * (stg.percentage/100)).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>`;
+            div.innerHTML = `<span><strong>${stg.stage_name}</strong> (${stg.percentage}%)</span> <span class="font-bold font-mono">${formatMoney(stgAmt)}</span>`;
             pmtContainer.appendChild(div);
         });
 
@@ -906,30 +1128,19 @@
         });
     }
 
-    function onLeadSelect(selectEl) {
-        const opt = selectEl.options[selectEl.selectedIndex];
-        if (!opt || !opt.value) return;
-
-        const company = opt.getAttribute('data-company') || '';
-        const name = opt.getAttribute('data-name') || '';
-        const email = opt.getAttribute('data-email') || '';
-        const phone = opt.getAttribute('data-phone') || '';
-        const address = opt.getAttribute('data-address') || '';
-
-        document.getElementById('client_name').value = company || name;
-        document.getElementById('company_name').value = company;
-        if (email) document.getElementById('email').value = email;
-        if (phone) document.getElementById('phone').value = phone;
-        if (address) document.getElementById('address').value = address;
-
-        updatePreview();
-    }
-
+    // Save Quotation API Call
     function saveQuotation(targetStatus) {
+        const qDiscType = document.getElementById('quotation_discount_type').value;
+        const qDiscVal = parseFloat(document.getElementById('quotation_discount_val').value) || 0;
+        const taxRate = parseFloat(document.getElementById('quotation_tax_rate').value) || 0;
+
         const payload = {
             quotation_number: document.getElementById('quotation_number').value,
-            client_name: document.getElementById('client_name').value,
+            project_title: document.getElementById('project_title').value,
+            lead_id: document.getElementById('leadSelect').value || null,
+            client_name: document.getElementById('client_name').value || 'Client',
             company_name: document.getElementById('company_name').value,
+            contact_person: document.getElementById('contact_person').value,
             email: document.getElementById('email').value,
             phone: document.getElementById('phone').value,
             address: document.getElementById('address').value,
@@ -939,10 +1150,16 @@
             valid_until: document.getElementById('valid_until').value,
             currency: document.getElementById('currency').value,
             template_style: document.getElementById('template_style').value,
+            objective_text: document.getElementById('objective_text').value,
+            deliverables_summary_text: document.getElementById('deliverables_summary_text').value,
+            success_metrics_text: document.getElementById('success_metrics_text').value,
+            declaration_text: document.getElementById('declaration_text').value,
+            discount_type: qDiscType,
+            discount_rate: qDiscType === 'percentage' ? qDiscVal : 0,
+            discount_amount: qDiscType === 'fixed' ? qDiscVal : 0,
+            tax_rate: taxRate,
             status: targetStatus,
             items: lineItems,
-            package: selectedPackage,
-            domain_options: domainOptions,
             payment_stages: paymentStages,
             terms: terms.map(t => ({ content: t })),
             exclusions: exclusions
@@ -969,7 +1186,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         renderItemRows();
-        renderDomainRows();
+        renderPaymentStages();
         renderExclusions();
         renderTerms();
         updatePreview();

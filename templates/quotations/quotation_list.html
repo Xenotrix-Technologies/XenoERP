@@ -137,7 +137,8 @@
                         <td class="px-5 py-4">
                             <div>
                                 <p class="font-bold text-slate-900">{{ q.client_name }}</p>
-                                {% if q.company_name %}<p class="text-[11px] text-slate-500">{{ q.company_name }}</p>{% endif %}
+                                {% if q.company_name %}<p class="text-[11px] text-slate-500 font-medium">{{ q.company_name }}</p>{% endif %}
+                                {% if q.project_title %}<p class="text-[10px] text-blue-600 font-semibold mt-0.5">{{ q.project_title }}</p>{% endif %}
                             </div>
                         </td>
                         <td class="px-5 py-4 font-medium text-slate-600">
@@ -150,9 +151,9 @@
                             {% endif %}
                         </td>
                         <td class="px-5 py-4 text-right">
-                            <span class="font-bold text-slate-900 text-sm">₹{{ q.grand_total|floatformat:2 }}</span>
+                            <span class="font-bold text-slate-900 text-sm">{% if q.currency == 'INR' %}₹{% elif q.currency == 'USD' %}${% elif q.currency == 'EUR' %}€{% else %}{{ q.currency }} {% endif %}{{ q.grand_total|floatformat:2 }}</span>
                             {% if q.monthly_recurring_total > 0 %}
-                            <p class="text-[10px] text-primary-600 font-semibold">+₹{{ q.monthly_recurring_total|floatformat:0 }}/mo</p>
+                            <p class="text-[10px] text-blue-600 font-semibold">+{% if q.currency == 'INR' %}₹{% elif q.currency == 'USD' %}${% elif q.currency == 'EUR' %}€{% else %}{{ q.currency }} {% endif %}{{ q.monthly_recurring_total|floatformat:0 }}/mo</p>
                             {% endif %}
                         </td>
                         <td class="px-5 py-4 text-slate-500 font-mono">

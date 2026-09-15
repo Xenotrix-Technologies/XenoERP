@@ -223,21 +223,26 @@ class Quotation(models.Model):
     ]
 
     TEMPLATE_CHOICES = [
+        ('default', 'Xenotrix Standard'),
         ('corporate', 'Professional Corporate'),
-        ('minimal', 'Minimal'),
-        ('modern', 'Modern'),
-        ('default', 'Xenotrix Default'),
+        ('minimal', 'Minimalist Clean'),
+        ('modern', 'Modern Visual'),
     ]
 
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='quotations')
     quotation_number = models.CharField(max_length=50, unique=True)
     lead = models.ForeignKey('leads.Lead', on_delete=models.SET_NULL, null=True, blank=True, related_name='quotations')
     
+    project_title = models.CharField(max_length=255, default='Project Proposal', blank=True)
     client_name = models.CharField(max_length=255)
     company_name = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=50, blank=True, null=True)
+    alt_phone = models.CharField(max_length=50, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    state = models.CharField(max_length=100, blank=True, null=True)
+    country = models.CharField(max_length=100, blank=True, null=True, default='India')
     gstin = models.CharField(max_length=50, blank=True, null=True)
     contact_person = models.CharField(max_length=255, blank=True, null=True)
     lead_source = models.CharField(max_length=100, blank=True, null=True)
@@ -251,12 +256,23 @@ class Quotation(models.Model):
     notes = models.TextField(blank=True, null=True)
     template_style = models.CharField(max_length=50, choices=TEMPLATE_CHOICES, default='default')
     
+    # Dynamic Section Text Fields
+    objective_text = models.TextField(blank=True, null=True)
+    deliverables_summary_text = models.TextField(blank=True, null=True)
+    success_metrics_text = models.TextField(blank=True, null=True)
+    declaration_text = models.TextField(blank=True, null=True)
+    sections_data_json = models.TextField(default='[]')
+    
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Draft')
     public_token = models.CharField(max_length=64, unique=True, blank=True, null=True)
     version = models.IntegerField(default=1)
     
+    # Financial Totals & Discounts
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    discount_type = models.CharField(max_length=20, default='fixed')  # 'fixed' or 'percentage'
+    discount_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     grand_total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     
@@ -293,6 +309,35 @@ class Quotation(models.Model):
         return False
 
 
+class QuotationSection(models.Model):
+    SECTION_TYPES = [
+        ('objective', 'Project Objective'),
+        ('deliverables', 'Deliverables Summary'),
+        ('pricing_table', 'Pricing & Services Table'),
+        ('milestones', 'Development & Delivery Schedule'),
+        ('terms', 'Commercial Terms & Conditions'),
+        ('exclusions', 'Third-Party Charges & Exclusions'),
+        ('success_metrics', 'What Success Looks Like'),
+        ('declaration', 'Declaration & Acceptance'),
+        ('important_notes', 'Important Notes'),
+        ('custom_text', 'Custom Section'),
+    ]
+
+    quotation = models.ForeignKey(Quotation, on_delete=models.CASCADE, related_name='sections')
+    section_type = models.CharField(max_length=50, choices=SECTION_TYPES, default='custom_text')
+    title = models.CharField(max_length=255)
+    content = models.TextField(blank=True, null=True)
+    position = models.IntegerField(default=0)
+    is_visible = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'quotation_sections'
+        ordering = ['position', 'id']
+
+    def __str__(self):
+        return f"{self.quotation.quotation_number} - {self.title}"
+
+
 class QuotationItem(models.Model):
     PRICING_TYPES = [
         ('fixed', 'Fixed Price'),
@@ -307,10 +352,14 @@ class QuotationItem(models.Model):
     service = models.ForeignKey('services.Service', on_delete=models.SET_NULL, null=True, blank=True)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
+    deliverables = models.TextField(blank=True, null=True)
+    features = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
     pricing_type = models.CharField(max_length=50, choices=PRICING_TYPES, default='fixed')
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1.00)
     unit = models.CharField(max_length=50, default='Item')
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    discount_type = models.CharField(max_length=20, default='fixed')
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     line_total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)

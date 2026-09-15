@@ -101,21 +101,26 @@ def recalculate_quotation_totals(quotation):
     items = quotation.items.filter(is_optional=False)
     
     subtotal = Decimal('0.00')
-    total_discount = Decimal('0.00')
-    total_tax = Decimal('0.00')
+    item_discount_sum = Decimal('0.00')
+    item_tax_sum = Decimal('0.00')
     
     one_time = Decimal('0.00')
     monthly = Decimal('0.00')
     yearly = Decimal('0.00')
 
     for item in items:
-        qty = item.quantity or Decimal('1.00')
-        price = item.unit_price or Decimal('0.00')
-        disc = item.discount or Decimal('0.00')
-        tax_pct = item.tax_rate or Decimal('0.00')
+        qty = Decimal(str(item.quantity or 1.00))
+        price = Decimal(str(item.unit_price or 0.00))
+        disc_val = Decimal(str(item.discount or 0.00))
+        tax_pct = Decimal(str(item.tax_rate or 0.00))
 
         line_base = qty * price
-        line_disc = disc
+        
+        if getattr(item, 'discount_type', 'fixed') in ['percentage', 'percent'] and disc_val > 0:
+            line_disc = (line_base * disc_val) / Decimal('100.00')
+        else:
+            line_disc = disc_val
+
         line_after_disc = max(Decimal('0.00'), line_base - line_disc)
         line_tax = (line_after_disc * tax_pct) / Decimal('100.00')
         line_total = line_after_disc + line_tax
@@ -124,8 +129,8 @@ def recalculate_quotation_totals(quotation):
         item.save()
 
         subtotal += line_base
-        total_discount += line_disc
-        total_tax += line_tax
+        item_discount_sum += line_disc
+        item_tax_sum += line_tax
 
         ptype = (item.pricing_type or 'fixed').lower()
         if ptype in ['monthly']:
@@ -135,9 +140,9 @@ def recalculate_quotation_totals(quotation):
         else:
             one_time += line_total
 
-    # Add package prices if any
+    # Package prices if any (legacy compatibility)
     for pkg in quotation.packages.all():
-        pkg_price = pkg.price or Decimal('0.00')
+        pkg_price = Decimal(str(pkg.price or 0.00))
         if pkg.billing_frequency and pkg.billing_frequency.lower() == 'monthly':
             monthly += pkg_price
         elif pkg.billing_frequency and pkg.billing_frequency.lower() == 'yearly':
@@ -146,7 +151,26 @@ def recalculate_quotation_totals(quotation):
             one_time += pkg_price
         subtotal += pkg_price
 
-    grand_total = max(Decimal('0.00'), subtotal - total_discount + total_tax)
+    # Overall Quotation Discount & Tax
+    q_disc_type = quotation.discount_type or 'fixed'
+    q_disc_rate = Decimal(str(quotation.discount_rate or 0.00))
+    q_disc_amt = Decimal(str(quotation.discount_amount or 0.00))
+    
+    if q_disc_type in ['percentage', 'percent'] and q_disc_rate > 0:
+        total_discount = item_discount_sum + max(Decimal('0.00'), ((subtotal - item_discount_sum) * q_disc_rate / Decimal('100.00')))
+    elif q_disc_amt > 0:
+        total_discount = max(item_discount_sum, q_disc_amt)
+    else:
+        total_discount = item_discount_sum
+
+    tax_rate = Decimal(str(quotation.tax_rate or 0.00))
+    taxable_amount = max(Decimal('0.00'), subtotal - total_discount)
+    if tax_rate > 0:
+        total_tax = (taxable_amount * tax_rate) / Decimal('100.00')
+    else:
+        total_tax = item_tax_sum
+
+    grand_total = max(Decimal('0.00'), taxable_amount + total_tax)
 
     quotation.subtotal = subtotal
     quotation.discount_amount = total_discount
@@ -156,6 +180,12 @@ def recalculate_quotation_totals(quotation):
     quotation.monthly_recurring_total = monthly
     quotation.yearly_recurring_total = yearly
     quotation.save()
+
+    # Automatically keep payment stages synced with grand total
+    for stage in quotation.payment_stages.all():
+        if stage.percentage and stage.percentage > 0:
+            stage.amount = (grand_total * Decimal(str(stage.percentage))) / Decimal('100.00')
+            stage.save(update_fields=['amount'])
 
     return quotation
 
@@ -180,6 +210,7 @@ def create_quotation_activity(quotation, user, activity_type, description, reque
 
 def create_quotation_version_snapshot(quotation, user, summary="Saved version"):
     items_data = list(quotation.items.values())
+    sections_data = list(quotation.sections.values())
     packages_data = list(quotation.packages.values())
     domains_data = list(quotation.domain_options.values())
     stages_data = list(quotation.payment_stages.values())
@@ -188,13 +219,22 @@ def create_quotation_version_snapshot(quotation, user, summary="Saved version"):
 
     snapshot = {
         'quotation_number': quotation.quotation_number,
+        'project_title': quotation.project_title,
         'client_name': quotation.client_name,
         'company_name': quotation.company_name,
         'date': str(quotation.date),
         'valid_until': str(quotation.valid_until),
+        'subtotal': str(quotation.subtotal),
+        'discount_amount': str(quotation.discount_amount),
+        'tax_amount': str(quotation.tax_amount),
         'grand_total': str(quotation.grand_total),
         'status': quotation.status,
+        'objective_text': quotation.objective_text,
+        'deliverables_summary_text': quotation.deliverables_summary_text,
+        'success_metrics_text': quotation.success_metrics_text,
+        'declaration_text': quotation.declaration_text,
         'items': items_data,
+        'sections': sections_data,
         'packages': packages_data,
         'domain_options': domains_data,
         'payment_stages': stages_data,
@@ -214,6 +254,59 @@ def create_quotation_version_snapshot(quotation, user, summary="Saved version"):
 # ==========================================
 # QUOTATIONS MANAGEMENT VIEWS
 # ==========================================
+
+@login_required
+@page_permission_required('leads')
+def quotation_quick_create_client(request):
+    profile = get_user_profile(request.user)
+    org = profile.organization
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body) if request.content_type == 'application/json' else request.POST
+            name = data.get('name', '').strip()
+            company = data.get('company', '').strip()
+            email = data.get('email', '').strip()
+            phone = data.get('phone_number', '').strip()
+            alt_phone = data.get('alt_phone_number', '').strip()
+            location = data.get('location', '').strip()
+            notes = data.get('notes', '').strip()
+
+            if not name and not company:
+                return JsonResponse({'success': False, 'error': 'Client Name or Company Name is required.'}, status=400)
+
+            lead = Lead.objects.create(
+                organization=org,
+                name=name or company,
+                company=company or name,
+                email=email or None,
+                phone_number=phone or 'N/A',
+                alt_phone_number=alt_phone or '',
+                location=location or '',
+                notes=notes or '',
+                status='Qualified',
+                stage='Won',
+                is_client=True,
+                owner=profile
+            )
+
+            return JsonResponse({
+                'success': True,
+                'lead': {
+                    'id': lead.id,
+                    'name': lead.name,
+                    'company': lead.company,
+                    'email': lead.email or '',
+                    'phone': lead.phone_number or '',
+                    'alt_phone': lead.alt_phone_number or '',
+                    'address': lead.location or '',
+                }
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
 
 @login_required
 @page_permission_required('agreements')
@@ -237,6 +330,7 @@ def quotation_list(request):
     if search_q:
         quotations = quotations.filter(
             Q(quotation_number__icontains=search_q) |
+            Q(project_title__icontains=search_q) |
             Q(client_name__icontains=search_q) |
             Q(company_name__icontains=search_q) |
             Q(email__icontains=search_q) |
@@ -312,11 +406,16 @@ def quotation_create(request):
                 organization=org,
                 quotation_number=q_num,
                 lead=lead_fk,
+                project_title=data.get('project_title', 'Project Proposal'),
                 client_name=data.get('client_name', 'Unnamed Client'),
                 company_name=data.get('company_name', ''),
                 email=data.get('email', ''),
                 phone=data.get('phone', ''),
+                alt_phone=data.get('alt_phone', ''),
                 address=data.get('address', ''),
+                city=data.get('city', ''),
+                state=data.get('state', ''),
+                country=data.get('country', 'India'),
                 gstin=data.get('gstin', ''),
                 contact_person=data.get('contact_person', ''),
                 lead_source=data.get('lead_source', ''),
@@ -328,10 +427,32 @@ def quotation_create(request):
                 payment_terms_summary=data.get('payment_terms_summary', '50% Advance / 50% Completion'),
                 notes=data.get('notes', ''),
                 template_style=data.get('template_style', 'default'),
+                objective_text=data.get('objective_text', ''),
+                deliverables_summary_text=data.get('deliverables_summary_text', ''),
+                success_metrics_text=data.get('success_metrics_text', ''),
+                declaration_text=data.get('declaration_text', ''),
+                sections_data_json=json.dumps(data.get('sections', [])) if isinstance(data.get('sections'), list) else data.get('sections_data_json', '[]'),
+                discount_type=data.get('discount_type', 'fixed'),
+                discount_rate=Decimal(str(data.get('discount_rate', 0))),
+                discount_amount=Decimal(str(data.get('discount_amount', 0))),
+                tax_rate=Decimal(str(data.get('tax_rate', 0))),
                 status=data.get('status', 'Draft'),
             )
 
-            # Insert Line Items
+            # Insert Dynamic Sections
+            sections_list = data.get('sections', [])
+            for idx, sec in enumerate(sections_list):
+                if isinstance(sec, dict) and sec.get('title'):
+                    QuotationSection.objects.create(
+                        quotation=quotation,
+                        section_type=sec.get('section_type', 'custom_text'),
+                        title=sec.get('title'),
+                        content=sec.get('content', ''),
+                        position=idx,
+                        is_visible=bool(sec.get('is_visible', True))
+                    )
+
+            # Insert Dynamic Line Items
             items_list = data.get('items', [])
             for idx, item in enumerate(items_list):
                 QuotationItem.objects.create(
@@ -339,32 +460,21 @@ def quotation_create(request):
                     section_name=item.get('section_name') or 'Services',
                     title=item.get('title', 'Service Item'),
                     description=item.get('description', ''),
+                    deliverables=item.get('deliverables', ''),
+                    features=item.get('features', ''),
+                    notes=item.get('notes', ''),
                     pricing_type=item.get('pricing_type', 'fixed'),
                     quantity=Decimal(str(item.get('quantity', 1))),
                     unit=item.get('unit', 'Item'),
                     unit_price=Decimal(str(item.get('unit_price', 0))),
+                    discount_type=item.get('discount_type', 'fixed'),
                     discount=Decimal(str(item.get('discount', 0))),
                     tax_rate=Decimal(str(item.get('tax_rate', 0))),
                     is_optional=bool(item.get('is_optional', False)),
                     position=idx
                 )
 
-            # Insert Package if selected
-            pkg_data = data.get('package')
-            if pkg_data and isinstance(pkg_data, dict) and pkg_data.get('package_name'):
-                QuotationPackage.objects.create(
-                    quotation=quotation,
-                    package_name=pkg_data.get('package_name'),
-                    price=Decimal(str(pkg_data.get('price', 0))),
-                    billing_frequency=pkg_data.get('billing_frequency', 'Monthly'),
-                    description=pkg_data.get('description', ''),
-                    deliverables_text=pkg_data.get('deliverables_text', ''),
-                    inclusions_text=pkg_data.get('inclusions_text', ''),
-                    exclusions_text=pkg_data.get('exclusions_text', ''),
-                    terms_text=pkg_data.get('terms_text', '')
-                )
-
-            # Insert Domain Options
+            # Insert Domain Options if provided
             domains_list = data.get('domain_options', [])
             for dom in domains_list:
                 if dom.get('domain_name'):
@@ -482,11 +592,19 @@ def quotation_edit(request, quotation_id):
             if quotation.status == 'Accepted':
                 return JsonResponse({'success': False, 'error': 'Accepted quotations cannot be edited. Please create a revision or convert to agreement.'}, status=400)
 
+            if data.get('lead_id'):
+                quotation.lead = Lead.objects.filter(organization=org, id=data.get('lead_id')).first()
+            
+            quotation.project_title = data.get('project_title', quotation.project_title)
             quotation.client_name = data.get('client_name', quotation.client_name)
             quotation.company_name = data.get('company_name', quotation.company_name)
             quotation.email = data.get('email', quotation.email)
             quotation.phone = data.get('phone', quotation.phone)
+            quotation.alt_phone = data.get('alt_phone', quotation.alt_phone)
             quotation.address = data.get('address', quotation.address)
+            quotation.city = data.get('city', quotation.city)
+            quotation.state = data.get('state', quotation.state)
+            quotation.country = data.get('country', quotation.country)
             quotation.gstin = data.get('gstin', quotation.gstin)
             quotation.contact_person = data.get('contact_person', quotation.contact_person)
             quotation.lead_source = data.get('lead_source', quotation.lead_source)
@@ -494,12 +612,40 @@ def quotation_edit(request, quotation_id):
             quotation.payment_terms_summary = data.get('payment_terms_summary', quotation.payment_terms_summary)
             quotation.notes = data.get('notes', quotation.notes)
             quotation.template_style = data.get('template_style', quotation.template_style)
+            
+            quotation.objective_text = data.get('objective_text', quotation.objective_text)
+            quotation.deliverables_summary_text = data.get('deliverables_summary_text', quotation.deliverables_summary_text)
+            quotation.success_metrics_text = data.get('success_metrics_text', quotation.success_metrics_text)
+            quotation.declaration_text = data.get('declaration_text', quotation.declaration_text)
+            if 'sections' in data:
+                quotation.sections_data_json = json.dumps(data.get('sections', []))
+            
+            quotation.discount_type = data.get('discount_type', quotation.discount_type)
+            if data.get('discount_rate') is not None:
+                quotation.discount_rate = Decimal(str(data.get('discount_rate', 0)))
+            if data.get('discount_amount') is not None:
+                quotation.discount_amount = Decimal(str(data.get('discount_amount', 0)))
+            if data.get('tax_rate') is not None:
+                quotation.tax_rate = Decimal(str(data.get('tax_rate', 0)))
 
             if data.get('valid_until'):
                 quotation.valid_until = datetime.strptime(data['valid_until'], '%Y-%m-%d').date()
 
             quotation.version += 1
             quotation.save()
+
+            if 'sections' in data:
+                quotation.sections.all().delete()
+                for idx, sec in enumerate(data['sections']):
+                    if isinstance(sec, dict) and sec.get('title'):
+                        QuotationSection.objects.create(
+                            quotation=quotation,
+                            section_type=sec.get('section_type', 'custom_text'),
+                            title=sec.get('title'),
+                            content=sec.get('content', ''),
+                            position=idx,
+                            is_visible=bool(sec.get('is_visible', True))
+                        )
 
             if 'items' in data:
                 quotation.items.all().delete()
@@ -509,10 +655,14 @@ def quotation_edit(request, quotation_id):
                         section_name=item.get('section_name') or 'Services',
                         title=item.get('title', 'Service Item'),
                         description=item.get('description', ''),
+                        deliverables=item.get('deliverables', ''),
+                        features=item.get('features', ''),
+                        notes=item.get('notes', ''),
                         pricing_type=item.get('pricing_type', 'fixed'),
                         quantity=Decimal(str(item.get('quantity', 1))),
                         unit=item.get('unit', 'Item'),
                         unit_price=Decimal(str(item.get('unit_price', 0))),
+                        discount_type=item.get('discount_type', 'fixed'),
                         discount=Decimal(str(item.get('discount', 0))),
                         tax_rate=Decimal(str(item.get('tax_rate', 0))),
                         is_optional=bool(item.get('is_optional', False)),
@@ -608,11 +758,13 @@ def quotation_detail(request, quotation_id):
     quotation = get_object_or_404(Quotation, organization=org, id=quotation_id)
     doc_settings = get_or_create_document_settings(org)
     activities = quotation.activities.all()
+    sections = quotation.sections.filter(is_visible=True)
 
     context = {
         'quotation': quotation,
         'doc_settings': doc_settings,
         'activities': activities,
+        'sections': sections,
         'profile': profile,
     }
     return render(request, 'quotations/quotation_detail.html', context)
@@ -630,11 +782,16 @@ def quotation_duplicate(request, quotation_id):
         organization=org,
         quotation_number=new_q_num,
         lead=orig_q.lead,
+        project_title=orig_q.project_title,
         client_name=orig_q.client_name,
         company_name=orig_q.company_name,
         email=orig_q.email,
         phone=orig_q.phone,
+        alt_phone=orig_q.alt_phone,
         address=orig_q.address,
+        city=orig_q.city,
+        state=orig_q.state,
+        country=orig_q.country,
         gstin=orig_q.gstin,
         contact_person=orig_q.contact_person,
         lead_source=orig_q.lead_source,
@@ -646,15 +803,33 @@ def quotation_duplicate(request, quotation_id):
         payment_terms_summary=orig_q.payment_terms_summary,
         notes=orig_q.notes,
         template_style=orig_q.template_style,
+        objective_text=orig_q.objective_text,
+        deliverables_summary_text=orig_q.deliverables_summary_text,
+        success_metrics_text=orig_q.success_metrics_text,
+        declaration_text=orig_q.declaration_text,
+        sections_data_json=orig_q.sections_data_json,
+        discount_type=orig_q.discount_type,
+        discount_rate=orig_q.discount_rate,
+        discount_amount=orig_q.discount_amount,
+        tax_rate=orig_q.tax_rate,
+        tax_amount=orig_q.tax_amount,
         status='Draft',
         subtotal=orig_q.subtotal,
-        discount_amount=orig_q.discount_amount,
-        tax_amount=orig_q.tax_amount,
         grand_total=orig_q.grand_total,
         one_time_total=orig_q.one_time_total,
         monthly_recurring_total=orig_q.monthly_recurring_total,
         yearly_recurring_total=orig_q.yearly_recurring_total
     )
+
+    for sec in orig_q.sections.all():
+        QuotationSection.objects.create(
+            quotation=new_q,
+            section_type=sec.section_type,
+            title=sec.title,
+            content=sec.content,
+            position=sec.position,
+            is_visible=sec.is_visible
+        )
 
     for item in orig_q.items.all():
         QuotationItem.objects.create(
@@ -663,10 +838,14 @@ def quotation_duplicate(request, quotation_id):
             service=item.service,
             title=item.title,
             description=item.description,
+            deliverables=item.deliverables,
+            features=item.features,
+            notes=item.notes,
             pricing_type=item.pricing_type,
             quantity=item.quantity,
             unit=item.unit,
             unit_price=item.unit_price,
+            discount_type=item.discount_type,
             discount=item.discount,
             tax_rate=item.tax_rate,
             line_total=item.line_total,
@@ -771,8 +950,12 @@ def quotation_convert_to_agreement(request, quotation_id):
     scope_lines = []
     deliverable_lines = []
     for item in quotation.items.all():
-        scope_lines.append(f"• {item.title}: {item.description or 'Standard service execution'}")
-        deliverable_lines.append(f"• {item.title} ({item.quantity} {item.unit})")
+        desc = item.description or 'Standard service execution'
+        scope_lines.append(f"• {item.title}: {desc}")
+        if item.deliverables:
+            deliverable_lines.append(f"• {item.title}: {item.deliverables}")
+        else:
+            deliverable_lines.append(f"• {item.title} ({item.quantity} {item.unit})")
 
     for pkg in quotation.packages.all():
         scope_lines.append(f"• Package: {pkg.package_name} - {pkg.description}")
@@ -802,7 +985,7 @@ def quotation_convert_to_agreement(request, quotation_id):
         client_address=quotation.address,
         gstin=quotation.gstin,
         agreement_type='Website Development Agreement' if 'Website' in (quotation.items.first().title if quotation.items.exists() else '') else 'Service Agreement',
-        project_name=quotation.items.first().title if quotation.items.exists() else 'CRM Digital Service',
+        project_name=quotation.project_title or (quotation.items.first().title if quotation.items.exists() else 'CRM Digital Service'),
         monthly_fee=quotation.monthly_recurring_total,
         advance_payment=quotation.payment_stages.first().amount if quotation.payment_stages.exists() else Decimal('0.00'),
         total_value=quotation.grand_total,
@@ -841,9 +1024,12 @@ def public_quotation_view(request, public_token):
                 type='info'
             )
 
+    sections = quotation.sections.filter(is_visible=True)
+
     context = {
         'quotation': quotation,
         'doc_settings': doc_settings,
+        'sections': sections,
         'items': quotation.items.all(),
         'included_items': quotation.items.filter(is_optional=False),
         'optional_items': quotation.items.filter(is_optional=True),
@@ -854,6 +1040,7 @@ def public_quotation_view(request, public_token):
         'exclusions': quotation.exclusions.all(),
     }
     return render(request, 'quotations/quotation_public.html', context)
+
 
 
 @csrf_exempt

@@ -60,7 +60,7 @@ class AgreementAdmin(admin.ModelAdmin):
 from .models import (
     Income, Expense, PartnerPayout, DeletedIncome, DeletedExpense,
     FinancePaymentMethod, FinanceExpenseCategory, FinancePaymentStatus, FinanceCommissionType,
-    DocumentSettings, Quotation, QuotationItem, QuotationPackage, QuotationDomainOption,
+    DocumentSettings, Quotation, QuotationSection, QuotationItem, QuotationPackage, QuotationDomainOption,
     QuotationPaymentStage, QuotationTerm, QuotationExclusion, QuotationActivity, QuotationVersion,
     AgreementVersion, DocumentTemplate
 )
@@ -76,6 +76,7 @@ admin.site.register(FinancePaymentStatus)
 admin.site.register(FinanceCommissionType)
 admin.site.register(DocumentSettings)
 admin.site.register(Quotation)
+admin.site.register(QuotationSection)
 admin.site.register(QuotationItem)
 admin.site.register(QuotationPackage)
 admin.site.register(QuotationDomainOption)
@@ -86,4 +87,5 @@ admin.site.register(QuotationActivity)
 admin.site.register(QuotationVersion)
 admin.site.register(AgreementVersion)
 admin.site.register(DocumentTemplate)
+
 

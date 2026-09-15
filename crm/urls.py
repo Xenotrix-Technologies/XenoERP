@@ -87,6 +87,7 @@ urlpatterns = [
     path('quotations/', document_views.quotation_list, name='quotations'),
     path('quotations/list/', document_views.quotation_list, name='quotation_list'),
     path('quotations/create/', document_views.quotation_create, name='quotation_create'),
+    path('quotations/quick-client/', document_views.quotation_quick_create_client, name='quotation_quick_create_client'),
     path('quotations/<int:quotation_id>/', document_views.quotation_detail, name='quotation_detail'),
     path('quotations/<int:quotation_id>/edit/', document_views.quotation_edit, name='quotation_edit'),
     path('quotations/<int:quotation_id>/duplicate/', document_views.quotation_duplicate, name='quotation_duplicate'),
