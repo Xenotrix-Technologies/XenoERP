@@ -432,6 +432,7 @@ def quotation_create(request):
                 success_metrics_text=data.get('success_metrics_text', ''),
                 declaration_text=data.get('declaration_text', ''),
                 sections_data_json=json.dumps(data.get('sections', [])) if isinstance(data.get('sections'), list) else data.get('sections_data_json', '[]'),
+                show_bank_details=bool(data.get('show_bank_details', False)),
                 discount_type=data.get('discount_type', 'fixed'),
                 discount_rate=Decimal(str(data.get('discount_rate', 0))),
                 discount_amount=Decimal(str(data.get('discount_amount', 0))),
@@ -619,6 +620,8 @@ def quotation_edit(request, quotation_id):
             quotation.declaration_text = data.get('declaration_text', quotation.declaration_text)
             if 'sections' in data:
                 quotation.sections_data_json = json.dumps(data.get('sections', []))
+            if 'show_bank_details' in data:
+                quotation.show_bank_details = bool(data.get('show_bank_details', False))
             
             quotation.discount_type = data.get('discount_type', quotation.discount_type)
             if data.get('discount_rate') is not None:

@@ -354,6 +354,20 @@
                 </div>
             </div>
 
+            <!-- Section 7: Bank & Payment Transfer Details Option -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-slate-800 text-xs block">Include Bank Account & Payment Details</span>
+                        <span class="text-[10px] text-slate-500">Show company bank transfer & UPI information on this proposal</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="show_bank_details" onchange="updatePreview()" class="sr-only peer" {% if quotation and quotation.show_bank_details %}checked{% endif %}>
+                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+            </div>
+
         </div>
 
         <!-- RIGHT PANEL: Live Interactive A4 Document Preview -->
@@ -482,9 +496,9 @@
                     <p class="text-[11px] text-slate-600 leading-relaxed" id="prev_success_text"></p>
                 </div>
 
-                <!-- 8. Bank Account & UPI Details -->
-                {% if doc_settings.bank_name or doc_settings.upi_id %}
-                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 text-xs space-y-1.5 print-avoid-break">
+                <!-- 8. Bank Account & UPI Details (Preview) -->
+                {% if doc_settings.bank_name or doc_settings.account_name or doc_settings.account_number or doc_settings.ifsc_code or doc_settings.upi_id %}
+                <div id="prev_bank_box" class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-xs space-y-1.5 print-avoid-break hidden">
                     <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                         <i data-lucide="landmark" class="w-3.5 h-3.5 text-blue-600"></i>
                         Bank Account & Payment Transfer Details
@@ -1131,6 +1145,13 @@
             exList.appendChild(li);
         });
 
+        // Bank Details Preview Toggle
+        const bankBox = document.getElementById('prev_bank_box');
+        if (bankBox) {
+            const showBank = document.getElementById('show_bank_details') && document.getElementById('show_bank_details').checked;
+            bankBox.classList.toggle('hidden', !showBank);
+        }
+
         // Terms
         const termsList = document.getElementById('prev_terms_list');
         termsList.innerHTML = '';
@@ -1167,6 +1188,7 @@
             deliverables_summary_text: document.getElementById('deliverables_summary_text').value,
             success_metrics_text: document.getElementById('success_metrics_text').value,
             declaration_text: document.getElementById('declaration_text').value,
+            show_bank_details: document.getElementById('show_bank_details') ? document.getElementById('show_bank_details').checked : false,
             discount_type: qDiscType,
             discount_rate: qDiscType === 'percentage' ? qDiscVal : 0,
             discount_amount: qDiscType === 'fixed' ? qDiscVal : 0,
