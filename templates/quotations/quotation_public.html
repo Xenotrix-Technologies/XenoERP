@@ -75,44 +75,68 @@
             {% endif %}
 
             <!-- Header Branding -->
-            <div class="flex flex-col sm:flex-row justify-between items-start border-b-2 border-blue-600 pb-8 gap-4">
-                <div>
-                    <h2 class="text-2xl font-black text-blue-900 tracking-tight">{{ doc_settings.company_name }}</h2>
-                    <p class="text-xs text-slate-500 font-medium mt-1">{{ doc_settings.address }}</p>
-                    <p class="text-xs text-slate-400">GSTIN: {{ doc_settings.gstin }} | Email: {{ doc_settings.email }} | Web: {{ doc_settings.website }}</p>
+            <div class="flex flex-col sm:flex-row justify-between items-start border-b-2 border-primary-600 pb-8 gap-4 print-avoid-break">
+                <div class="space-y-1">
+                    {% if doc_settings.logo_url %}
+                    <img src="{{ doc_settings.logo_url }}" alt="{{ doc_settings.company_name }}" class="h-10 max-w-[200px] object-contain mb-2">
+                    {% endif %}
+                    <h2 class="text-2xl font-black text-primary-700 tracking-tight">{{ doc_settings.company_name }}</h2>
+                    {% if doc_settings.address %}
+                    <p class="text-xs text-slate-600 font-medium leading-relaxed max-w-md">{{ doc_settings.address }}</p>
+                    {% endif %}
+                    <div class="text-[11px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 pt-0.5">
+                        {% if doc_settings.gstin %}<span><strong>GSTIN:</strong> {{ doc_settings.gstin }}</span>{% endif %}
+                        {% if doc_settings.pan %}<span>• <strong>PAN:</strong> {{ doc_settings.pan }}</span>{% endif %}
+                        {% if doc_settings.phone %}<span>• <strong>Phone:</strong> {{ doc_settings.phone }}</span>{% endif %}
+                        {% if doc_settings.email %}<span>• <strong>Email:</strong> {{ doc_settings.email }}</span>{% endif %}
+                        {% if doc_settings.website %}<span>• <strong>Web:</strong> {{ doc_settings.website }}</span>{% endif %}
+                    </div>
                 </div>
-                <div class="sm:text-right">
-                    <span class="inline-block px-3 py-1 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded">QUOTATION</span>
+                <div class="sm:text-right flex-shrink-0">
+                    <span class="inline-block px-3.5 py-1 bg-primary-600 text-white font-black text-xs uppercase tracking-widest rounded-md shadow-xs">QUOTATION</span>
                     <p class="text-sm font-mono font-bold text-slate-900 mt-2">{{ quotation.quotation_number }}</p>
-                    <p class="text-xs text-slate-500">Date: <span class="font-semibold text-slate-700">{{ quotation.date|date:"M d, Y" }}</span></p>
-                    <p class="text-xs text-slate-500">Valid Until: <span class="font-semibold text-slate-700">{{ quotation.valid_until|date:"M d, Y" }}</span></p>
+                    <p class="text-xs text-slate-500 mt-1">Date: <span class="font-semibold text-slate-800">{{ quotation.date|date:"M d, Y" }}</span></p>
+                    <p class="text-xs text-slate-500">Valid Until: <span class="font-semibold text-slate-800">{{ quotation.valid_until|date:"M d, Y" }}</span></p>
                 </div>
             </div>
 
             <!-- Client Info Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/80 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/80 text-xs print-avoid-break">
                 <div>
                     <span class="font-bold text-slate-400 text-[10px] uppercase tracking-wider block mb-1">PREPARED FOR</span>
                     <h4 class="font-bold text-slate-900 text-sm">{{ quotation.client_name }}</h4>
-                    {% if quotation.company_name %}<p class="font-semibold text-slate-700">{{ quotation.company_name }}</p>{% endif %}
-                    <p class="text-slate-600 mt-1">{{ quotation.email }} | {{ quotation.phone }}</p>
-                    {% if quotation.address %}<p class="text-slate-500">{{ quotation.address }}</p>{% endif %}
+                    {% if quotation.company_name %}<p class="font-semibold text-slate-700 mt-0.5">{{ quotation.company_name }}</p>{% endif %}
+                    <p class="text-slate-600 mt-1">
+                        {% if quotation.email %}{{ quotation.email }}{% if quotation.phone %} | {% endif %}{% endif %}
+                        {% if quotation.phone %}{{ quotation.phone }}{% endif %}
+                    </p>
+                    {% if quotation.address %}<p class="text-slate-500 mt-0.5 leading-relaxed">{{ quotation.address }}</p>{% endif %}
+                    {% if quotation.gstin %}<p class="text-slate-500 font-mono mt-0.5">GSTIN: {{ quotation.gstin }}</p>{% endif %}
                 </div>
                 <div class="sm:text-right">
-                    <span class="font-bold text-slate-400 text-[10px] uppercase tracking-wider block mb-1">PREPARED BY</span>
-                    <p class="font-bold text-slate-900 text-sm">{{ quotation.salesperson|default:doc_settings.authorized_person_name }}</p>
-                    <p class="text-slate-600">{{ doc_settings.company_name }}</p>
-                    <p class="text-slate-500">{{ doc_settings.email }}</p>
+                    <span class="font-bold text-slate-400 text-[10px] uppercase tracking-wider block mb-1">SALES REPRESENTATIVE</span>
+                    <p class="font-bold text-slate-900 text-sm">
+                        {% if quotation.salesperson %}
+                            {{ quotation.salesperson }}
+                        {% elif quotation.prepared_by and quotation.prepared_by.user %}
+                            {{ quotation.prepared_by.user.get_full_name|default:quotation.prepared_by.user.username }}
+                        {% else %}
+                            {{ doc_settings.authorized_person_name }}
+                        {% endif %}
+                    </p>
+                    <p class="text-slate-700 font-medium mt-0.5">{{ doc_settings.company_name }}</p>
+                    {% if doc_settings.email %}<p class="text-slate-500 mt-0.5">{{ doc_settings.email }}</p>{% endif %}
+                    {% if doc_settings.phone %}<p class="text-slate-500">{{ doc_settings.phone }}</p>{% endif %}
                 </div>
             </div>
 
             <!-- Line Items Table -->
-            <div>
-                <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 border-l-4 border-blue-600 pl-2">Services & Deliverables</h4>
+            <div class="print-avoid-break">
+                <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 border-l-4 border-primary-600 pl-2">Services & Deliverables</h4>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs border-collapse">
                         <thead>
-                            <tr class="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] border-y border-slate-200">
+                            <tr class="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] border-y border-slate-200">
                                 <th class="py-3 px-3">Service / Description</th>
                                 <th class="py-3 px-3 text-center">Type</th>
                                 <th class="py-3 px-3 text-center">Qty</th>
@@ -125,12 +149,16 @@
                             <tr>
                                 <td class="py-3 px-3">
                                     <p class="font-bold text-slate-900">{{ item.title }}</p>
-                                    {% if item.description %}<p class="text-[11px] text-slate-500 mt-0.5">{{ item.description }}</p>{% endif %}
+                                    {% if item.description %}<p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{{ item.description }}</p>{% endif %}
                                 </td>
                                 <td class="py-3 px-3 text-center uppercase text-[10px] font-semibold text-slate-600">{{ item.pricing_type }}</td>
                                 <td class="py-3 px-3 text-center font-medium">{{ item.quantity }} {{ item.unit }}</td>
                                 <td class="py-3 px-3 text-right font-mono text-slate-700">₹{{ item.unit_price|floatformat:2 }}</td>
                                 <td class="py-3 px-3 text-right font-bold font-mono text-slate-900">₹{{ item.line_total|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="py-4 text-center text-slate-400">No services specified.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -140,13 +168,34 @@
 
             <!-- Optional Items -->
             {% if optional_items.exists %}
-            <div>
+            <div class="print-avoid-break">
                 <h5 class="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 border-l-4 border-amber-500 pl-2">Optional Services (Not Included in Total)</h5>
                 <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200/80 space-y-2 text-xs">
                     {% for item in optional_items %}
-                    <div class="flex justify-between items-center text-amber-900">
-                        <span>• <strong>{{ item.title }}</strong> - {{ item.description }}</span>
+                    <div class="flex justify-between items-center text-amber-900 py-0.5">
+                        <span>• <strong>{{ item.title }}</strong>{% if item.description %} - <span class="text-amber-700 font-normal">{{ item.description }}</span>{% endif %}</span>
                         <span class="font-bold font-mono">₹{{ item.line_total|floatformat:2 }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Packages Section (If any) -->
+            {% if packages.exists %}
+            <div class="print-avoid-break">
+                <h5 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2 border-l-4 border-indigo-600 pl-2">Included Service Package</h5>
+                <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-200 text-xs space-y-2">
+                    {% for pkg in packages %}
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h6 class="font-bold text-indigo-950 text-sm">{{ pkg.package_name }}</h6>
+                            <p class="text-slate-600 mt-0.5">{{ pkg.description }}</p>
+                            {% if pkg.deliverables_text %}<p class="text-slate-500 mt-1"><strong>Deliverables:</strong> {{ pkg.deliverables_text }}</p>{% endif %}
+                        </div>
+                        <div class="text-right flex-shrink-0 font-mono font-bold text-indigo-900 text-sm">
+                            ₹{{ pkg.price|floatformat:2 }} <span class="text-[10px] font-sans text-slate-500 font-normal">/ {{ pkg.billing_frequency }}</span>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -155,12 +204,12 @@
 
             <!-- Domain Options -->
             {% if domain_options.exists %}
-            <div>
+            <div class="print-avoid-break">
                 <h5 class="text-xs font-bold text-blue-900 uppercase tracking-wider mb-2 border-l-4 border-blue-600 pl-2">Domain Options</h5>
                 <div class="bg-blue-50/60 p-4 rounded-xl border border-blue-200 space-y-2 text-xs">
                     {% for dom in domain_options %}
                     <div class="flex justify-between items-center text-slate-800">
-                        <span>○ <strong>{{ dom.domain_name }}</strong> ({{ dom.period }}) {% if dom.is_recommended %}<span class="px-2 py-0.5 bg-blue-600 text-white rounded text-[9px] font-bold uppercase">RECOMMENDED</span>{% endif %}</span>
+                        <span>○ <strong>{{ dom.domain_name }}</strong> ({{ dom.period }}) {% if dom.is_recommended %}<span class="px-2 py-0.5 bg-blue-600 text-white rounded text-[9px] font-bold uppercase ml-1">RECOMMENDED</span>{% endif %}</span>
                         <span class="font-bold font-mono text-blue-900">₹{{ dom.price|floatformat:2 }}</span>
                     </div>
                     {% endfor %}
@@ -169,17 +218,17 @@
             {% endif %}
 
             <!-- Totals & Payment Milestones -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-200">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-200 print-avoid-break">
                 <div>
                     <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">Payment Milestones</h5>
                     <div class="space-y-1.5 text-xs">
                         {% for stage in payment_stages %}
-                        <div class="flex justify-between items-center text-slate-700">
+                        <div class="flex justify-between items-center text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/60">
                             <span>{{ stage.stage_name }} ({{ stage.percentage }}%)</span>
-                            <span class="font-bold font-mono">₹{{ stage.amount|floatformat:2 }}</span>
+                            <span class="font-bold font-mono text-slate-900">₹{{ stage.amount|floatformat:2 }}</span>
                         </div>
                         {% empty %}
-                        <p class="text-slate-500">{{ quotation.payment_terms_summary }}</p>
+                        <p class="text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">{{ quotation.payment_terms_summary }}</p>
                         {% endfor %}
                     </div>
                 </div>
@@ -188,29 +237,75 @@
                         <span>Subtotal:</span>
                         <span class="font-semibold font-mono">₹{{ quotation.subtotal|floatformat:2 }}</span>
                     </div>
-                    <div class="flex justify-between text-slate-600">
+                    {% if quotation.discount_amount > 0 %}
+                    <div class="flex justify-between text-emerald-700">
                         <span>Discount:</span>
-                        <span class="font-semibold font-mono">₹{{ quotation.discount_amount|floatformat:2 }}</span>
+                        <span class="font-semibold font-mono">- ₹{{ quotation.discount_amount|floatformat:2 }}</span>
                     </div>
+                    {% endif %}
+                    {% if quotation.tax_amount > 0 %}
                     <div class="flex justify-between text-slate-600">
                         <span>Tax:</span>
                         <span class="font-semibold font-mono">₹{{ quotation.tax_amount|floatformat:2 }}</span>
                     </div>
+                    {% endif %}
                     <div class="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-slate-200">
                         <span>Grand Total:</span>
-                        <span class="text-blue-700 font-mono">₹{{ quotation.grand_total|floatformat:2 }}</span>
+                        <span class="text-primary-700 font-mono">₹{{ quotation.grand_total|floatformat:2 }}</span>
                     </div>
                     {% if quotation.monthly_recurring_total > 0 %}
-                    <div class="text-xs text-blue-600 font-bold">
+                    <div class="text-xs text-primary-600 font-bold pt-1">
                         Recurring: ₹{{ quotation.monthly_recurring_total|floatformat:2 }}/Month
                     </div>
                     {% endif %}
                 </div>
             </div>
 
+            <!-- Bank & Payment Transfer Details from DocumentSettings -->
+            {% if doc_settings.bank_name or doc_settings.upi_id %}
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 text-xs space-y-2 print-avoid-break">
+                <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="landmark" class="w-3.5 h-3.5 text-primary-600"></i>
+                    Bank Account & Payment Transfer Details
+                </h5>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-[11px] text-slate-700 pt-1">
+                    {% if doc_settings.bank_name %}
+                    <div>
+                        <span class="text-slate-400 font-semibold block text-[10px]">BANK NAME</span>
+                        <span class="font-bold text-slate-800">{{ doc_settings.bank_name }}</span>
+                    </div>
+                    {% endif %}
+                    {% if doc_settings.account_name %}
+                    <div>
+                        <span class="text-slate-400 font-semibold block text-[10px]">ACCOUNT HOLDER</span>
+                        <span class="font-bold text-slate-800">{{ doc_settings.account_name }}</span>
+                    </div>
+                    {% endif %}
+                    {% if doc_settings.account_number %}
+                    <div>
+                        <span class="text-slate-400 font-semibold block text-[10px]">ACCOUNT NUMBER</span>
+                        <span class="font-mono font-bold text-slate-800">{{ doc_settings.account_number }}</span>
+                    </div>
+                    {% endif %}
+                    {% if doc_settings.ifsc_code %}
+                    <div>
+                        <span class="text-slate-400 font-semibold block text-[10px]">IFSC CODE</span>
+                        <span class="font-mono font-bold text-slate-800">{{ doc_settings.ifsc_code }}</span>
+                    </div>
+                    {% endif %}
+                    {% if doc_settings.upi_id %}
+                    <div>
+                        <span class="text-slate-400 font-semibold block text-[10px]">UPI ID</span>
+                        <span class="font-mono font-bold text-primary-700">{{ doc_settings.upi_id }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Exclusions -->
             {% if exclusions.exists %}
-            <div class="pt-4 border-t border-slate-100">
+            <div class="pt-4 border-t border-slate-100 print-avoid-break">
                 <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5">Exclusions</h5>
                 <ul class="list-disc pl-4 text-xs text-slate-500 space-y-0.5">
                     {% for ex in exclusions %}
@@ -222,7 +317,7 @@
 
             <!-- Terms & Conditions -->
             {% if terms.exists %}
-            <div class="pt-4 border-t border-slate-100">
+            <div class="pt-4 border-t border-slate-100 print-avoid-break">
                 <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5">Terms & Conditions</h5>
                 <ol class="list-decimal pl-4 text-xs text-slate-500 space-y-1">
                     {% for t in terms %}
@@ -233,10 +328,10 @@
             {% endif %}
 
             <!-- Signatures Section -->
-            <div class="pt-8 border-t border-slate-200 flex justify-between items-end text-xs">
+            <div class="pt-8 border-t border-slate-200 flex justify-between items-end text-xs print-avoid-break">
                 <div>
-                    <p class="text-[10px] text-slate-400">Accepted By Client</p>
-                    <div class="h-10 border-b border-dashed border-slate-300 w-44 mt-1 flex items-end">
+                    <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Accepted By Client</p>
+                    <div class="h-12 border-b border-dashed border-slate-300 w-44 mt-1 flex items-end pb-1">
                         {% if quotation.accepted_at %}
                         <span class="font-semibold text-emerald-700 text-xs">{{ quotation.accepted_by_name }}</span>
                         {% endif %}
@@ -244,13 +339,24 @@
                     <p class="text-[10px] text-slate-500 mt-1">Signature & Date</p>
                 </div>
                 <div class="text-right">
-                    <p class="text-[10px] text-slate-400">For {{ doc_settings.company_name }}</p>
-                    <div class="h-10 border-b border-dashed border-slate-300 w-44 ml-auto mt-1 flex items-end justify-end pb-1 font-serif italic text-blue-700 text-sm">
-                        {{ doc_settings.authorized_person_name }}
+                    <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">For {{ doc_settings.company_name }}</p>
+                    <div class="h-12 border-b border-dashed border-slate-300 w-48 ml-auto mt-1 flex items-end justify-end pb-1">
+                        {% if doc_settings.authorized_signature_url %}
+                        <img src="{{ doc_settings.authorized_signature_url }}" alt="Signature" class="max-h-10 max-w-full">
+                        {% else %}
+                        <span class="font-serif italic text-primary-700 text-sm font-semibold">{{ doc_settings.authorized_person_name }}</span>
+                        {% endif %}
                     </div>
                     <p class="text-[10px] text-slate-500 mt-1">Authorized Representative</p>
                 </div>
             </div>
+
+            <!-- Footer Text from DocumentSettings -->
+            {% if doc_settings.footer_text %}
+            <div class="pt-4 border-t border-slate-100 text-center text-[10px] text-slate-400 print-avoid-break">
+                <p>{{ doc_settings.footer_text }}</p>
+            </div>
+            {% endif %}
 
         </div>
     </div>

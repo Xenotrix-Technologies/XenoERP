@@ -10,9 +10,21 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .font-signature { font-family: 'Great Vibes', cursive; }
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
         @media print {
             .no-print { display: none !important; }
-            .print-paper { shadow: none !important; border: none !important; width: 100% !important; padding: 0 !important; }
+            body { background: #ffffff !important; padding: 0 !important; }
+            .print-paper {
+                box-shadow: none !important;
+                border: none !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
         }
     </style>
 </head>
@@ -22,9 +34,13 @@
     <div class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs no-print">
         <div class="max-w-5xl mx-auto px-6 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-primary-600 text-white flex items-center justify-center font-bold text-sm">
+                {% if doc_settings.logo_url %}
+                <img src="{{ doc_settings.logo_url }}" alt="{{ doc_settings.company_name }}" class="h-9 max-w-[140px] object-contain">
+                {% else %}
+                <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
                     AG
                 </div>
+                {% endif %}
                 <div>
                     <h1 class="text-sm font-extrabold text-slate-900">{{ doc_settings.company_name }}</h1>
                     <p class="text-xs text-slate-500">Service Agreement {{ agreement.agreement_number }}</p>
@@ -68,6 +84,9 @@
 
             <!-- Header -->
             <div class="text-center border-b-2 border-slate-900 pb-6 space-y-1">
+                {% if doc_settings.logo_url %}
+                <img src="{{ doc_settings.logo_url }}" alt="{{ doc_settings.company_name }}" class="h-12 max-w-[200px] object-contain mx-auto mb-3">
+                {% endif %}
                 <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tight">{{ agreement.agreement_type }}</h1>
                 <p class="text-xs font-mono font-bold text-slate-600">Agreement No: {{ agreement.agreement_number }}</p>
                 <p class="text-xs text-slate-500">Effective Date: {{ agreement.date|date:"F d, Y" }}</p>
@@ -83,14 +102,15 @@
                         <span class="font-bold text-slate-400 text-[10px] uppercase">SERVICE PROVIDER</span>
                         <p class="font-bold text-slate-900 text-sm mt-0.5">{{ doc_settings.company_name }}</p>
                         <p>{{ doc_settings.address }}</p>
-                        <p>GSTIN: {{ doc_settings.gstin }} | Email: {{ doc_settings.email }}</p>
+                        {% if doc_settings.phone %}<p>Phone: {{ doc_settings.phone }}</p>{% endif %}
+                        <p>{% if doc_settings.gstin %}GSTIN: {{ doc_settings.gstin }} | {% endif %}Email: {{ doc_settings.email }}</p>
                     </div>
                     <div>
                         <span class="font-bold text-slate-400 text-[10px] uppercase">CLIENT</span>
                         <p class="font-bold text-slate-900 text-sm mt-0.5">{{ agreement.client_name }}</p>
                         {% if agreement.company_name %}<p class="font-semibold text-slate-800">{{ agreement.company_name }}</p>{% endif %}
                         <p>{{ agreement.client_address|default:"Address on file" }}</p>
-                        <p>Email: {{ agreement.client_email }} | Phone: {{ agreement.client_phone }}</p>
+                        <p>{% if agreement.client_email %}Email: {{ agreement.client_email }}{% endif %}{% if agreement.client_email and agreement.client_phone %} | {% endif %}{% if agreement.client_phone %}Phone: {{ agreement.client_phone }}{% endif %}</p>
                     </div>
                 </div>
             </div>
@@ -109,7 +129,7 @@
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-2">
                     <p class="font-bold text-slate-900 text-sm">Total Agreement Value: ₹{{ agreement.total_value|floatformat:2 }}</p>
                     {% if agreement.monthly_fee > 0 %}
-                    <p class="font-bold text-primary-700">Recurring Monthly Fee: ₹{{ agreement.monthly_fee|floatformat:2 }} / Month</p>
+                    <p class="font-bold text-blue-700">Recurring Monthly Fee: ₹{{ agreement.monthly_fee|floatformat:2 }} / Month</p>
                     {% endif %}
                     <div class="whitespace-pre-line text-slate-600 pt-2 border-t border-slate-200">
                         {{ agreement.payment_terms_text|default:"Payment schedule according to agreed milestones." }}
@@ -149,7 +169,11 @@
                 <div class="text-right">
                     <p class="text-[10px] font-bold uppercase text-slate-400">SERVICE PROVIDER SIGNATURE</p>
                     <div class="h-16 border-b border-dashed border-slate-300 w-56 ml-auto mt-1 flex items-end justify-end pb-1">
+                        {% if doc_settings.authorized_signature_url %}
+                        <img src="{{ doc_settings.authorized_signature_url }}" alt="Authorized Signature" class="max-h-12 max-w-full">
+                        {% else %}
                         <span class="font-signature text-2xl text-blue-900">{{ doc_settings.authorized_person_name }}</span>
+                        {% endif %}
                     </div>
                     <p class="text-[10px] font-bold text-slate-800 mt-1">For {{ doc_settings.company_name }}</p>
                     <p class="text-[9px] text-slate-400">Authorized Representative</p>

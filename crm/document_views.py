@@ -1031,10 +1031,8 @@ def document_settings_view(request):
         settings_obj.footer_text = request.POST.get('footer_text', settings_obj.footer_text)
         settings_obj.authorized_person_name = request.POST.get('authorized_person_name', settings_obj.authorized_person_name)
 
-        if request.POST.get('logo_url'):
-            settings_obj.logo_url = request.POST.get('logo_url')
-        if request.POST.get('authorized_signature_url'):
-            settings_obj.authorized_signature_url = request.POST.get('authorized_signature_url')
+        settings_obj.logo_url = request.POST.get('logo_url', '').strip() or None
+        settings_obj.authorized_signature_url = request.POST.get('authorized_signature_url', '').strip() or None
 
         settings_obj.save()
         return redirect('document_settings')

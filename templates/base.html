@@ -39,6 +39,39 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 
+    <!-- Global Print Styles -->
+    <style>
+        @media print {
+            header, aside, nav, .no-print, #mobile-menu-btn, #sidebar-overlay,
+            #quick-create-modal, #pwa-install-banner, #offline-network-banner,
+            .fixed.bottom-0, .app-main-layout > header {
+                display: none !important;
+            }
+            body, html {
+                background: #ffffff !important;
+                color: #0f172a !important;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .app-main-layout {
+                margin: 0 !important;
+                padding: 0 !important;
+                min-height: auto !important;
+                width: 100% !important;
+            }
+            .app-main-layout > div.flex-1 {
+                margin-top: 0 !important;
+                padding-bottom: 0 !important;
+            }
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+    {% block extra_css %}{% endblock %}
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
