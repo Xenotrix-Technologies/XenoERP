@@ -313,6 +313,7 @@ class Quotation(models.Model):
     success_metrics_text = models.TextField(blank=True, null=True)
     declaration_text = models.TextField(blank=True, null=True)
     sections_data_json = models.TextField(default='[]')
+    show_bank_details = models.BooleanField(default=False)
     
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Draft')
     public_token = models.CharField(max_length=64, unique=True, blank=True, null=True)

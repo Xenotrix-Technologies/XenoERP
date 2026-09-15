@@ -312,8 +312,8 @@
                 </div>
                 {% endif %}
 
-                <!-- 9. Bank Account & Payment Details -->
-                {% if doc_settings.bank_name or doc_settings.upi_id %}
+                <!-- 9. Bank Account & Payment Details (Only if enabled for quotation and has values) -->
+                {% if quotation.show_bank_details and doc_settings.bank_name or quotation.show_bank_details and doc_settings.account_name or quotation.show_bank_details and doc_settings.account_number or quotation.show_bank_details and doc_settings.ifsc_code or quotation.show_bank_details and doc_settings.upi_id %}
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-xs space-y-1.5 print-avoid-break">
                     <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                         <i data-lucide="landmark" class="w-3.5 h-3.5 text-blue-600"></i>
