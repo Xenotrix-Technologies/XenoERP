@@ -5,6 +5,11 @@
 
 {% block extra_head %}
 <style>
+@page {
+    size: A4 portrait;
+    margin: 0 !important; /* Disables browser header/footer (date, title, URL, page #) */
+}
+
 @media print {
     /* Hide all non-printable UI elements */
     header, aside, nav, .no-print, 
@@ -17,15 +22,18 @@
     .quotation-main-column {
         width: 100% !important;
         max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     #quotationPaperDoc {
         border: none !important;
         box-shadow: none !important;
-        padding: 0 !important;
+        padding: 10mm 12mm !important;
         margin: 0 !important;
         background: #ffffff !important;
         width: 100% !important;
+        max-width: 100% !important;
     }
 
     .print-avoid-break {
@@ -37,18 +45,15 @@
         background: #ffffff !important;
         padding: 0 !important;
         margin: 0 !important;
-    }
-
-    @page {
-        size: A4 portrait;
-        margin: 12mm 12mm;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="p-4 sm:p-6 space-y-6 bg-slate-50 min-h-screen">
+<div class="p-4 sm:p-6 space-y-5 bg-slate-50 min-h-screen">
     <!-- Header Navigation & Quick Actions (Hidden in Print) -->
     <div class="quotation-actions-bar flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
         <div class="flex items-center gap-3">
@@ -111,20 +116,22 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         <!-- Left 2 Cols: Full Paper Document Render -->
-        <div class="quotation-main-column lg:col-span-2 space-y-6">
-            <div id="quotationPaperDoc" class="bg-white p-6 sm:p-10 rounded-2xl border border-slate-200/80 shadow-xs space-y-6 print:p-0 print:border-none print:shadow-none print:space-y-5 font-sans">
+        <div class="quotation-main-column lg:col-span-2 space-y-4">
+            <div id="quotationPaperDoc" class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-xs space-y-4 print:p-0 print:border-none print:shadow-none print:space-y-3 font-sans">
 
                 <!-- 1. Header Branding (Xenotrix Technologies Reference Structure) -->
-                <div class="flex justify-between items-start border-b-2 border-blue-600 pb-6 print-avoid-break">
+                <div class="flex justify-between items-start border-b-2 border-blue-600 pb-4 print-avoid-break gap-4">
                     <div class="space-y-1">
-                        {% if doc_settings.logo_url %}
-                        <img src="{{ doc_settings.logo_url }}" alt="{{ doc_settings.company_name }}" class="h-10 max-w-[200px] object-contain mb-2">
+                        {% if doc_settings.effective_logo_url %}
+                        <img src="{{ doc_settings.effective_logo_url }}" alt="{{ doc_settings.company_name }}" class="h-9 max-w-[190px] object-contain mb-1.5">
+                        {% else %}
+                        <img src="{% static 'images/xenotrix.png' %}" alt="{{ doc_settings.company_name }}" class="h-9 max-w-[190px] object-contain mb-1.5">
                         {% endif %}
-                        <h2 class="text-2xl font-black text-blue-900 tracking-tight">{{ doc_settings.company_name }}</h2>
+                        <h2 class="text-xl font-black text-blue-900 tracking-tight">{{ doc_settings.company_name }}</h2>
                         {% if doc_settings.address %}
-                        <p class="text-xs text-slate-600 font-medium leading-relaxed max-w-md">{{ doc_settings.address }}</p>
+                        <p class="text-[11px] text-slate-600 font-medium leading-relaxed max-w-md">{{ doc_settings.address }}</p>
                         {% endif %}
-                        <div class="text-[11px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 pt-0.5">
+                        <div class="text-[10px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 pt-0.5">
                             {% if doc_settings.gstin %}<span><strong>GSTIN:</strong> {{ doc_settings.gstin }}</span>{% endif %}
                             {% if doc_settings.pan %}<span>• <strong>PAN:</strong> {{ doc_settings.pan }}</span>{% endif %}
                             {% if doc_settings.phone %}<span>• <strong>Phone:</strong> {{ doc_settings.phone }}</span>{% endif %}
@@ -132,22 +139,22 @@
                             {% if doc_settings.website %}<span>• <strong>Web:</strong> {{ doc_settings.website }}</span>{% endif %}
                         </div>
                     </div>
-                    <div class="text-right flex-shrink-0 ml-4">
-                        <span class="inline-block px-3.5 py-1 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-md shadow-xs">QUOTATION</span>
-                        <p class="text-sm font-mono font-bold text-slate-900 mt-2">{{ quotation.quotation_number }}</p>
-                        <p class="text-xs text-slate-500 mt-1">Date: <span class="font-bold text-slate-800">{{ quotation.date|date:"M d, Y" }}</span></p>
-                        <p class="text-xs text-slate-500">Valid Until: <span class="font-bold text-slate-800">{{ quotation.valid_until|date:"M d, Y" }}</span></p>
+                    <div class="text-right flex-shrink-0">
+                        <span class="inline-block px-3 py-0.5 bg-blue-600 text-white font-black text-[11px] uppercase tracking-widest rounded shadow-xs">QUOTATION</span>
+                        <p class="text-xs font-mono font-bold text-slate-900 mt-1.5">{{ quotation.quotation_number }}</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Date: <span class="font-bold text-slate-800">{{ quotation.date|date:"M d, Y" }}</span></p>
+                        <p class="text-[11px] text-slate-500">Valid Until: <span class="font-bold text-slate-800">{{ quotation.valid_until|date:"M d, Y" }}</span></p>
                     </div>
                 </div>
 
                 <!-- Requirement / Project Title Banner -->
-                <div class="bg-blue-50/60 p-3.5 rounded-xl border border-blue-100 print-avoid-break">
-                    <span class="text-[10px] font-bold uppercase text-blue-700 tracking-wider block">PROJECT REQUIREMENT / SCOPE</span>
-                    <h3 class="text-base font-black text-slate-900 mt-0.5">{{ quotation.project_title|default:"Project Proposal & Quotation" }}</h3>
+                <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100 print-avoid-break">
+                    <span class="text-[9px] font-bold uppercase text-blue-700 tracking-wider block">PROJECT REQUIREMENT / SCOPE</span>
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 mt-0.5">{{ quotation.project_title|default:"Project Proposal & Quotation" }}</h3>
                 </div>
 
                 <!-- 2. Prepared For (Client) & Prepared By Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/80 p-4 rounded-xl border border-slate-200/80 text-xs print-avoid-break">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200/80 text-xs print-avoid-break">
                     <div>
                         <span class="font-bold text-slate-400 text-[10px] uppercase tracking-wider block mb-1">PREPARED FOR</span>
                         <h4 class="font-bold text-slate-900 text-sm">{{ quotation.client_name }}</h4>
@@ -159,8 +166,8 @@
                             {% if quotation.phone %}{{ quotation.phone }}{% endif %}
                         </p>
                         
-                        {% if quotation.address %}<p class="text-slate-500 mt-0.5 leading-relaxed">{{ quotation.address }}</p>{% endif %}
-                        {% if quotation.gstin %}<p class="text-slate-500 font-mono mt-0.5">GSTIN: {{ quotation.gstin }}</p>{% endif %}
+                        {% if quotation.address %}<p class="text-slate-500 mt-0.5 leading-relaxed text-[11px]">{{ quotation.address }}</p>{% endif %}
+                        {% if quotation.gstin %}<p class="text-slate-500 font-mono mt-0.5 text-[11px]">GSTIN: {{ quotation.gstin }}</p>{% endif %}
                     </div>
                     <div class="sm:text-right">
                         <span class="font-bold text-slate-400 text-[10px] uppercase tracking-wider block mb-1">SALES REPRESENTATIVE</span>
@@ -174,88 +181,90 @@
                             {% endif %}
                         </p>
                         <p class="text-slate-700 font-medium mt-0.5">{{ doc_settings.company_name }}</p>
-                        {% if doc_settings.email %}<p class="text-slate-500 mt-0.5">{{ doc_settings.email }}</p>{% endif %}
-                        {% if doc_settings.phone %}<p class="text-slate-500">{{ doc_settings.phone }}</p>{% endif %}
+                        {% if doc_settings.email %}<p class="text-slate-500 mt-0.5 text-[11px]">{{ doc_settings.email }}</p>{% endif %}
+                        {% if doc_settings.phone %}<p class="text-slate-500 text-[11px]">{{ doc_settings.phone }}</p>{% endif %}
                     </div>
                 </div>
 
                 <!-- 3. Our Objective (If provided) -->
                 {% if quotation.objective_text %}
                 <div class="print-avoid-break">
-                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 border-l-4 border-blue-600 pl-2">Our Objective</h4>
-                    <p class="text-xs text-slate-600 leading-relaxed">{{ quotation.objective_text }}</p>
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5 border-l-4 border-blue-600 pl-2">Our Objective</h4>
+                    <p class="text-[11px] text-slate-600 leading-relaxed">{{ quotation.objective_text }}</p>
                 </div>
                 {% endif %}
 
                 <!-- 4. Deliverables Summary (If provided) -->
                 {% if quotation.deliverables_summary_text %}
                 <div class="print-avoid-break">
-                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 border-l-4 border-blue-600 pl-2">Deliverables Summary</h4>
-                    <p class="text-xs text-slate-600 leading-relaxed">{{ quotation.deliverables_summary_text }}</p>
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5 border-l-4 border-blue-600 pl-2">Deliverables Summary</h4>
+                    <p class="text-[11px] text-slate-600 leading-relaxed">{{ quotation.deliverables_summary_text }}</p>
                 </div>
                 {% endif %}
 
                 <!-- 5. Dynamic Sections (If any) -->
                 {% for sec in sections %}
                 <div class="print-avoid-break">
-                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 border-l-4 border-blue-600 pl-2">{{ sec.title }}</h4>
-                    <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">{{ sec.content }}</p>
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5 border-l-4 border-blue-600 pl-2">{{ sec.title }}</h4>
+                    <p class="text-[11px] text-slate-600 leading-relaxed whitespace-pre-line">{{ sec.content }}</p>
                 </div>
                 {% endfor %}
 
                 <!-- 6. Line Items Table -->
                 <div class="print-avoid-break">
-                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2.5 border-l-4 border-blue-600 pl-2">Project Investment & Services</h4>
-                    <table class="w-full text-left text-xs border-collapse border border-slate-200">
-                        <thead>
-                            <tr class="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200">
-                                <th class="py-2.5 px-3">Service / Deliverable Description</th>
-                                <th class="py-2.5 px-3 text-center">Type</th>
-                                <th class="py-2.5 px-3 text-center">Qty</th>
-                                <th class="py-2.5 px-3 text-right">Price</th>
-                                <th class="py-2.5 px-3 text-right">Discount</th>
-                                <th class="py-2.5 px-3 text-right">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            {% for item in quotation.items.all %}
-                            {% if not item.is_optional %}
-                            <tr>
-                                <td class="py-3 px-3 border border-slate-200">
-                                    <p class="font-bold text-slate-900">{{ item.title }}</p>
-                                    {% if item.description %}<p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{{ item.description }}</p>{% endif %}
-                                    {% if item.deliverables %}<p class="text-[10px] text-blue-800 mt-1 font-medium leading-relaxed"><strong>Deliverables:</strong> {{ item.deliverables }}</p>{% endif %}
-                                </td>
-                                <td class="py-3 px-3 text-center uppercase text-[10px] font-semibold text-slate-600 border border-slate-200">{{ item.pricing_type }}</td>
-                                <td class="py-3 px-3 text-center font-medium border border-slate-200 font-mono">{{ item.quantity }} {{ item.unit }}</td>
-                                <td class="py-3 px-3 text-right font-mono text-slate-700 border border-slate-200">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.unit_price|floatformat:2 }}</td>
-                                <td class="py-3 px-3 text-right font-mono text-slate-500 border border-slate-200">{% if item.discount > 0 %}-{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.discount|floatformat:2 }}{% else %}-{% endif %}</td>
-                                <td class="py-3 px-3 text-right font-bold font-mono text-slate-900 border border-slate-200">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.line_total|floatformat:2 }}</td>
-                            </tr>
-                            {% endif %}
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="text-center py-4 text-slate-400 text-xs border border-slate-200">No services specified.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 border-l-4 border-blue-600 pl-2">Project Investment & Services</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse border border-slate-200">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200">
+                                    <th class="py-2 px-3">Service / Deliverable Description</th>
+                                    <th class="py-2 px-3 text-center">Type</th>
+                                    <th class="py-2 px-3 text-center">Qty</th>
+                                    <th class="py-2 px-3 text-right">Price</th>
+                                    <th class="py-2 px-3 text-right">Discount</th>
+                                    <th class="py-2 px-3 text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for item in quotation.items.all %}
+                                {% if not item.is_optional %}
+                                <tr>
+                                    <td class="py-2.5 px-3 border border-slate-200">
+                                        <p class="font-bold text-slate-900">{{ item.title }}</p>
+                                        {% if item.description %}<p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{{ item.description }}</p>{% endif %}
+                                        {% if item.deliverables %}<p class="text-[10px] text-blue-800 mt-1 font-medium leading-relaxed"><strong>Deliverables:</strong> {{ item.deliverables }}</p>{% endif %}
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center uppercase text-[10px] font-semibold text-slate-600 border border-slate-200">{{ item.pricing_type }}</td>
+                                    <td class="py-2.5 px-3 text-center font-medium border border-slate-200 font-mono text-[11px]">{{ item.quantity }} {{ item.unit }}</td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-slate-700 border border-slate-200 text-[11px]">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.unit_price|floatformat:2 }}</td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-slate-500 border border-slate-200 text-[11px]">{% if item.discount > 0 %}-{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.discount|floatformat:2 }}{% else %}-{% endif %}</td>
+                                    <td class="py-2.5 px-3 text-right font-bold font-mono text-slate-900 border border-slate-200 text-[11px]">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.line_total|floatformat:2 }}</td>
+                                </tr>
+                                {% endif %}
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-slate-400 text-xs border border-slate-200">No services specified.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- 7. Totals & Milestones Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-200 print-avoid-break">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-200 print-avoid-break">
                     <!-- Left: Payment Milestones Schedule -->
                     <div>
                         <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2 border-l-4 border-blue-600 pl-2">Payment Milestones Schedule</h5>
                         <div class="space-y-1.5 text-xs">
                             {% for stage in quotation.payment_stages.all %}
-                            <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+                            <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-200/80">
                                 <div>
-                                    <span class="font-bold text-slate-800">{{ stage.stage_name }}</span>
+                                    <span class="font-bold text-slate-800 text-[11px]">{{ stage.stage_name }}</span>
                                     {% if stage.description %}<p class="text-[10px] text-slate-500">{{ stage.description }}</p>{% endif %}
                                 </div>
                                 <div class="text-right">
-                                    <span class="font-bold font-mono text-blue-900">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ stage.amount|floatformat:2 }}</span>
+                                    <span class="font-bold font-mono text-blue-900 text-[11px]">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ stage.amount|floatformat:2 }}</span>
                                     <span class="text-[10px] text-slate-400 block">({{ stage.percentage }}%)</span>
                                 </div>
                             </div>
@@ -266,29 +275,29 @@
                     </div>
 
                     <!-- Right: Summary Financial Box -->
-                    <div class="space-y-2 text-xs bg-slate-50/80 p-4 rounded-xl border border-slate-200/80">
-                        <div class="flex justify-between text-slate-600">
+                    <div class="space-y-1.5 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-200/80">
+                        <div class="flex justify-between text-slate-600 text-[11px]">
                             <span>Subtotal:</span>
                             <span class="font-semibold font-mono">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ quotation.subtotal|floatformat:2 }}</span>
                         </div>
                         {% if quotation.discount_amount > 0 %}
-                        <div class="flex justify-between text-slate-600">
+                        <div class="flex justify-between text-slate-600 text-[11px]">
                             <span>Total Discount:</span>
                             <span class="font-semibold font-mono text-rose-600">-{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ quotation.discount_amount|floatformat:2 }}</span>
                         </div>
                         {% endif %}
                         {% if quotation.tax_amount > 0 %}
-                        <div class="flex justify-between text-slate-600">
+                        <div class="flex justify-between text-slate-600 text-[11px]">
                             <span>Tax / GST{% if quotation.tax_rate > 0 %} ({{ quotation.tax_rate }}%){% endif %}:</span>
                             <span class="font-semibold font-mono">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ quotation.tax_amount|floatformat:2 }}</span>
                         </div>
                         {% endif %}
-                        <div class="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-slate-200">
+                        <div class="flex justify-between text-sm sm:text-base font-black text-slate-900 pt-1.5 border-t border-slate-200">
                             <span>Grand Total:</span>
                             <span class="text-blue-700 font-mono">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ quotation.grand_total|floatformat:2 }}</span>
                         </div>
                         {% if quotation.monthly_recurring_total > 0 %}
-                        <div class="text-[11px] text-blue-600 font-bold pt-1 text-right">
+                        <div class="text-[10px] text-blue-600 font-bold pt-0.5 text-right">
                             Recurring: {% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ quotation.monthly_recurring_total|floatformat:2 }}/Month
                         </div>
                         {% endif %}
@@ -298,19 +307,19 @@
                 <!-- 8. What Success Looks Like (If provided) -->
                 {% if quotation.success_metrics_text %}
                 <div class="print-avoid-break">
-                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 border-l-4 border-blue-600 pl-2">What Success Looks Like</h4>
-                    <p class="text-xs text-slate-600 leading-relaxed">{{ quotation.success_metrics_text }}</p>
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5 border-l-4 border-blue-600 pl-2">What Success Looks Like</h4>
+                    <p class="text-[11px] text-slate-600 leading-relaxed">{{ quotation.success_metrics_text }}</p>
                 </div>
                 {% endif %}
 
                 <!-- 9. Bank Account & Payment Details -->
                 {% if doc_settings.bank_name or doc_settings.upi_id %}
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 text-xs space-y-2 print-avoid-break">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-xs space-y-1.5 print-avoid-break">
                     <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                        <i data-lucide="landmark" class="w-4 h-4 text-blue-600"></i>
+                        <i data-lucide="landmark" class="w-3.5 h-3.5 text-blue-600"></i>
                         Bank Account & Payment Transfer Details
                     </h5>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-[11px] text-slate-600">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-slate-600">
                         {% if doc_settings.bank_name %}<div><strong>Bank:</strong> {{ doc_settings.bank_name }}</div>{% endif %}
                         {% if doc_settings.account_name %}<div><strong>Beneficiary:</strong> {{ doc_settings.account_name }}</div>{% endif %}
                         {% if doc_settings.account_number %}<div><strong>A/C No:</strong> <span class="font-mono font-bold text-slate-800">{{ doc_settings.account_number }}</span></div>{% endif %}
@@ -323,8 +332,8 @@
                 <!-- 10. Third-Party Charges & Exclusions -->
                 {% if quotation.exclusions.exists %}
                 <div class="print-avoid-break">
-                    <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1.5 border-l-4 border-slate-400 pl-2">Third-Party Charges & Exclusions</h5>
-                    <ul class="list-disc pl-5 text-[11px] text-slate-600 space-y-1">
+                    <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1 border-l-4 border-slate-400 pl-2">Third-Party Charges & Exclusions</h5>
+                    <ul class="list-disc pl-5 text-[11px] text-slate-600 space-y-0.5">
                         {% for ex in quotation.exclusions.all %}
                         <li><strong>{{ ex.service_name }}:</strong> {{ ex.charges_description }}</li>
                         {% endfor %}
@@ -335,8 +344,8 @@
                 <!-- 11. Commercial Terms & Conditions -->
                 {% if quotation.terms.exists %}
                 <div class="print-avoid-break">
-                    <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1.5 border-l-4 border-slate-400 pl-2">Commercial Terms & Conditions</h5>
-                    <ol class="list-decimal pl-5 text-[11px] text-slate-600 space-y-1">
+                    <h5 class="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-1 border-l-4 border-slate-400 pl-2">Commercial Terms & Conditions</h5>
+                    <ol class="list-decimal pl-5 text-[11px] text-slate-600 space-y-0.5">
                         {% for t in quotation.terms.all %}
                         <li>{% if t.clause_title %}<strong>{{ t.clause_title }}:</strong> {% endif %}{{ t.content }}</li>
                         {% endfor %}
@@ -345,29 +354,49 @@
                 {% endif %}
 
                 <!-- 12. Declaration & Acceptance Block -->
-                <div class="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200 text-[11px] text-slate-600 leading-relaxed print-avoid-break">
+                <div class="p-3 bg-slate-50/70 rounded-xl border border-slate-200 text-[11px] text-slate-600 leading-relaxed print-avoid-break">
                     <p>{{ quotation.declaration_text|default:"We hereby accept the quotation proposal, deliverables, commercial terms, and milestone payment schedule detailed above." }}</p>
                 </div>
 
-                <!-- 13. Footer Signatures -->
-                <div class="pt-6 border-t border-slate-200 flex justify-between items-end text-xs print-avoid-break">
+                <!-- 13. Footer Signatures & Official Stamp -->
+                <div class="pt-4 border-t border-slate-200 grid grid-cols-2 gap-6 items-end text-xs print-avoid-break">
                     <div>
                         <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Client Acceptance</p>
-                        <div class="h-10 border-b border-dashed border-slate-300 w-48 mt-1"></div>
+                        <div class="h-14 border-b border-dashed border-slate-300 w-48 mt-1 flex items-end pb-1">
+                            {% if quotation.accepted_at %}
+                            <div>
+                                <span class="font-bold text-emerald-700 text-xs block">{{ quotation.accepted_by_name }}</span>
+                                <span class="text-[9px] text-slate-400 block">{{ quotation.accepted_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
                         <p class="text-[10px] text-slate-500 mt-1">Signature & Company Seal</p>
                     </div>
-                    <div class="text-right">
+                    <div class="text-right flex flex-col items-end">
                         <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">For {{ doc_settings.company_name }}</p>
-                        <div class="h-10 border-b border-dashed border-slate-300 w-48 ml-auto mt-1 flex items-end justify-end pb-1 font-serif italic text-blue-800 text-sm font-semibold">
-                            {{ doc_settings.authorized_person_name }}
+                        
+                        <div class="relative w-48 h-14 border-b border-dashed border-slate-300 mt-1 flex items-end justify-end pb-1">
+                            <!-- Seal Stamp if enabled -->
+                            {% if doc_settings.effective_seal_url %}
+                            <img src="{{ doc_settings.effective_seal_url }}" alt="Company Seal" class="absolute right-10 bottom-0.5 h-13 w-13 object-contain opacity-90 pointer-events-none">
+                            {% endif %}
+
+                            <!-- Signature if provided -->
+                            {% if doc_settings.effective_signature_url %}
+                            <img src="{{ doc_settings.effective_signature_url }}" alt="Authorized Signature" class="relative z-10 max-h-11 max-w-[140px] object-contain">
+                            {% else %}
+                            <span class="relative z-10 font-serif italic text-blue-900 text-sm font-bold">{{ doc_settings.authorized_person_name|default:"Authorized Signatory" }}</span>
+                            {% endif %}
                         </div>
-                        <p class="text-[10px] text-slate-500 mt-1">Authorized Signatory</p>
+
+                        <p class="text-[10px] text-slate-700 font-semibold mt-1">{{ doc_settings.authorized_person_name|default:"Authorized Signatory" }}</p>
+                        <p class="text-[9px] text-slate-400">Authorized Signatory & Seal</p>
                     </div>
                 </div>
 
                 <!-- 14. Footer Note -->
                 {% if doc_settings.footer_text %}
-                <div class="pt-3 border-t border-slate-100 text-center text-[10px] text-slate-400 print-avoid-break">
+                <div class="pt-2 border-t border-slate-100 text-center text-[10px] text-slate-400 print-avoid-break">
                     <p>{{ doc_settings.footer_text }}</p>
                 </div>
                 {% endif %}
@@ -376,7 +405,7 @@
         </div>
 
         <!-- Right 1 Col: Management Sidebar & Activity Timeline (Hidden in Print) -->
-        <div class="quotation-sidebar-column space-y-6 no-print">
+        <div class="quotation-sidebar-column space-y-5 no-print">
             
             <!-- Quick Status Box -->
             <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
@@ -400,30 +429,40 @@
                         <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                         <span>Duplicate Quotation</span>
                     </a>
-                    <a href="{% url 'quotation_edit' quotation.id %}" class="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
-                        <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-                        <span>Edit Quotation Builder</span>
-                    </a>
+                </div>
+            </div>
+
+            <!-- Client Details Snapshot Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 text-xs">
+                <h3 class="font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                    <i data-lucide="user" class="w-4 h-4 text-blue-600"></i>
+                    Client Snapshot
+                </h3>
+                <div class="space-y-1 text-slate-600">
+                    <p class="font-bold text-slate-900">{{ quotation.client_name }}</p>
+                    {% if quotation.company_name %}<p class="text-slate-700 font-medium">{{ quotation.company_name }}</p>{% endif %}
+                    {% if quotation.email %}<p>{{ quotation.email }}</p>{% endif %}
+                    {% if quotation.phone %}<p>{{ quotation.phone }}</p>{% endif %}
+                    {% if quotation.city or quotation.state %}
+                    <p class="text-slate-500">{{ quotation.city }}{% if quotation.city and quotation.state %}, {% endif %}{{ quotation.state }}</p>
+                    {% endif %}
                 </div>
             </div>
 
             <!-- Activity Log -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <i data-lucide="history" class="w-3.5 h-3.5 text-slate-500"></i>
-                    Activity Timeline
-                </h3>
-                <div class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Activity History</h3>
+                <div class="space-y-3 text-xs">
                     {% for act in activities %}
-                    <div class="text-xs border-l-2 border-blue-500 pl-3 py-0.5 space-y-0.5">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-slate-900">{{ act.activity_type }}</span>
-                            <span class="text-[10px] text-slate-400">{{ act.timestamp|date:"M d, H:i" }}</span>
+                    <div class="flex items-start gap-2.5">
+                        <div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
+                        <div class="space-y-0.5">
+                            <p class="font-semibold text-slate-800">{{ act.activity_type }}: {{ act.description }}</p>
+                            <span class="text-[10px] text-slate-400 font-mono">{{ act.created_at|date:"M d, H:i" }}</span>
                         </div>
-                        <p class="text-slate-600 text-[11px] leading-relaxed">{{ act.description }}</p>
                     </div>
                     {% empty %}
-                    <p class="text-xs text-slate-400">No activity recorded yet.</p>
+                    <p class="text-xs text-slate-400 italic">No activity recorded yet.</p>
                     {% endfor %}
                 </div>
             </div>
@@ -434,28 +473,29 @@
 </div>
 
 <script>
+    lucide.createIcons();
+
     function copyPublicLink() {
         const publicUrl = window.location.origin + "{% url 'public_quotation_view' quotation.public_token %}";
         navigator.clipboard.writeText(publicUrl).then(() => {
-            alert("Public quotation link copied to clipboard:\n" + publicUrl);
+            alert('Public Quotation link copied to clipboard!');
         });
     }
 
     function updateQuotationStatus(newStatus) {
-        fetch("{% url 'quotation_update_status' quotation.id %}", {
+        fetch("{% url 'quotation_edit' quotation.id %}", {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 'X-CSRFToken': '{{ csrf_token }}'
             },
-            body: JSON.stringify({ status: newStatus })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
+            body: new URLSearchParams({
+                'action': 'update_status',
+                'status': newStatus
+            })
+        }).then(res => {
+            if (res.ok) {
                 window.location.reload();
-            } else {
-                alert('Error updating status: ' + (data.error || 'Unknown error'));
             }
         });
     }

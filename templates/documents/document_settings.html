@@ -9,22 +9,174 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <i data-lucide="settings-2" class="w-7 h-7 text-primary-600"></i>
-                Company Document Settings
+                <i data-lucide="settings-2" class="w-7 h-7 text-blue-600"></i>
+                Company Document & Branding Settings
             </h1>
-            <p class="text-xs text-slate-500 mt-1">Configure company branding, banking, tax details, and document numbering defaults for generated PDFs.</p>
+            <p class="text-xs text-slate-500 mt-1">Configure company logos, official seals, digital signatures, bank accounts, and print defaults for quotations & agreements.</p>
         </div>
     </div>
 
     <!-- Form Container -->
-    <form method="POST" class="space-y-6 max-w-4xl">
+    <form method="POST" enctype="multipart/form-data" class="space-y-6 max-w-4xl">
         {% csrf_token %}
 
-        <!-- Company Information -->
+        <!-- Branding, Logo, Seal & Signature -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <i data-lucide="image" class="w-4 h-4 text-blue-600"></i>
+                Branding, Logo, Official Seal & Digital Signature
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+                
+                <!-- 1. Company Logo Config -->
+                <div class="space-y-3 bg-slate-50/80 p-4 rounded-xl border border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="award" class="w-4 h-4 text-blue-600"></i>
+                            Company Logo
+                        </label>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-blue-300">
+                            <input type="radio" name="logo_choice" value="asset" {% if settings.logo_choice == 'asset' or not settings.logo_choice %}checked{% endif %} onchange="toggleLogoFields()">
+                            <span class="font-medium text-[11px]">Use Default Xenotrix Logo (Assets)</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-blue-300">
+                            <input type="radio" name="logo_choice" value="upload" {% if settings.logo_choice == 'upload' %}checked{% endif %} onchange="toggleLogoFields()">
+                            <span class="font-medium text-[11px]">Upload Custom Logo File</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-blue-300">
+                            <input type="radio" name="logo_choice" value="url" {% if settings.logo_choice == 'url' %}checked{% endif %} onchange="toggleLogoFields()">
+                            <span class="font-medium text-[11px]">Enter Custom Logo URL</span>
+                        </label>
+                    </div>
+
+                    <div id="logoUploadField" class="space-y-1 {% if settings.logo_choice != 'upload' %}hidden{% endif %}">
+                        <input type="file" name="logo_file" accept="image/*" class="w-full text-[11px] file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+
+                    <div id="logoUrlField" class="space-y-1 {% if settings.logo_choice != 'url' %}hidden{% endif %}">
+                        <input type="url" name="logo_url" value="{{ settings.logo_url|default:'' }}" placeholder="https://example.com/logo.png" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+                    </div>
+
+                    <!-- Logo Preview -->
+                    <div class="pt-2 border-t border-slate-200">
+                        <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1.5">Active Logo Preview</span>
+                        <div class="h-14 bg-white rounded-lg border border-slate-200 flex items-center justify-center p-2">
+                            {% if settings.effective_logo_url %}
+                            <img src="{{ settings.effective_logo_url }}" alt="Company Logo" class="max-h-10 max-w-full object-contain">
+                            {% else %}
+                            <img src="{% static 'images/xenotrix.png' %}" alt="Company Logo" class="max-h-10 max-w-full object-contain">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Official Seal / Stamp Config -->
+                <div class="space-y-3 bg-slate-50/80 p-4 rounded-xl border border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
+                            Official Seal & Stamp
+                        </label>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-emerald-300">
+                            <input type="radio" name="seal_choice" value="asset" {% if settings.seal_choice == 'asset' or not settings.seal_choice %}checked{% endif %} onchange="toggleSealFields()">
+                            <span class="font-medium text-[11px]">Use Default Xenotrix Seal (Assets)</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-emerald-300">
+                            <input type="radio" name="seal_choice" value="upload" {% if settings.seal_choice == 'upload' %}checked{% endif %} onchange="toggleSealFields()">
+                            <span class="font-medium text-[11px]">Upload Custom Seal File</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-emerald-300">
+                            <input type="radio" name="seal_choice" value="url" {% if settings.seal_choice == 'url' %}checked{% endif %} onchange="toggleSealFields()">
+                            <span class="font-medium text-[11px]">Enter Custom Seal URL</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-rose-300">
+                            <input type="radio" name="seal_choice" value="none" {% if settings.seal_choice == 'none' %}checked{% endif %} onchange="toggleSealFields()">
+                            <span class="font-medium text-[11px]">No Seal / Do Not Display</span>
+                        </label>
+                    </div>
+
+                    <div id="sealUploadField" class="space-y-1 {% if settings.seal_choice != 'upload' %}hidden{% endif %}">
+                        <input type="file" name="seal_file" accept="image/*" class="w-full text-[11px] file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                    </div>
+
+                    <div id="sealUrlField" class="space-y-1 {% if settings.seal_choice != 'url' %}hidden{% endif %}">
+                        <input type="url" name="seal_url" value="{{ settings.seal_url|default:'' }}" placeholder="https://example.com/seal.png" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+                    </div>
+
+                    <!-- Seal Preview -->
+                    <div class="pt-2 border-t border-slate-200">
+                        <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1.5">Active Seal Preview</span>
+                        <div class="h-14 bg-white rounded-lg border border-slate-200 flex items-center justify-center p-2">
+                            {% if settings.seal_choice == 'none' %}
+                            <span class="text-[10px] text-slate-400 italic">Seal disabled</span>
+                            {% elif settings.effective_seal_url %}
+                            <img src="{{ settings.effective_seal_url }}" alt="Company Seal" class="max-h-10 max-w-full object-contain">
+                            {% else %}
+                            <img src="{% static 'images/seal.png' %}" alt="Company Seal" class="max-h-10 max-w-full object-contain">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Authorized Signature Config -->
+                <div class="space-y-3 bg-slate-50/80 p-4 rounded-xl border border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="file-signature" class="w-4 h-4 text-purple-600"></i>
+                            Authorized Signatory
+                        </label>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Signatory Name</label>
+                            <input type="text" name="authorized_person_name" value="{{ settings.authorized_person_name|default:'Authorized Signatory' }}" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Upload Signature Image</label>
+                            <input type="file" name="signature_file" accept="image/*" class="w-full text-[11px] file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Or Signature Image URL</label>
+                            <input type="url" name="authorized_signature_url" value="{{ settings.authorized_signature_url|default:'' }}" placeholder="https://example.com/sign.png" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+                        </div>
+                    </div>
+
+                    <!-- Signature Preview -->
+                    <div class="pt-2 border-t border-slate-200">
+                        <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1.5">Active Signature Preview</span>
+                        <div class="h-14 bg-white rounded-lg border border-slate-200 flex items-center justify-center p-2">
+                            {% if settings.effective_signature_url %}
+                            <img src="{{ settings.effective_signature_url }}" alt="Signature" class="max-h-10 max-w-full object-contain">
+                            {% else %}
+                            <span class="font-serif italic text-blue-900 text-sm font-bold">{{ settings.authorized_person_name|default:"Authorized Signatory" }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Company Legal Information -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
             <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <i data-lucide="building" class="w-4 h-4 text-primary-600"></i>
-                Company Information & Branding
+                <i data-lucide="building" class="w-4 h-4 text-blue-600"></i>
+                Company Information & Tax Identifiers
             </h3>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -45,22 +197,12 @@
                     <input type="url" name="website" value="{{ settings.website|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 mb-1">Company Logo URL</label>
-                    <input type="url" name="logo_url" value="{{ settings.logo_url|default:'' }}" placeholder="https://example.com/logo.png" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+                    <label class="block font-bold text-slate-700 mb-1">GSTIN Number</label>
+                    <input type="text" name="gstin" value="{{ settings.gstin|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
                 </div>
-                {% if settings.logo_url %}
-                <div class="sm:col-span-2 bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-center gap-4">
-                    <span class="text-[11px] font-bold text-slate-500">Logo Preview:</span>
-                    <img src="{{ settings.logo_url }}" alt="Company Logo" class="h-10 max-w-[200px] object-contain rounded border border-slate-200 bg-white p-1">
-                </div>
-                {% endif %}
                 <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-700 mb-1">Registered Address *</label>
                     <textarea name="address" rows="2" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">{{ settings.address }}</textarea>
-                </div>
-                <div>
-                    <label class="block font-bold text-slate-700 mb-1">GSTIN Number</label>
-                    <input type="text" name="gstin" value="{{ settings.gstin|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">PAN Number</label>
@@ -72,8 +214,8 @@
         <!-- Banking & UPI Details -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
             <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <i data-lucide="landmark" class="w-4 h-4 text-primary-600"></i>
-                Bank Account & Payment Details
+                <i data-lucide="landmark" class="w-4 h-4 text-blue-600"></i>
+                Bank Account & Payment Transfer Details
             </h3>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -107,19 +249,19 @@
         <!-- Document Formats & Prefixes -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
             <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <i data-lucide="hash" class="w-4 h-4 text-primary-600"></i>
-                Document Numbering & Formatting
+                <i data-lucide="hash" class="w-4 h-4 text-blue-600"></i>
+                Document Numbering & Formatting Defaults
             </h3>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">Quotation Prefix</label>
-                    <input type="text" name="quotation_prefix" value="{{ settings.quotation_prefix|default:'XT-QT' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-primary-700">
+                    <input type="text" name="quotation_prefix" value="{{ settings.quotation_prefix|default:'XT-QT' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-blue-700">
                     <p class="text-[10px] text-slate-400 mt-1">Example: XT-QT-2026-0001</p>
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 mb-1">Agreement Prefix</label>
-                    <input type="text" name="agreement_prefix" value="{{ settings.agreement_prefix|default:'XT-AGR' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-primary-700">
+                    <input type="text" name="agreement_prefix" value="{{ settings.agreement_prefix|default:'XT-AGR' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-blue-700">
                     <p class="text-[10px] text-slate-400 mt-1">Example: XT-AGR-2026-0001</p>
                 </div>
                 <div>
@@ -130,20 +272,6 @@
                         <option value="EUR" {% if settings.default_currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block font-bold text-slate-700 mb-1">Authorized Representative Name</label>
-                    <input type="text" name="authorized_person_name" value="{{ settings.authorized_person_name|default:'' }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="block font-bold text-slate-700 mb-1">Authorized Signature Image URL</label>
-                    <input type="url" name="authorized_signature_url" value="{{ settings.authorized_signature_url|default:'' }}" placeholder="https://example.com/signature.png" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
-                </div>
-                {% if settings.authorized_signature_url %}
-                <div class="sm:col-span-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-center gap-4">
-                    <span class="text-[11px] font-bold text-slate-500">Signature Preview:</span>
-                    <img src="{{ settings.authorized_signature_url }}" alt="Authorized Signature" class="h-10 max-w-[200px] object-contain rounded border border-slate-200 bg-white p-1">
-                </div>
-                {% endif %}
                 <div class="sm:col-span-3">
                     <label class="block font-bold text-slate-700 mb-1">Document Footer Notice</label>
                     <textarea name="footer_text" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">{{ settings.footer_text|default:'' }}</textarea>
@@ -152,10 +280,26 @@
         </div>
 
         <div class="flex justify-end gap-3 pt-2">
-            <button type="submit" class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs shadow-md active:scale-98 transition-all">
+            <button type="submit" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md shadow-blue-600/20 active:scale-98 transition-all">
                 Save Document Settings
             </button>
         </div>
     </form>
 </div>
+
+<script>
+    lucide.createIcons();
+
+    function toggleLogoFields() {
+        const choice = document.querySelector('input[name="logo_choice"]:checked').value;
+        document.getElementById('logoUploadField').classList.toggle('hidden', choice !== 'upload');
+        document.getElementById('logoUrlField').classList.toggle('hidden', choice !== 'url');
+    }
+
+    function toggleSealFields() {
+        const choice = document.querySelector('input[name="seal_choice"]:checked').value;
+        document.getElementById('sealUploadField').classList.toggle('hidden', choice !== 'upload');
+        document.getElementById('sealUrlField').classList.toggle('hidden', choice !== 'url');
+    }
+</script>
 {% endblock %}
