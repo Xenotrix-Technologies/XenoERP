@@ -758,19 +758,33 @@ def create_agreement_view(request):
             agreement = Agreement.objects.create(
                 organization=org,
                 agreement_number=agreement_number,
-                date=request.POST.get('date'),
-                start_date=request.POST.get('start_date'),
-                end_date=request.POST.get('end_date'),
-                client_name=request.POST.get('client_name'),
+                date=request.POST.get('date') or timezone.now().date(),
+                start_date=request.POST.get('start_date') or timezone.now().date(),
+                end_date=request.POST.get('end_date') or (timezone.now().date() + timedelta(days=365)),
+                client_name=request.POST.get('client_name', ''),
                 company_name=request.POST.get('company_name', ''),
                 client_email=request.POST.get('client_email', ''),
                 client_phone=request.POST.get('client_phone', ''),
                 client_address=request.POST.get('client_address', ''),
+                gstin=request.POST.get('gstin', ''),
                 service=service,
+                agreement_type=request.POST.get('agreement_type', 'Universal Service Agreement'),
+                project_name=request.POST.get('project_name', ''),
                 monthly_fee=request.POST.get('monthly_fee') or 0.00,
                 advance_payment=request.POST.get('advance_payment') or 0.00,
+                total_value=request.POST.get('total_value') or 0.00,
                 payment_cycle=request.POST.get('payment_cycle', 'Monthly'),
                 payment_method=request.POST.get('payment_method', 'Bank Transfer'),
+                scope_of_work=request.POST.get('scope_of_work', ''),
+                deliverables_text=request.POST.get('deliverables_text', ''),
+                payment_terms_text=request.POST.get('payment_terms_text', ''),
+                governing_law=request.POST.get('governing_law', 'Laws of Telangana, India'),
+                confidentiality_clause=request.POST.get('confidentiality_clause', ''),
+                ip_clause=request.POST.get('ip_clause', ''),
+                termination_clause=request.POST.get('termination_clause', ''),
+                refund_policy=request.POST.get('refund_policy', ''),
+                limitation_liability=request.POST.get('limitation_liability', ''),
+                dispute_resolution=request.POST.get('dispute_resolution', ''),
                 posts_count=request.POST.get('posts_count') or 0,
                 campaigns_count=request.POST.get('campaigns_count') or 0,
                 revisions=request.POST.get('revisions') or 3,
@@ -827,14 +841,15 @@ def update_agreement_view(request, agreement_id):
     
     if request.method == 'POST':
         try:
-            agreement.date = request.POST.get('date')
-            agreement.start_date = request.POST.get('start_date')
-            agreement.end_date = request.POST.get('end_date')
-            agreement.client_name = request.POST.get('client_name')
+            agreement.date = request.POST.get('date') or timezone.now().date()
+            agreement.start_date = request.POST.get('start_date') or timezone.now().date()
+            agreement.end_date = request.POST.get('end_date') or (timezone.now().date() + timedelta(days=365))
+            agreement.client_name = request.POST.get('client_name', '')
             agreement.company_name = request.POST.get('company_name', '')
             agreement.client_email = request.POST.get('client_email', '')
             agreement.client_phone = request.POST.get('client_phone', '')
             agreement.client_address = request.POST.get('client_address', '')
+            agreement.gstin = request.POST.get('gstin', '')
             
             service_id = request.POST.get('service')
             service = None
@@ -844,10 +859,23 @@ def update_agreement_view(request, agreement_id):
                 except (ValueError, Service.DoesNotExist):
                     pass
             agreement.service = service
+            agreement.agreement_type = request.POST.get('agreement_type', agreement.agreement_type or 'Universal Service Agreement')
+            agreement.project_name = request.POST.get('project_name', agreement.project_name)
             agreement.monthly_fee = request.POST.get('monthly_fee') or 0.00
             agreement.advance_payment = request.POST.get('advance_payment') or 0.00
+            agreement.total_value = request.POST.get('total_value') or agreement.total_value or 0.00
             agreement.payment_cycle = request.POST.get('payment_cycle', 'Monthly')
             agreement.payment_method = request.POST.get('payment_method', 'Bank Transfer')
+            agreement.scope_of_work = request.POST.get('scope_of_work', agreement.scope_of_work)
+            agreement.deliverables_text = request.POST.get('deliverables_text', agreement.deliverables_text)
+            agreement.payment_terms_text = request.POST.get('payment_terms_text', agreement.payment_terms_text)
+            agreement.governing_law = request.POST.get('governing_law', agreement.governing_law or 'Laws of Telangana, India')
+            agreement.confidentiality_clause = request.POST.get('confidentiality_clause', agreement.confidentiality_clause)
+            agreement.ip_clause = request.POST.get('ip_clause', agreement.ip_clause)
+            agreement.termination_clause = request.POST.get('termination_clause', agreement.termination_clause)
+            agreement.refund_policy = request.POST.get('refund_policy', agreement.refund_policy)
+            agreement.limitation_liability = request.POST.get('limitation_liability', agreement.limitation_liability)
+            agreement.dispute_resolution = request.POST.get('dispute_resolution', agreement.dispute_resolution)
             agreement.posts_count = request.POST.get('posts_count') or 0
             agreement.campaigns_count = request.POST.get('campaigns_count') or 0
             agreement.revisions = request.POST.get('revisions') or 3

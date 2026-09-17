@@ -115,24 +115,60 @@
                 </div>
             </div>
 
-            <!-- Scope of Work -->
-            <div class="space-y-2 text-xs leading-relaxed text-slate-700">
-                <h3 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-l-4 border-slate-900 pl-2">2. SCOPE OF WORK & DELIVERABLES</h3>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 whitespace-pre-line">
-                    {{ agreement.scope_of_work|default:"Scope as defined in approved quotation." }}
-                </div>
+            <!-- Scope of Work & Multi-Service Streams -->
+            <div class="space-y-3 text-xs leading-relaxed text-slate-700">
+                <h3 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-l-4 border-slate-900 pl-2">2. SCOPE OF SERVICES & DELIVERABLES</h3>
+                
+                {% if agreement.services.exists %}
+                    <div class="space-y-3">
+                        {% for svc in agreement.services.all %}
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <h4 class="font-bold text-slate-900 text-xs mb-1">2.{{ forloop.counter }} {{ svc.title }}</h4>
+                            <p class="text-slate-600">{{ svc.description|default:"Deliverables executed as per scope specifications." }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% elif agreement.scope_of_work %}
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 whitespace-pre-line">
+                        {{ agreement.scope_of_work }}
+                    </div>
+                {% endif %}
+
+                {% if agreement.deliverables.exists %}
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-1.5">
+                        <span class="font-bold text-slate-800 block text-[11px] uppercase tracking-wider">Approved Deliverables Checklist:</span>
+                        <ul class="list-disc pl-4 space-y-1 text-slate-600">
+                            {% for d in agreement.deliverables.all %}
+                            <li>{{ d.title }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% elif agreement.deliverables_text %}
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 whitespace-pre-line text-slate-600">
+                        {{ agreement.deliverables_text }}
+                    </div>
+                {% endif %}
             </div>
 
-            <!-- Pricing & Payment Terms -->
+            <!-- Pricing & Commercial Matrix -->
             <div class="space-y-2 text-xs leading-relaxed text-slate-700">
-                <h3 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-l-4 border-slate-900 pl-2">3. FINANCIAL CONSIDERATION & PAYMENT TERMS</h3>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-2">
-                    <p class="font-bold text-slate-900 text-sm">Total Agreement Value: ₹{{ agreement.total_value|floatformat:2 }}</p>
+                <h3 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-l-4 border-slate-900 pl-2">3. FINANCIAL CONSIDERATION & COMMERCIAL SCHEDULE</h3>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                        <span class="text-slate-500 font-semibold">Total Contract Value:</span>
+                        <span class="font-bold text-slate-900 font-mono text-sm">₹{{ agreement.total_value|floatformat:2 }}</span>
+                    </div>
                     {% if agreement.monthly_fee > 0 %}
-                    <p class="font-bold text-blue-700">Recurring Monthly Fee: ₹{{ agreement.monthly_fee|floatformat:2 }} / Month</p>
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                        <span class="text-blue-700 font-semibold">Monthly Recurring Retainer:</span>
+                        <span class="font-bold text-blue-700 font-mono text-sm">₹{{ agreement.monthly_fee|floatformat:2 }} / Month</span>
+                    </div>
                     {% endif %}
-                    <div class="whitespace-pre-line text-slate-600 pt-2 border-t border-slate-200">
-                        {{ agreement.payment_terms_text|default:"Payment schedule according to agreed milestones." }}
+                    <div>
+                        <span class="font-bold text-slate-800 text-[11px] uppercase tracking-wider block mb-1">Payment Schedule Terms:</span>
+                        <div class="whitespace-pre-line text-slate-600">
+                            {{ agreement.payment_terms_text|default:"Payment schedule according to agreed milestones and advance invoices." }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -140,10 +176,11 @@
             <!-- Terms & Governing Law -->
             <div class="space-y-3 text-xs leading-relaxed text-slate-700">
                 <h3 class="font-bold text-slate-900 uppercase text-xs tracking-wider border-l-4 border-slate-900 pl-2">4. GENERAL TERMS & GOVERNING LAW</h3>
-                <ul class="list-disc pl-5 space-y-1 text-slate-600">
-                    <li><strong>Confidentiality:</strong> Both parties agree to maintain strict confidentiality regarding project materials and intellectual property.</li>
+                <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                    <li><strong>Confidentiality:</strong> {{ agreement.confidentiality_clause|default:"Both parties agree to maintain strict confidentiality regarding project materials and intellectual property." }}</li>
+                    <li><strong>Intellectual Property:</strong> {{ agreement.ip_clause|default:"All deliverables and source code IP are transferred upon final invoice settlement." }}</li>
                     <li><strong>Governing Law:</strong> This Agreement shall be governed by and construed in accordance with the <strong>{{ agreement.governing_law }}</strong>.</li>
-                    <li><strong>Termination:</strong> Either party may terminate this agreement by providing a 30-day written notice.</li>
+                    <li><strong>Termination:</strong> Either party may terminate this agreement by providing a <strong>{{ agreement.notice_period|default:30 }}-day written notice</strong>.</li>
                 </ul>
             </div>
 

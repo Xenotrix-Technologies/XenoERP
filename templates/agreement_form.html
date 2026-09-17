@@ -1,656 +1,864 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}XenoCRM | {{ action }} Agreement{% endblock %}
+{% block title %}XenoCRM | {{ action }} Universal Service Agreement{% endblock %}
+
+{% block extra_head %}
+<style>
+    .stepper-active { border-color: #2563eb !important; color: #2563eb !important; background-color: #eff6ff !important; }
+    .stepper-completed { border-color: #10b981 !important; color: #10b981 !important; background-color: #ecfdf5 !important; }
+    .font-signature { font-family: 'Times New Roman', Georgia, serif; font-style: italic; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="p-margin-edge flex-1 flex flex-col bg-surface-container-low overflow-y-auto custom-scrollbar">
-    <!-- Header -->
-    <div class="flex justify-between items-end mb-6">
+<div class="p-margin-edge flex-1 flex flex-col bg-slate-50 overflow-y-auto custom-scrollbar min-h-screen">
+    
+    <!-- Top Action Bar -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-            <h2 class="font-headline-lg text-headline-lg text-on-background">{{ action }} Service Agreement</h2>
-            <p class="text-secondary font-body-md">Fill out the form below to compile an enterprise-grade digital marketing agreement.</p>
+            <div class="flex items-center gap-2">
+                <a href="{% url 'agreements' %}" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition-all">
+                    <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                </a>
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight">{{ action }} Universal Service Agreement</h2>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
+                    Multi-Service Engine
+                </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Configure multi-service deliverables, commercial pricing terms, and automated legal clauses.</p>
         </div>
-        <a href="{% url 'agreements' %}" class="flex items-center px-4 py-2 border border-outline-variant text-secondary rounded-lg font-button text-button hover:bg-slate-50">
-            Cancel
-        </a>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'agreements' %}" class="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold hover:bg-white transition-all">
+                Cancel
+            </a>
+            <button type="button" onclick="submitAgreementForm()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center gap-1.5 transition-all">
+                <span class="material-symbols-outlined text-[16px]">save</span>
+                <span>Save Agreement</span>
+            </button>
+        </div>
     </div>
 
-    <!-- Form Container -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-outline-variant/30 max-w-4xl mx-auto w-full">
-        <form method="POST" class="space-y-6">
-            {% csrf_token %}
-            
-            <input type="hidden" name="project_estimation_json" id="project_estimation_json" value="{{ agreement.project_estimation_json|default:''|escape }}">
-
-            <!-- Project Package Configuration -->
-            <div class="space-y-4">
-                <div class="flex justify-between items-center border-b border-outline-variant/30 pb-2 cursor-pointer group" onclick="document.getElementById('package-config-body').classList.toggle('hidden')">
-                    <h3 class="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[16px]">calculate</span> Project Estimator
-                    </h3>
-                    <span class="text-xs text-secondary ml-2 flex-1">Estimate project cost and auto-fill agreement details.</span>
-                    <span class="material-symbols-outlined text-[18px] text-outline group-hover:text-primary transition-colors">expand_more</span>
-                </div>
-                
-                <div id="package-config-body" class="bg-slate-50/40 border border-outline-variant/30 rounded-xl p-5 hidden">
-                    <div class="flex flex-col lg:flex-row gap-6">
-                        <!-- Left Side: Configurator -->
-                        <div class="flex-1 space-y-6">
-                            
-                            <!-- Service Selection -->
-                            <div>
-                                <label class="block text-label-md font-label-md text-outline uppercase mb-2">Select Service</label>
-                                <select id="config-service" class="w-full bg-white border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary transition-all">
-                                    <option value="" disabled selected>-- Select a Service Category --</option>
-                                    <option value="Website Development">Website Development</option>
-                                    <option value="Mobile App Development">Mobile App Development</option>
-                                    <option value="AI Solutions">AI Solutions</option>
-                                    <option value="Data Analytics">Data Analytics</option>
-                                    <option value="UI/UX Design">UI/UX Design</option>
-                                    <option value="Digital Marketing">Digital Marketing</option>
-                                    <option value="SaaS Development">SaaS Development</option>
-                                    <option value="Automation Solutions">Automation Solutions</option>
-                                    <option value="Backend Development">Backend Development</option>
-                                </select>
-                            </div>
-
-                            <!-- Packages Selection -->
-                            <div id="packages-section" class="hidden">
-                                <label class="block text-label-md font-label-md text-outline uppercase mb-2">Select Package</label>
-                                <div id="packages-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <!-- Dynamic Packages inserted here -->
-                                </div>
-                            </div>
-
-                            <!-- Optional Services (Add-ons) -->
-                            <div id="addons-section" class="hidden">
-                                <label class="block text-label-md font-label-md text-outline uppercase mb-2">Optional Services</label>
-                                <div class="grid grid-cols-2 md:grid-cols-3 gap-3" id="addons-container">
-                                    <!-- Add-ons inserted here -->
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <!-- Timeline -->
-                                <div>
-                                    <label class="block text-label-md font-label-md text-outline uppercase mb-2">Project Timeline</label>
-                                    <select id="config-timeline" class="w-full bg-white border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary">
-                                        <option value="Flexible">Flexible (Standard Rate)</option>
-                                        <option value="2 Months">2 Months (Standard Rate)</option>
-                                        <option value="1 Month">1 Month (+10% Rush Fee)</option>
-                                        <option value="2 Weeks">2 Weeks (+25% Rush Fee)</option>
-                                        <option value="Urgent">Urgent (+50% Priority Fee)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Requirements -->
-                            <div>
-                                <label class="block text-label-md font-label-md text-outline uppercase mb-2">Project Requirements</label>
-                                <textarea id="config-requirements" rows="3" placeholder="Enter specific client requirements, technical notes, or constraints..." class="w-full bg-white border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary"></textarea>
-                            </div>
-
-                        </div>
-
-                        <!-- Right Side: Live Estimate Panel -->
-                        <div class="w-full lg:w-80 flex-shrink-0">
-                            <div class="bg-white border border-outline-variant rounded-xl p-5 shadow-sm sticky top-6">
-                                <h4 class="text-sm font-bold text-on-surface mb-4 border-b border-outline-variant/30 pb-2">Live Estimate Summary</h4>
-                                
-                                <div class="space-y-3 text-sm">
-                                    <div class="flex justify-between">
-                                        <span class="text-secondary">Service:</span>
-                                        <span id="summary-service" class="font-medium text-right">-</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-secondary">Package:</span>
-                                        <span id="summary-package" class="font-medium text-right">-</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-secondary">Package Price:</span>
-                                        <span id="summary-base-price" class="font-mono font-medium">₹0</span>
-                                    </div>
-                                    
-                                    <div class="border-t border-outline-variant/30 pt-2 pb-1">
-                                        <span class="text-xs font-bold text-outline uppercase">Add-ons</span>
-                                        <ul id="summary-addons-list" class="mt-1 space-y-1 text-xs text-secondary">
-                                            <!-- Addons list -->
-                                        </ul>
-                                    </div>
-
-                                    <div class="flex justify-between text-xs">
-                                        <span class="text-secondary">Timeline Surcharge:</span>
-                                        <span id="summary-timeline-fee" class="font-mono text-error">₹0</span>
-                                    </div>
-
-                                    <div class="flex justify-between text-xs">
-                                        <span class="text-secondary">Discount:</span>
-                                        <input type="number" id="config-discount" value="0" class="w-16 bg-slate-50 border border-outline-variant rounded px-1 py-0.5 text-right font-mono" min="0">
-                                    </div>
-
-                                    <div class="flex justify-between text-xs pt-1">
-                                        <span class="text-secondary">GST (18%):</span>
-                                        <span id="summary-gst" class="font-mono text-on-surface">₹0</span>
-                                    </div>
-
-                                    <div class="border-t-2 border-outline-variant pt-2 mt-2">
-                                        <div class="flex justify-between items-center">
-                                            <span class="font-bold text-primary">Grand Total:</span>
-                                            <span id="summary-total" class="font-mono font-bold text-lg text-primary">₹0</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="mt-4 pt-4 border-t border-outline-variant/30 text-center">
-                                        <span class="text-xs text-secondary block mb-1">Estimated Delivery:</span>
-                                        <span id="summary-delivery" class="text-sm font-medium text-on-surface">TBD</span>
-                                    </div>
-
-                                    <button type="button" id="btn-calculate" class="w-full mt-4 bg-secondary text-white py-2 rounded-lg font-button text-xs hover:opacity-90 transition-all flex justify-center items-center gap-1 shadow-sm">
-                                        <span class="material-symbols-outlined text-[16px]">task_alt</span> Apply to Agreement
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Basic Details Section -->
-            <div class="space-y-4">
-                <h3 class="text-xs font-bold text-primary uppercase tracking-wider border-b border-outline-variant/30 pb-2">1. Agreement Information</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Agreement Date *</label>
-                        <input type="date" name="date" required value="{{ agreement.date|date:'Y-m-d'|default:'' }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary"/>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Start Date *</label>
-                        <input type="date" name="start_date" required value="{{ agreement.start_date|date:'Y-m-d'|default:'' }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary"/>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">End Date *</label>
-                        <input type="date" name="end_date" required value="{{ agreement.end_date|date:'Y-m-d'|default:'' }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary"/>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Client Info Section -->
-            <div class="space-y-4 pt-4">
-                <h3 class="text-xs font-bold text-primary uppercase tracking-wider border-b border-outline-variant/30 pb-2">2. Client Details</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Client Contact Name *</label>
-                        <input type="text" name="client_name" required value="{{ agreement.client_name|default:'' }}" placeholder="e.g. John Doe" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary"/>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Company / Organization Name</label>
-                        <input type="text" name="company_name" value="{{ agreement.company_name|default:'' }}" placeholder="e.g. Acme Corp" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary"/>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Client Email</label>
-                        <input type="email" name="client_email" value="{{ agreement.client_email|default:'' }}" placeholder="client@example.com" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary"/>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Client Phone</label>
-                        <input type="text" name="client_phone" value="{{ agreement.client_phone|default:'' }}" placeholder="+1-202-555-0143" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary"/>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Service Offered *</label>
-                        <select name="service" required class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary">
-                            <option value="" disabled selected>-- Select Service --</option>
-                            {% for svc in services %}
-                            <option value="{{ svc.id }}" {% if agreement.service.id == svc.id %}selected{% endif %}>{{ svc.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
+    <!-- 4-Step Stepper Header -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 max-w-5xl mx-auto w-full">
+        <div id="step-tab-1" onclick="goToStep(1)" class="cursor-pointer p-3.5 rounded-2xl border-2 stepper-active transition-all bg-white shadow-xs">
+            <div class="flex items-center gap-2.5">
+                <span id="step-badge-1" class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">1</span>
                 <div>
-                    <label class="block text-label-md font-label-md text-outline uppercase mb-1">Client Address</label>
-                    <textarea name="client_address" rows="2" placeholder="Street, City, Zip Code" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary">{{ agreement.client_address|default:'' }}</textarea>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Step 1</p>
+                    <p class="text-xs font-bold text-slate-800">Client & Info</p>
                 </div>
             </div>
-
-            <!-- Campaign Scope Specs & Term Details -->
-            <div class="space-y-4 pt-4">
-                <h3 class="text-xs font-bold text-primary uppercase tracking-wider border-b border-outline-variant/30 pb-2">3. Campaigns & Billing Specifications</h3>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Monthly Fee ($) *</label>
-                        <input type="number" step="0.01" name="monthly_fee" required value="{{ agreement.monthly_fee|default:'0.00' }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary font-mono"/>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Advance Payment ($)</label>
-                        <input type="number" step="0.01" name="advance_payment" value="{{ agreement.advance_payment|default:'0.00' }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary font-mono"/>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Payment Cycle</label>
-                        <select name="payment_cycle" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary">
-                            <option value="Monthly" {% if agreement.payment_cycle == 'Monthly' %}selected{% endif %}>Monthly</option>
-                            <option value="Bi-Weekly" {% if agreement.payment_cycle == 'Bi-Weekly' %}selected{% endif %}>Bi-Weekly</option>
-                            <option value="One-Time" {% if agreement.payment_cycle == 'One-Time' %}selected{% endif %}>One-Time</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Payment Method</label>
-                        <input type="text" name="payment_method" value="{{ agreement.payment_method|default:'Bank Transfer' }}" placeholder="Bank Transfer, Card, etc." class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary"/>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Monthly Social Posts</label>
-                        <input type="number" name="posts_count" value="{{ agreement.posts_count|default:0 }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary font-mono"/>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Ad Campaigns</label>
-                        <input type="number" name="campaigns_count" value="{{ agreement.campaigns_count|default:0 }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary font-mono"/>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Max Revisions Allowed</label>
-                        <input type="number" name="revisions" value="{{ agreement.revisions|default:3 }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary font-mono"/>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Notice Period (Days)</label>
-                        <input type="number" name="notice_period" value="{{ agreement.notice_period|default:30 }}" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary font-mono"/>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Agreement Status</label>
-                        <select name="status" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary">
-                            <option value="Draft" {% if agreement.status == 'Draft' %}selected{% endif %}>Draft</option>
-                            <option value="Active" {% if agreement.status == 'Active' %}selected{% endif %}>Active</option>
-                            <option value="Completed" {% if agreement.status == 'Completed' %}selected{% endif %}>Completed</option>
-                            <option value="Cancelled" {% if agreement.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-label-md font-label-md text-outline uppercase mb-1">Special Notes / Clauses</label>
-                        <input type="text" name="notes" value="{{ agreement.notes|default:'' }}" placeholder="Custom details..." class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-body-sm focus:ring-1 focus:ring-primary focus:border-primary"/>
-                    </div>
+        </div>
+        <div id="step-tab-2" onclick="goToStep(2)" class="cursor-pointer p-3.5 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 transition-all shadow-xs">
+            <div class="flex items-center gap-2.5">
+                <span id="step-badge-2" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center">2</span>
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Step 2</p>
+                    <p class="text-xs font-bold text-slate-800">Services & Scope</p>
                 </div>
             </div>
-
-            <!-- Dynamic Services Section -->
-            <div class="space-y-4 pt-4">
-                <div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
-                    <h3 class="text-xs font-bold text-primary uppercase tracking-wider">4. Scope of Services</h3>
-                    <button type="button" onclick="addServiceRow()" class="text-xs text-primary font-bold hover:underline flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[16px]">add_circle</span> Add Service
-                    </button>
+        </div>
+        <div id="step-tab-3" onclick="goToStep(3)" class="cursor-pointer p-3.5 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 transition-all shadow-xs">
+            <div class="flex items-center gap-2.5">
+                <span id="step-badge-3" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center">3</span>
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Step 3</p>
+                    <p class="text-xs font-bold text-slate-800">Commercial Matrix</p>
                 </div>
-                <div id="services-container" class="space-y-3">
-                    {% for svc in agreement.services.all %}
-                    <div class="flex gap-3 items-start service-row bg-slate-50/50 p-3 rounded-xl border border-outline-variant/20">
-                        <div class="flex-1 space-y-2">
-                            <input type="text" name="service_title[]" required value="{{ svc.title }}" placeholder="e.g. Social Media Management" class="w-full bg-white border border-outline-variant rounded-lg px-3 py-1.5 text-xs font-bold focus:ring-1 focus:ring-primary"/>
-                            <textarea name="service_desc[]" rows="2" placeholder="Details/channels..." class="w-full bg-white border border-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary">{{ svc.description|default:'' }}</textarea>
+            </div>
+        </div>
+        <div id="step-tab-4" onclick="goToStep(4)" class="cursor-pointer p-3.5 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 transition-all shadow-xs">
+            <div class="flex items-center gap-2.5">
+                <span id="step-badge-4" class="w-6 h-6 rounded-full bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center">4</span>
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Step 4</p>
+                    <p class="text-xs font-bold text-slate-800">Clauses & Preview</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wizard Form Container -->
+    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 max-w-5xl mx-auto w-full mb-12">
+        <form id="universalAgreementForm" method="POST" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- Hidden aggregated fields for backend compatibility -->
+            <input type="hidden" name="agreement_type" id="id_agreement_type" value="{{ agreement.agreement_type|default:'Universal Master Service Agreement' }}">
+            <input type="hidden" name="scope_of_work" id="id_scope_of_work" value="{{ agreement.scope_of_work|default:'' }}">
+            <input type="hidden" name="deliverables_text" id="id_deliverables_text" value="{{ agreement.deliverables_text|default:'' }}">
+            <input type="hidden" name="payment_terms_text" id="id_payment_terms_text" value="{{ agreement.payment_terms_text|default:'' }}">
+            <input type="hidden" name="total_value" id="id_total_value" value="{{ agreement.total_value|default:'0.00' }}">
+            <input type="hidden" name="monthly_fee" id="id_monthly_fee" value="{{ agreement.monthly_fee|default:'0.00' }}">
+            <input type="hidden" name="advance_payment" id="id_advance_payment" value="{{ agreement.advance_payment|default:'0.00' }}">
+            <input type="hidden" name="project_estimation_json" id="id_project_estimation_json" value="{{ agreement.project_estimation_json|default:''|escape }}">
+            <input type="hidden" name="status" id="id_status" value="{{ agreement.status|default:'Draft' }}">
+
+            <!-- Dynamic Hidden Service & Deliverable inputs rendered via JS -->
+            <div id="dynamicHiddenInputs"></div>
+
+            <!-- STEP 1: CLIENT & GENERAL PARAMETERS -->
+            <section id="step-panel-1" class="space-y-6">
+                <div class="border-b border-slate-100 pb-4">
+                    <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">badge</span>
+                        Step 1: Client & General Information
+                    </h3>
+                    <p class="text-xs text-slate-500">Provide legal party entity details, reference quotation, and execution timelines.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Client Entity -->
+                    <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-4">
+                        <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px] text-blue-600">person</span> Client (Second Party)
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Contact Person Name *</label>
+                                <input type="text" name="client_name" id="f_client_name" required value="{{ agreement.client_name|default:'' }}" placeholder="e.g. Rahul Sharma" class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Legal Business Name *</label>
+                                <input type="text" name="company_name" id="f_company_name" value="{{ agreement.company_name|default:'' }}" placeholder="e.g. Apex Global Solutions Pvt Ltd" class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                            </div>
                         </div>
-                        <button type="button" onclick="this.closest('.service-row').remove()" class="p-1 text-outline hover:text-red-600">
-                            <span class="material-symbols-outlined">delete</span>
-                        </button>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Registered Business Address *</label>
+                            <textarea name="client_address" id="f_client_address" rows="2" placeholder="Plot / Street, City, State, PIN" class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">{{ agreement.client_address|default:'' }}</textarea>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+                                <input type="email" name="client_email" id="f_client_email" value="{{ agreement.client_email|default:'' }}" placeholder="client@example.com" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Phone</label>
+                                <input type="text" name="client_phone" id="f_client_phone" value="{{ agreement.client_phone|default:'' }}" placeholder="+91 98765 43210" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">GSTIN / Tax ID</label>
+                                <input type="text" name="gstin" id="f_gstin" value="{{ agreement.gstin|default:'' }}" placeholder="36AABCA1234F1Z8" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono uppercase" />
+                            </div>
+                        </div>
                     </div>
-                    {% endfor %}
-                </div>
-            </div>
 
-            <!-- Dynamic Deliverables -->
-            <div class="space-y-4 pt-4">
-                <div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
-                    <h3 class="text-xs font-bold text-primary uppercase tracking-wider">5. Key Deliverables</h3>
-                    <button type="button" onclick="addDeliverableRow()" class="text-xs text-primary font-bold hover:underline flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[16px]">add_circle</span> Add Deliverable
+                    <!-- Contract Dates & Provider -->
+                    <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-4">
+                        <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px] text-emerald-600">calendar_month</span> Dates & References
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Agreement Date *</label>
+                                <input type="date" name="date" id="f_date" required value="{{ agreement.date|date:'Y-m-d'|default:'' }}" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Start Date *</label>
+                                <input type="date" name="start_date" id="f_start_date" required value="{{ agreement.start_date|date:'Y-m-d'|default:'' }}" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">End Date *</label>
+                                <input type="date" name="end_date" id="f_end_date" required value="{{ agreement.end_date|date:'Y-m-d'|default:'' }}" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs" />
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Governing Jurisdiction</label>
+                                <input type="text" name="governing_law" id="f_governing_law" value="{{ agreement.governing_law|default:'Laws of Telangana, India' }}" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Termination Notice (Days)</label>
+                                <input type="number" name="notice_period" id="f_notice_period" value="{{ agreement.notice_period|default:30 }}" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs" />
+                            </div>
+                        </div>
+                        <div class="p-3 bg-white rounded-xl border border-slate-200 text-xs text-slate-600">
+                            <span class="font-bold text-slate-900 block">First Party (Service Provider)</span>
+                            <span>{{ doc_settings.company_name|default:'Xenotrix Technologies / XenoERP' }} | {{ doc_settings.address|default:'Hyderabad, India' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-4">
+                    <button type="button" onclick="goToStep(2)" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20">
+                        <span>Continue to Service Selection</span>
+                        <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </button>
                 </div>
-                <div id="deliverables-container" class="space-y-2">
-                    {% for del in agreement.deliverables.all %}
-                    <div class="flex gap-3 items-center deliverable-row">
-                        <input type="text" name="deliverable_title[]" required value="{{ del.title }}" placeholder="e.g. 15 Facebook Post Designs" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary"/>
-                        <button type="button" onclick="this.closest('.deliverable-row').remove()" class="p-1 text-outline hover:text-red-600">
-                            <span class="material-symbols-outlined">delete</span>
-                        </button>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
+            </section>
 
-            <!-- Dynamic Client Responsibilities -->
-            <div class="space-y-4 pt-4">
-                <div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
-                    <h3 class="text-xs font-bold text-primary uppercase tracking-wider">6. Client Responsibilities</h3>
-                    <button type="button" onclick="addResponsibilityRow()" class="text-xs text-primary font-bold hover:underline flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[16px]">add_circle</span> Add Responsibility
+            <!-- STEP 2: MULTI-SERVICE SELECTION & DYNAMIC SCOPE BUILDER -->
+            <section id="step-panel-2" class="hidden space-y-6">
+                <div class="border-b border-slate-100 pb-4 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-blue-600">checklist</span>
+                            Step 2: Multi-Service Selection & Custom Scope Builder
+                        </h3>
+                        <p class="text-xs text-slate-500">Check 1 or more services. Deliverables populate automatically with instant editing and bullet point addition.</p>
+                    </div>
+                    <span id="ui-selected-service-count" class="text-xs font-bold px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
+                        0 Services Selected
+                    </span>
+                </div>
+
+                <!-- Service Catalog Cards -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" id="service-catalog-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+
+                <!-- Active Service Scope Accordions -->
+                <div class="space-y-4 mt-6">
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px] text-blue-600">format_list_bulleted</span> Configured Service Deliverables
+                    </h4>
+                    <div id="service-scopes-container" class="space-y-4">
+                        <!-- Dynamic scope editors populate here -->
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-4">
+                    <button type="button" onclick="goToStep(1)" class="px-5 py-2.5 border border-slate-300 text-slate-700 font-bold rounded-xl text-xs">
+                        Back
+                    </button>
+                    <button type="button" onclick="goToStep(3)" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20">
+                        <span>Proceed to Commercial Terms</span>
+                        <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </button>
                 </div>
-                <div id="responsibilities-container" class="space-y-2">
-                    {% for resp in agreement.responsibilities.all %}
-                    <div class="flex gap-3 items-center responsibility-row">
-                        <input type="text" name="responsibility_text[]" required value="{{ resp.responsibility }}" placeholder="e.g. Providing brand guidelines and graphic assets." class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary"/>
-                        <button type="button" onclick="this.closest('.responsibility-row').remove()" class="p-1 text-outline hover:text-red-600">
-                            <span class="material-symbols-outlined">delete</span>
+            </section>
+
+            <!-- STEP 3: INVESTMENT & COMMERCIAL TERMS GENERATOR -->
+            <section id="step-panel-3" class="hidden space-y-6">
+                <div class="border-b border-slate-100 pb-4">
+                    <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">payments</span>
+                        Step 3: Investment & Commercial Terms Generator
+                    </h3>
+                    <p class="text-xs text-slate-500">Specify investment pricing and customizable milestone payment terms for each stream.</p>
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase font-bold text-slate-600">
+                            <tr>
+                                <th class="px-4 py-3.5">Service Stream</th>
+                                <th class="px-4 py-3.5 w-36">Billing Type</th>
+                                <th class="px-4 py-3.5 w-44">Investment (₹)</th>
+                                <th class="px-4 py-3.5">Payment Terms & Milestones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="commercial-table-body" class="divide-y divide-slate-200">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Financial Calculation Summary Banner -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">One-Time Deliverable Investment</span>
+                        <p id="ui-summary-onetime" class="text-xl font-black text-slate-900 mt-1 font-mono">₹0.00</p>
+                    </div>
+                    <div class="p-4 bg-blue-50/60 border border-blue-200 rounded-2xl">
+                        <span class="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Monthly Recurring Retainer</span>
+                        <p id="ui-summary-recurring" class="text-xl font-black text-blue-700 mt-1 font-mono">₹0.00 / mo</p>
+                    </div>
+                    <div class="p-4 bg-emerald-50/60 border border-emerald-200 rounded-2xl">
+                        <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Initial Contract Value Commitment</span>
+                        <p id="ui-summary-total" class="text-xl font-black text-emerald-800 mt-1 font-mono">₹0.00</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-4">
+                    <button type="button" onclick="goToStep(2)" class="px-5 py-2.5 border border-slate-300 text-slate-700 font-bold rounded-xl text-xs">
+                        Back
+                    </button>
+                    <button type="button" onclick="goToStep(4)" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-blue-500/20">
+                        <span>Review Legal Clauses & Preview</span>
+                        <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- STEP 4: CLAUSE & TERM CONFIGURATION & PREVIEW -->
+            <section id="step-panel-4" class="hidden space-y-6">
+                <div class="border-b border-slate-100 pb-4">
+                    <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">gavel</span>
+                        Step 4: Legal Clause Configuration & Live Contract Preview
+                    </h3>
+                    <p class="text-xs text-slate-500">Service-specific conditional clauses are automatically included. Toggle clauses or append custom legal terms.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Clause Toggles Column -->
+                    <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-4">
+                        <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px] text-indigo-600">verified_user</span> Active Legal Clauses
+                        </h4>
+                        <div id="clause-toggle-list" class="space-y-2.5">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <button type="button" onclick="addCustomClause()" class="w-full py-2 border-2 border-dashed border-slate-300 rounded-xl text-xs font-bold text-slate-600 hover:bg-white flex items-center justify-center gap-1 transition-all">
+                            <span class="material-symbols-outlined text-[16px]">add</span> Add Custom Clause
                         </button>
                     </div>
-                    {% endfor %}
-                </div>
-            </div>
 
-            <!-- Action Buttons -->
-            <div class="pt-6 border-t border-outline-variant/30 flex justify-end gap-3">
-                <a href="{% url 'agreements' %}" class="px-5 py-2 border border-outline-variant text-secondary rounded-lg hover:bg-slate-50 font-button">Cancel</a>
-                <button type="submit" class="px-6 py-2 bg-primary text-on-primary font-button rounded-lg shadow-md hover:opacity-90 active:scale-95 transition-all">
-                    Save Agreement
-                </button>
-            </div>
+                    <!-- Live Contract Render Frame -->
+                    <div class="lg:col-span-2 p-6 bg-slate-900 rounded-3xl shadow-xl border border-slate-800 text-slate-100">
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800 text-xs">
+                            <span class="font-mono text-emerald-400 font-bold flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Live Contract Preview
+                            </span>
+                            <span class="text-slate-400 text-[11px]" id="preview-section-count">Sections: 0</span>
+                        </div>
+                        <div id="contract-live-preview" class="mt-4 max-h-[480px] overflow-y-auto space-y-4 pr-2 text-xs leading-relaxed text-slate-300 font-sans">
+                            <!-- Live Rendered Document -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-4">
+                    <button type="button" onclick="goToStep(3)" class="px-5 py-2.5 border border-slate-300 text-slate-700 font-bold rounded-xl text-xs">
+                        Back
+                    </button>
+                    <button type="button" onclick="submitAgreementForm()" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-xs shadow-xl shadow-emerald-600/30 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">done_all</span>
+                        <span>Save & Compile Agreement</span>
+                    </button>
+                </div>
+            </section>
+
         </form>
     </div>
 </div>
 
+<!-- Dynamic State & Universal Engine Script -->
 <script>
-    function addServiceRow() {
-        const container = document.getElementById('services-container');
-        const html = `
-            <div class="flex gap-3 items-start service-row bg-slate-50/50 p-3 rounded-xl border border-outline-variant/20">
-                <div class="flex-1 space-y-2">
-                    <input type="text" name="service_title[]" required placeholder="e.g. Meta Ads Management" class="w-full bg-white border border-outline-variant rounded-lg px-3 py-1.5 text-xs font-bold focus:ring-1 focus:ring-primary"/>
-                    <textarea name="service_desc[]" rows="2" placeholder="Details/channels..." class="w-full bg-white border border-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary"></textarea>
-                </div>
-                <button type="button" onclick="this.closest('.service-row').remove()" class="p-1 text-outline hover:text-red-600">
-                    <span class="material-symbols-outlined">delete</span>
-                </button>
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', html);
-    }
-
-    function addDeliverableRow() {
-        const container = document.getElementById('deliverables-container');
-        const html = `
-            <div class="flex gap-3 items-center deliverable-row">
-                <input type="text" name="deliverable_title[]" required placeholder="e.g. Monthly Performance Reports" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary"/>
-                <button type="button" onclick="this.closest('.deliverable-row').remove()" class="p-1 text-outline hover:text-red-600">
-                    <span class="material-symbols-outlined">delete</span>
-                </button>
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', html);
-    }
-
-    function addResponsibilityRow() {
-        const container = document.getElementById('responsibilities-container');
-        const html = `
-            <div class="flex gap-3 items-center responsibility-row">
-                <input type="text" name="responsibility_text[]" required placeholder="e.g. Fast approval of draft assets (within 48 hours)." class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-primary"/>
-                <button type="button" onclick="this.closest('.responsibility-row').remove()" class="p-1 text-outline hover:text-red-600">
-                    <span class="material-symbols-outlined">delete</span>
-                </button>
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', html);
-    }
-
-    // Initialize with empty rows if creating
-    {% if action == 'Create' %}
-    window.addEventListener('DOMContentLoaded', () => {
-        if (document.querySelectorAll('.service-row').length === 0) addServiceRow();
-        if (document.querySelectorAll('.deliverable-row').length === 0) addDeliverableRow();
-        if (document.querySelectorAll('.responsibility-row').length === 0) addResponsibilityRow();
-    });
-    {% endif %}
-
-    // ---- Project Package Configurator JS ----
-    const packagesData = {
-        'Website Development': [
-            { name: 'Starter', price: 12000, desc: '₹12k - ₹18k. Perfect for Small Startups & Personal Brands', features: ['Up to 5 Pages', 'Mobile Responsive Design', 'Contact Form', 'WhatsApp Integration', 'Basic SEO', 'SSL Setup'], time: '2 Weeks' },
-            { name: 'Business', price: 20000, desc: '₹20k - ₹35k. Ideal for Growing Businesses', features: ['Up to 10 Pages', 'Custom UI Design', 'Blog', 'Social Media Integration', 'Analytics Setup', 'Speed Optimization', 'Business Email Setup'], time: '3-4 Weeks', recommended: true },
-            { name: 'Professional', price: 35000, desc: '₹35k - ₹60k. Advanced Features for Business Growth', features: ['Everything in Business Package', 'User Login System', 'Booking System', 'Admin Dashboard', 'API Integrations', 'Advanced SEO'], time: '1-1.5 Months' },
-            { name: 'E-Commerce', price: 45000, desc: '₹45k - ₹1.2L+. Custom E-commerce Websites (Full Stack)', features: ['Product Management', 'Cart & Checkout', 'Payment Gateway Integration', 'Order Management System', 'Customer Accounts', 'Admin Dashboard', 'SEO + Performance Optimization'], time: '1.5-2 Months' },
-            { name: 'Shopify', price: 25000, desc: '₹25k - ₹70k. Fast & Scalable Online Stores with Shopify', features: ['Shopify Store Setup', 'Theme Setup & Customization', 'Product Upload', 'Collections & Navigation Setup', 'Payment Gateway', 'Shipping Configuration', 'Basic SEO', 'App Integrations', 'Mobile Optimization'], time: '3-4 Weeks' }
-        ],
-        'Digital Marketing': [
-            { name: 'Starter Growth', price: 18000, desc: 'Best for Startups & Small Businesses', features: ['10 Social Media Posts', '8 Ad Creatives', 'Social Media Management', 'Content Planning', 'Monthly Performance Report', 'Brand Awareness Activities'], time: 'Monthly' },
-            { name: 'Business Growth', price: 25000, desc: 'Best for Growing & Mid-Level Businesses', features: ['12 Social Media Posts', '10 Ad Creatives', 'Social Media Management', 'Content Planning', 'Monthly Performance Report', 'Lead Generation Support', 'Brand Promotion Activities'], time: 'Monthly', recommended: true },
-            { name: 'Premium Scale', price: 35000, desc: 'Best for Large Businesses', features: ['20 Social Media Posts', '13 Ad Creatives', 'Advanced Social Media Management', 'Content Strategy', 'Lead Generation Campaigns', 'Advanced Performance Reporting', 'Priority Support'], time: 'Monthly' }
-        ],
-        'Mobile App Development': [
-            { name: 'Basic App', price: 150000, desc: 'Simple native app', features: ['UI Design', 'Basic Features', '1 Platform (iOS or Android)'], time: '2 Months' },
-            { name: 'Cross-Platform', price: 250000, desc: 'React Native / Flutter', features: ['iOS & Android', 'API Integration', 'Admin Panel'], time: '3 Months', recommended: true }
-        ],
-        'AI Solutions': [
-            { name: 'Chatbot Integration', price: 40000, desc: 'GPT-based Chatbot', features: ['Website Widget', 'Custom Knowledge Base', 'Handover to Human'], time: '2 Weeks' },
-            { name: 'Custom AI Agent', price: 120000, desc: 'Automated workflows', features: ['API Integrations', 'Agent Logic', 'Dashboard'], time: '1 Month' }
-        ]
-    };
-
-    const addonsData = {
-        'Website Development': [
-            { name: 'Additional Pages (After 5)', price: 1000 },
-            { name: 'Contact Form', price: 1000 },
-            { name: 'WhatsApp Integration', price: 500 },
-            { name: 'Social Media Integration', price: 1000 },
-            { name: 'Newsletter Subscription', price: 1500 },
-            { name: 'Blog System', price: 5000 },
-            { name: 'Product Catalog', price: 5000 },
-            { name: 'Payment Gateway Integration', price: 3000 },
-            { name: 'User Login / Registration', price: 5000 },
-            { name: 'Online Booking System', price: 8000 },
-            { name: 'Live Chat Support', price: 1000 },
-            { name: 'Admin Dashboard', price: 10000 },
-            { name: 'API Integration', price: 3000 },
-            { name: 'Business Email Setup', price: 1000 },
-            { name: 'Google Analytics Setup', price: 1000 },
-            { name: 'SEO Optimization', price: 3000 },
-            { name: 'Speed Optimization', price: 2000 },
-            { name: 'Security Setup (SSL, Firewall)', price: 2000 }
-        ],
-        'Digital Marketing': [],
-        'Mobile App Development': [],
-        'AI Solutions': []
-    };
-
-    let currentEstimation = {
-        service: '',
-        package: null,
-        addons: [],
-        timeline: 'Flexible',
-        timelineRate: 0,
-        discount: 0,
-        basePrice: 0,
-        addonsPrice: 0,
-        timelineFee: 0,
-        gst: 0,
-        total: 0,
-        delivery: 'TBD',
-        requirements: ''
-    };
-
-    const selService = document.getElementById('config-service');
-    const secPackages = document.getElementById('packages-section');
-    const containerPackages = document.getElementById('packages-container');
-    const secAddons = document.getElementById('addons-section');
-    const containerAddons = document.getElementById('addons-container');
-    const selTimeline = document.getElementById('config-timeline');
-    const inpDiscount = document.getElementById('config-discount');
-    const inpReqs = document.getElementById('config-requirements');
-
-    function renderAddons(serviceName) {
-        containerAddons.innerHTML = '';
-        const addonsList = addonsData[serviceName] || [];
-        
-        if (addonsList.length === 0) {
-            secAddons.classList.add('hidden');
-        } else {
-            secAddons.classList.remove('hidden');
-            addonsList.forEach((addon, idx) => {
-                const html = `
-                    <label class="flex items-center gap-2 text-sm bg-white p-2 rounded border border-outline-variant/30 cursor-pointer hover:bg-slate-50 transition-colors">
-                        <input type="checkbox" class="addon-check text-primary focus:ring-primary rounded" value="${idx}">
-                        <span class="flex-1">${addon.name}</span>
-                        <span class="text-xs text-secondary font-mono">₹${addon.price.toLocaleString()}</span>
-                    </label>
-                `;
-                containerAddons.insertAdjacentHTML('beforeend', html);
-            });
-            document.querySelectorAll('.addon-check').forEach(c => c.addEventListener('change', updateLiveEstimate));
+    // Universal Master Service Catalog
+    const SERVICE_CATALOG = [
+        {
+            id: "srv_web_dev",
+            name: "Website & Web App Dev",
+            billing_type: "Milestone-based",
+            default_price: 150000,
+            default_terms: "40% upfront deposit, 40% on milestone UAT sign-off, 20% on production deployment.",
+            default_scope: [
+                "Custom responsive web application architecture and UI design in Next.js / Tailwind CSS",
+                "Backend REST/GraphQL API integration with secure authentication & RBAC",
+                "Database schema provisioning, indexing, and data security policies",
+                "UAT testing, cross-browser validation, and production server deployment"
+            ],
+            conditional_clauses: [
+                {
+                    key: "clause_code_acceptance",
+                    title: "Delivery & User Acceptance Testing (UAT)",
+                    body: "The Client shall have 10 business days from deliverable handover to perform User Acceptance Testing (UAT) and notify the Service Provider in writing of any non-conformities. If no notice is provided within 10 days, the deliverables shall be deemed accepted."
+                },
+                {
+                    key: "clause_source_ip",
+                    title: "Source Code Licensing & IP Transfer",
+                    body: "Full intellectual property rights and production source code repositories shall be transferred to the Client exclusively upon receipt of 100% final invoice clearance."
+                }
+            ]
+        },
+        {
+            id: "srv_digital_marketing",
+            name: "Digital Marketing & Ads",
+            billing_type: "Monthly Recurring",
+            default_price: 45000,
+            default_terms: "100% monthly advance retainer payable on the 1st of every service month.",
+            default_scope: [
+                "Targeted Meta Ads (Facebook/Instagram) and Google Search/Display Campaign strategy",
+                "Ad copy creation, creative banner design, and A/B audience testing",
+                "Conversion tracking pixel integration (Google Analytics 4, Meta Pixel, GTM)",
+                "Weekly performance optimization (ROAS/CPA tracking) and monthly analytics report"
+            ],
+            conditional_clauses: [
+                {
+                    key: "clause_ad_spend",
+                    title: "Advertising & Media Budget Policy",
+                    body: "All third-party media and advertising costs (e.g., Google Ads, Meta Ads, LinkedIn Ads) shall be paid directly by the Client via their registered payment card. The Service Provider's management fees do not include platform media ad spend."
+                },
+                {
+                    key: "clause_marketing_disclaimer",
+                    title: "Performance & Platform Disclaimers",
+                    body: "While the Service Provider applies industry-best marketing practices, specific ROI, conversion counts, or algorithmic ad rank cannot be unconditionally guaranteed due to changing auction dynamics."
+                }
+            ]
+        },
+        {
+            id: "srv_mobile_app",
+            name: "Mobile App Development",
+            billing_type: "Milestone-based",
+            default_price: 220000,
+            default_terms: "30% upfront, 35% on Alpha build, 25% on Store Submission, 10% on live Store Approval.",
+            default_scope: [
+                "Cross-platform iOS & Android mobile application development via Flutter / React Native",
+                "Push notification integration (Firebase / APNs) and offline state caching",
+                "Submission and publishing compliance for Apple App Store and Google Play Store"
+            ],
+            conditional_clauses: [
+                {
+                    key: "clause_app_store_approval",
+                    title: "App Store Publishing & Compliance",
+                    body: "The Provider guarantees guideline-compliant app submission. Rejections caused by Client's proprietary content or business model shifts remain subject to Client remedy."
+                }
+            ]
+        },
+        {
+            id: "srv_uiux_design",
+            name: "UI/UX Product Design",
+            billing_type: "Milestone-based",
+            default_price: 75000,
+            default_terms: "50% advance booking, 50% upon final Figma design system handover.",
+            default_scope: [
+                "User research, persona mapping, and Information Architecture (IA) diagrams",
+                "High-fidelity Figma wireframes and clickable interactive prototypes",
+                "Comprehensive design system with typography, color tokens, and atomic components"
+            ],
+            conditional_clauses: [
+                {
+                    key: "clause_design_revisions",
+                    title: "Design Iteration & Revision Threshold",
+                    body: "Each milestone delivery includes up to 3 rounds of comprehensive design revisions. Iterations requested beyond this threshold will be billed at standard hourly extension rates."
+                }
+            ]
+        },
+        {
+            id: "srv_cloud_hosting",
+            name: "Cloud Hosting & DevOps",
+            billing_type: "Monthly Recurring",
+            default_price: 25000,
+            default_terms: "Monthly pre-payment due at the beginning of each billing cycle.",
+            default_scope: [
+                "Cloud server architecture provisioning, SSL certification, and CI/CD automated pipelines",
+                "Automated daily database backups and disaster recovery protocols",
+                "24/7 server uptime monitoring and security vulnerability patching"
+            ],
+            conditional_clauses: [
+                {
+                    key: "clause_uptime_sla",
+                    title: "Cloud Service Level Agreement (SLA) & Uptime",
+                    body: "The Provider guarantees a 99.9% network infrastructure uptime. Scheduled maintenance windows shall be communicated 48 hours in advance during off-peak hours."
+                }
+            ]
+        },
+        {
+            id: "srv_seo",
+            name: "Search Engine Optimization (SEO)",
+            billing_type: "Monthly Recurring",
+            default_price: 35000,
+            default_terms: "Monthly retainer payable in advance on the 1st of every month.",
+            default_scope: [
+                "Comprehensive on-page technical SEO audit and Core Web Vitals optimization",
+                "Keyword research, search intent mapping, and metadata tag structure",
+                "High-authority backlink outreach and monthly domain authority ranking report"
+            ],
+            conditional_clauses: [
+                {
+                    key: "clause_seo_algorithm",
+                    title: "Search Engine Algorithm Policy",
+                    body: "Organic search rankings are subject to proprietary search engine algorithm updates. The Provider adheres strictly to white-hat SEO guidelines."
+                }
+            ]
         }
-    }
+    ];
 
-    function formatCur(val) {
-        return '₹' + Math.round(val).toLocaleString();
-    }
+    const STANDARD_LEGAL_CLAUSES = [
+        { key: "clause_confidentiality", title: "Confidentiality & Non-Disclosure", body: "Both parties agree to protect proprietary and confidential business information with reasonable commercial care." },
+        { key: "clause_termination", title: "Termination & Notice Period", body: "Either party may terminate this agreement by providing a 30-day written notice to the registered communication address or email." },
+        { key: "clause_governing_law", title: "Governing Law & Dispute Resolution", body: "This agreement shall be governed by and construed in accordance with the Laws of Telangana, India. All disputes are subject to the exclusive jurisdiction of courts in Hyderabad." }
+    ];
 
-    function updateLiveEstimate() {
-        // Calculate Addons
-        let addonsCost = 0;
-        const selectedAddons = [];
-        const addonsList = addonsData[currentEstimation.service] || [];
+    // Wizard State
+    let currentStep = 1;
+    let selectedServices = {}; // service_id -> { deliverables: [], price: 0, payment_terms: "" }
+    let configuredClauses = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+        renderServiceGrid();
         
-        document.querySelectorAll('.addon-check:checked').forEach(chk => {
-            const addon = addonsList[chk.value];
-            if (addon) {
-                addonsCost += addon.price;
-                selectedAddons.push(addon);
+        // Check if editing existing agreement
+        const existingScope = "{{ agreement.scope_of_work|default:''|escapejs }}";
+        if (existingScope && existingScope.trim().length > 0) {
+            // Restore from existing
+            toggleService('srv_web_dev');
+        } else {
+            // Default seed
+            toggleService('srv_web_dev');
+            toggleService('srv_digital_marketing');
+        }
+    });
+
+    function goToStep(step) {
+        document.querySelectorAll("section[id^='step-panel-']").forEach(el => el.classList.add("hidden"));
+        document.getElementById(`step-panel-${step}`).classList.remove("hidden");
+
+        for (let i = 1; i <= 4; i++) {
+            const tab = document.getElementById(`step-tab-${i}`);
+            const badge = document.getElementById(`step-badge-${i}`);
+            if (i === step) {
+                tab.className = "cursor-pointer p-3.5 rounded-2xl border-2 stepper-active transition-all bg-white shadow-xs";
+                badge.className = "w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center";
+            } else if (i < step) {
+                tab.className = "cursor-pointer p-3.5 rounded-2xl border-2 stepper-completed transition-all bg-white shadow-xs";
+                badge.className = "w-6 h-6 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center";
+            } else {
+                tab.className = "cursor-pointer p-3.5 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 transition-all shadow-xs";
+                badge.className = "w-6 h-6 rounded-full bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center";
             }
-        });
-
-        currentEstimation.addons = selectedAddons;
-        currentEstimation.addonsPrice = addonsCost;
-
-        // Timeline Fee
-        const timeVal = selTimeline.value;
-        currentEstimation.timeline = timeVal;
-        let tRate = 0;
-        if(timeVal === '1 Month') tRate = 0.10;
-        else if(timeVal === '2 Weeks') tRate = 0.25;
-        else if(timeVal === 'Urgent') tRate = 0.50;
-
-        currentEstimation.timelineRate = tRate;
-        const subTotal1 = currentEstimation.basePrice + currentEstimation.addonsPrice;
-        currentEstimation.timelineFee = subTotal1 * tRate;
-
-        const subTotal2 = subTotal1 + currentEstimation.timelineFee;
-        currentEstimation.discount = parseFloat(inpDiscount.value) || 0;
-
-        const taxable = Math.max(0, subTotal2 - currentEstimation.discount);
-        currentEstimation.gst = taxable * 0.18;
-        currentEstimation.total = taxable + currentEstimation.gst;
-        currentEstimation.requirements = inpReqs.value;
-
-        // Update UI
-        document.getElementById('summary-service').textContent = currentEstimation.service || '-';
-        document.getElementById('summary-package').textContent = currentEstimation.package ? currentEstimation.package.name : '-';
-        document.getElementById('summary-base-price').textContent = formatCur(currentEstimation.basePrice);
-        
-        const listAddons = document.getElementById('summary-addons-list');
-        listAddons.innerHTML = '';
-        if(selectedAddons.length === 0) listAddons.innerHTML = '<li>None</li>';
-        selectedAddons.forEach(a => {
-            listAddons.insertAdjacentHTML('beforeend', `<li>+ ${a.name} (${formatCur(a.price)})</li>`);
-        });
-
-        document.getElementById('summary-timeline-fee').textContent = formatCur(currentEstimation.timelineFee);
-        document.getElementById('summary-gst').textContent = formatCur(currentEstimation.gst);
-        document.getElementById('summary-total').textContent = formatCur(currentEstimation.total);
-        document.getElementById('summary-delivery').textContent = currentEstimation.delivery;
-    }
-
-    selService.addEventListener('change', (e) => {
-        const sName = e.target.value;
-        currentEstimation.service = sName;
-        currentEstimation.package = null;
-        currentEstimation.basePrice = 0;
-        currentEstimation.delivery = 'TBD';
-
-        const pks = packagesData[sName] || [];
-        
-        containerPackages.innerHTML = '';
-        if (pks.length > 0) {
-            secPackages.classList.remove('hidden');
-            renderAddons(sName);
-            pks.forEach((pk, idx) => {
-                const recBadge = pk.recommended ? `<span class="absolute -top-3 -right-2 bg-primary text-white text-[10px] font-bold px-2 py-1 rounded-full shadow">Recommended</span>` : '';
-                const card = `
-                    <div class="relative bg-white border ${pk.recommended ? 'border-primary ring-1 ring-primary/20' : 'border-outline-variant'} rounded-xl p-4 cursor-pointer hover:shadow-md transition-all package-card" data-idx="${idx}">
-                        ${recBadge}
-                        <h4 class="font-bold text-on-surface">${pk.name}</h4>
-                        <p class="text-xs text-secondary mb-2">${pk.desc}</p>
-                        <p class="font-mono text-primary font-bold mb-3">₹${pk.price.toLocaleString()}</p>
-                        <ul class="text-xs space-y-1 text-secondary mb-2">
-                            ${pk.features.map(f => `<li><span class="text-primary mr-1">✓</span>${f}</li>`).join('')}
-                        </ul>
-                        <div class="text-[10px] bg-slate-100 text-slate-600 inline-block px-2 py-1 rounded">Est: ${pk.time}</div>
-                    </div>
-                `;
-                containerPackages.insertAdjacentHTML('beforeend', card);
-            });
-        } else {
-            // generic fallback
-            secPackages.classList.add('hidden');
-            renderAddons(sName);
-            currentEstimation.delivery = 'Based on requirements';
         }
 
-        document.querySelectorAll('.package-card').forEach(c => {
-            c.addEventListener('click', function() {
-                document.querySelectorAll('.package-card').forEach(x => {
-                    x.classList.remove('border-primary', 'ring-2', 'ring-primary/40');
-                    x.classList.add('border-outline-variant');
-                });
-                this.classList.remove('border-outline-variant');
-                this.classList.add('border-primary', 'ring-2', 'ring-primary/40');
-                
-                const idx = this.getAttribute('data-idx');
-                const pk = pks[idx];
-                currentEstimation.package = pk;
-                currentEstimation.basePrice = pk.price;
-                currentEstimation.delivery = pk.time;
-                updateLiveEstimate();
-            });
-        });
+        currentStep = step;
+        if (step === 3) renderCommercialTable();
+        if (step === 4) refreshClausesAndPreview();
+    }
 
-        updateLiveEstimate();
-    });
+    function renderServiceGrid() {
+        const grid = document.getElementById("service-catalog-grid");
+        grid.innerHTML = SERVICE_CATALOG.map(srv => `
+            <div onclick="toggleService('${srv.id}')" id="svc-card-${srv.id}" class="cursor-pointer p-3.5 rounded-2xl border-2 border-slate-200 bg-white hover:border-blue-300 transition-all flex flex-col justify-between shadow-xs">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${srv.billing_type === 'Monthly Recurring' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">
+                            ${srv.billing_type === 'Monthly Recurring' ? 'Monthly' : 'Milestone'}
+                        </span>
+                        <input type="checkbox" id="svc-chk-${srv.id}" class="w-4 h-4 text-blue-600 rounded" onclick="event.stopPropagation(); toggleService('${srv.id}')" />
+                    </div>
+                    <h5 class="font-bold text-xs text-slate-900">${srv.name}</h5>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2 font-medium">${srv.default_scope.length} Default Items</p>
+            </div>
+        `).join('');
+    }
 
-    document.querySelectorAll('.addon-check').forEach(c => c.addEventListener('change', updateLiveEstimate));
-    selTimeline.addEventListener('change', updateLiveEstimate);
-    inpDiscount.addEventListener('input', updateLiveEstimate);
-    inpReqs.addEventListener('input', () => { currentEstimation.requirements = inpReqs.value; });
+    function toggleService(serviceId) {
+        const srv = SERVICE_CATALOG.find(s => s.id === serviceId);
+        const card = document.getElementById(`svc-card-${serviceId}`);
+        const chk = document.getElementById(`svc-chk-${serviceId}`);
 
-    document.getElementById('btn-calculate').addEventListener('click', () => {
-        if (!currentEstimation.service) {
-            alert("Please select a service first.");
+        if (selectedServices[serviceId]) {
+            delete selectedServices[serviceId];
+            if (chk) chk.checked = false;
+            if (card) {
+                card.classList.remove("border-blue-600", "bg-blue-50/40");
+                card.classList.add("border-slate-200", "bg-white");
+            }
+        } else {
+            selectedServices[serviceId] = {
+                service_name: srv.name,
+                billing_type: srv.billing_type,
+                deliverables: [...srv.default_scope],
+                price: srv.default_price,
+                payment_terms: srv.default_terms
+            };
+            if (chk) chk.checked = true;
+            if (card) {
+                card.classList.add("border-blue-600", "bg-blue-50/40");
+                card.classList.remove("border-slate-200", "bg-white");
+            }
+        }
+
+        renderScopeEditors();
+    }
+
+    function renderScopeEditors() {
+        const container = document.getElementById("service-scopes-container");
+        const keys = Object.keys(selectedServices);
+        document.getElementById("ui-selected-service-count").innerText = `${keys.length} Services Selected`;
+
+        if (keys.length === 0) {
+            container.innerHTML = `
+                <div class="p-8 text-center border-2 border-dashed border-slate-200 rounded-2xl text-slate-400">
+                    <p class="font-semibold text-xs">No services selected. Please select at least 1 service above.</p>
+                </div>
+            `;
             return;
         }
 
-        // 1. Populate Hidden JSON
-        document.getElementById('project_estimation_json').value = JSON.stringify(currentEstimation);
+        container.innerHTML = keys.map((srvId, idx) => {
+            const srv = SERVICE_CATALOG.find(s => s.id === srvId);
+            const data = selectedServices[srvId];
+            return `
+                <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+                    <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                                3.${idx + 1}
+                            </span>
+                            <span class="font-bold text-xs text-slate-900">${srv.name}</span>
+                        </div>
+                        <button type="button" onclick="addDeliverableBullet('${srvId}')" class="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-[11px] font-bold text-blue-600 hover:bg-blue-50 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">add</span> Add Bullet
+                        </button>
+                    </div>
+                    
+                    <div class="p-4 space-y-2">
+                        ${data.deliverables.map((item, dIdx) => `
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400 text-xs">•</span>
+                                <input type="text" value="${item}" onchange="updateDeliverableText('${srvId}', ${dIdx}, this.value)" class="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none" />
+                                <button type="button" onclick="removeDeliverableBullet('${srvId}', ${dIdx})" class="p-1 text-slate-400 hover:text-red-600 rounded">
+                                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
 
-        // 2. Populate Form Fields
-        // Find existing service dropdown match
-        const selSvc = document.querySelector('select[name="service"]');
-        if (selSvc) {
-            Array.from(selSvc.options).forEach(opt => {
-                if (opt.text.toLowerCase().includes(currentEstimation.service.toLowerCase())) {
-                    selSvc.value = opt.value;
-                }
+    function addDeliverableBullet(serviceId) {
+        selectedServices[serviceId].deliverables.push("New custom deliverable scope point...");
+        renderScopeEditors();
+    }
+
+    function updateDeliverableText(serviceId, index, value) {
+        selectedServices[serviceId].deliverables[index] = value;
+    }
+
+    function removeDeliverableBullet(serviceId, index) {
+        selectedServices[serviceId].deliverables.splice(index, 1);
+        renderScopeEditors();
+    }
+
+    function renderCommercialTable() {
+        const tbody = document.getElementById("commercial-table-body");
+        const keys = Object.keys(selectedServices);
+
+        tbody.innerHTML = keys.map(srvId => {
+            const srv = SERVICE_CATALOG.find(s => s.id === srvId);
+            const data = selectedServices[srvId];
+            return `
+                <tr class="hover:bg-slate-50/80 transition-colors">
+                    <td class="px-4 py-3 font-bold text-slate-900">${srv.name}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${srv.billing_type === 'Monthly Recurring' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">
+                            ${srv.billing_type}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <input type="number" value="${data.price}" oninput="updateCommercialPrice('${srvId}', this.value)" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-mono font-bold" />
+                    </td>
+                    <td class="px-4 py-3">
+                        <input type="text" value="${data.payment_terms}" onchange="updateCommercialTerms('${srvId}', this.value)" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs" />
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        recalculateFinancials();
+    }
+
+    function updateCommercialPrice(srvId, val) {
+        selectedServices[srvId].price = parseFloat(val) || 0;
+        recalculateFinancials();
+    }
+
+    function updateCommercialTerms(srvId, val) {
+        selectedServices[srvId].payment_terms = val;
+    }
+
+    function recalculateFinancials() {
+        let onetime = 0;
+        let recurring = 0;
+
+        for (let srvId in selectedServices) {
+            const srv = SERVICE_CATALOG.find(s => s.id === srvId);
+            const p = selectedServices[srvId].price;
+            if (srv.billing_type === 'Monthly Recurring') {
+                recurring += p;
+            } else {
+                onetime += p;
+            }
+        }
+
+        document.getElementById("ui-summary-onetime").innerText = `₹${onetime.toLocaleString('en-IN')}`;
+        document.getElementById("ui-summary-recurring").innerText = `₹${recurring.toLocaleString('en-IN')} / mo`;
+        document.getElementById("ui-summary-total").innerText = `₹${(onetime + recurring).toLocaleString('en-IN')}`;
+
+        document.getElementById("id_total_value").value = (onetime + recurring).toFixed(2);
+        document.getElementById("id_monthly_fee").value = recurring.toFixed(2);
+        document.getElementById("id_advance_payment").value = (onetime * 0.4).toFixed(2);
+    }
+
+    function refreshClausesAndPreview() {
+        let clauses = [];
+
+        // Auto-include conditional clauses based on selected services
+        for (let srvId in selectedServices) {
+            const srv = SERVICE_CATALOG.find(s => s.id === srvId);
+            if (srv.conditional_clauses) {
+                srv.conditional_clauses.forEach(cl => {
+                    if (!clauses.some(c => c.key === cl.key)) {
+                        clauses.push({ ...cl, is_conditional: true, enabled: true });
+                    }
+                });
+            }
+        }
+
+        // Standard Universal Clauses
+        STANDARD_LEGAL_CLAUSES.forEach(cl => {
+            if (!clauses.some(c => c.key === cl.key)) {
+                clauses.push({ ...cl, is_conditional: false, enabled: true });
+            }
+        });
+
+        configuredClauses = clauses;
+        renderClauseToggles();
+        renderLivePreview();
+    }
+
+    function renderClauseToggles() {
+        const container = document.getElementById("clause-toggle-list");
+        container.innerHTML = configuredClauses.map((cl, idx) => `
+            <div class="p-2.5 bg-white border border-slate-200 rounded-xl flex items-start justify-between gap-2">
+                <div>
+                    <p class="text-xs font-bold text-slate-800">${cl.title}</p>
+                    <p class="text-[10px] text-slate-400">${cl.is_conditional ? '⚡ Auto-Included for Service' : 'Standard Universal Clause'}</p>
+                </div>
+                <input type="checkbox" ${cl.enabled ? 'checked' : ''} onchange="toggleClauseEnabled(${idx}, this.checked)" class="w-4 h-4 text-blue-600 rounded mt-0.5" />
+            </div>
+        `).join('');
+    }
+
+    function toggleClauseEnabled(idx, val) {
+        configuredClauses[idx].enabled = val;
+        renderLivePreview();
+    }
+
+    function addCustomClause() {
+        const title = prompt("Enter Custom Legal Clause Title:");
+        if (!title) return;
+        const body = prompt("Enter Legal Clause Body Text:");
+        if (!body) return;
+
+        configuredClauses.push({
+            key: `custom_${Date.now()}`,
+            title: title,
+            body: body,
+            is_conditional: true,
+            enabled: true
+        });
+
+        renderClauseToggles();
+        renderLivePreview();
+    }
+
+    function renderLivePreview() {
+        const preview = document.getElementById("contract-live-preview");
+        const clientName = document.getElementById("f_company_name").value || document.getElementById("f_client_name").value || "Client Entity";
+        const dateVal = document.getElementById("f_date").value || "Current Date";
+        const keys = Object.keys(selectedServices);
+
+        let sec = 1;
+        let html = `
+            <div class="border-b border-slate-700 pb-2 mb-3">
+                <h4 class="text-sm font-black text-white uppercase tracking-wider">UNIVERSAL SERVICE AGREEMENT</h4>
+                <p class="text-[10px] text-slate-400">Effective Date: ${dateVal}</p>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <h5 class="font-bold text-slate-200 uppercase text-[11px]">${sec++}. PARTIES TO THE AGREEMENT</h5>
+                    <p class="text-slate-400 text-[11px] mt-0.5">By and between <strong>Xenotrix Technologies</strong> and <strong>${clientName}</strong>.</p>
+                </div>
+
+                <div>
+                    <h5 class="font-bold text-slate-200 uppercase text-[11px]">${sec++}. PURPOSE & SCOPE OF SERVICES</h5>
+                    <div class="mt-1.5 space-y-2 pl-2 border-l border-slate-700">
+                        ${keys.map((k, i) => `
+                            <div>
+                                <p class="font-bold text-slate-200 text-[11px]">2.${i+1} ${selectedServices[k].service_name} (${selectedServices[k].billing_type})</p>
+                                <ul class="list-disc list-inside text-slate-400 text-[10px] space-y-0.5">
+                                    ${selectedServices[k].deliverables.map(d => `<li>${d}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div>
+                    <h5 class="font-bold text-slate-200 uppercase text-[11px]">${sec++}. COMMERCIAL INVESTMENT & PAYMENT SCHEDULE</h5>
+                    <p class="text-slate-400 text-[11px] mt-0.5">Commercial items mapped as per Section 3 schedule. Total Investment Value: ₹${document.getElementById("id_total_value").value}</p>
+                </div>
+        `;
+
+        configuredClauses.filter(c => c.enabled).forEach(c => {
+            html += `
+                <div>
+                    <h5 class="font-bold text-slate-200 uppercase text-[11px]">${sec++}. ${c.title.toUpperCase()}</h5>
+                    <p class="text-slate-400 text-[10px] mt-0.5">${c.body}</p>
+                </div>
+            `;
+        });
+
+        html += `
+                <div class="pt-3 border-t border-slate-700">
+                    <h5 class="font-bold text-slate-200 uppercase text-[11px]">${sec}. EXECUTION & DUAL SIGNATURES</h5>
+                    <div class="grid grid-cols-2 gap-3 mt-2">
+                        <div class="p-2.5 bg-slate-800 rounded-xl">
+                            <span class="text-[9px] uppercase text-slate-400 font-bold">First Party (Provider)</span>
+                            <p class="font-signature text-sm text-white mt-1">Authorized Signatory</p>
+                        </div>
+                        <div class="p-2.5 bg-slate-800 rounded-xl">
+                            <span class="text-[9px] uppercase text-slate-400 font-bold">Second Party (Client)</span>
+                            <p class="font-signature text-sm text-white mt-1">${document.getElementById("f_client_name").value || 'Client Signatory'}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        preview.innerHTML = html;
+        document.getElementById("preview-section-count").innerText = `Sections: ${sec}`;
+    }
+
+    function submitAgreementForm() {
+        // Compile aggregated deliverables and scope text for backend saving
+        let scopeLines = [];
+        let deliverableLines = [];
+        let paymentLines = [];
+
+        const hiddenInputs = document.getElementById("dynamicHiddenInputs");
+        hiddenInputs.innerHTML = '';
+
+        for (let srvId in selectedServices) {
+            const data = selectedServices[srvId];
+            scopeLines.push(`• ${data.service_name} (${data.billing_type}): ₹${data.price} - ${data.payment_terms}`);
+            
+            // Render hidden input for AgreementService relation
+            hiddenInputs.innerHTML += `
+                <input type="hidden" name="service_title[]" value="${data.service_name}">
+                <input type="hidden" name="service_desc[]" value="${data.billing_type} - ₹${data.price} | Terms: ${data.payment_terms}">
+            `;
+
+            data.deliverables.forEach(d => {
+                deliverableLines.push(`[${data.service_name}] ${d}`);
+                hiddenInputs.innerHTML += `<input type="hidden" name="deliverable_title[]" value="[${data.service_name}] ${d}">`;
             });
+
+            paymentLines.push(`• ${data.service_name}: ₹${data.price} (${data.payment_terms})`);
         }
 
-        // Cost
-        const feeInput = document.querySelector('input[name="monthly_fee"]');
-        if (feeInput) feeInput.value = Math.round(currentEstimation.total);
+        document.getElementById("id_scope_of_work").value = scopeLines.join("\n");
+        document.getElementById("id_deliverables_text").value = deliverableLines.join("\n");
+        document.getElementById("id_payment_terms_text").value = paymentLines.join("\n");
 
-        // Notes
-        const notesInput = document.querySelector('input[name="notes"]');
-        if (notesInput) {
-            let noteTxt = `Package: ${currentEstimation.package ? currentEstimation.package.name : 'Custom'}. Timeline: ${currentEstimation.timeline}.`;
-            notesInput.value = noteTxt;
-        }
+        // Save estimation and clauses state
+        const estimationPayload = {
+            selected_services: selectedServices,
+            clauses: configuredClauses
+        };
+        document.getElementById("id_project_estimation_json").value = JSON.stringify(estimationPayload);
 
-        // Collapse widget and alert
-        document.getElementById('package-config-body').classList.add('hidden');
-        alert("Estimation applied successfully! The details will be saved with this agreement.");
-    });
-
+        // Submit form
+        document.getElementById("universalAgreementForm").submit();
+    }
 </script>
 {% endblock %}
