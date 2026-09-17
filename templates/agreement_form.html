@@ -134,12 +134,12 @@
                                     data-email="{{ client.email|default:''|escape }}" 
                                     data-phone="{{ client.phone_number|default:client.alt_phone_number|default:''|escape }}" 
                                     data-address="{{ client.location|default:''|escape }}"
-                                    {% if selected_lead and selected_lead.id == client.id or agreement.lead and agreement.lead.id == client.id %}selected{% endif %}>
+                                    {% if current_lead_id and current_lead_id == client.id %}selected{% endif %}>
                                     {{ client.company|default:client.name }} {% if client.company and client.name and client.company != client.name %}({{ client.name }}){% endif %}
                                 </option>
                                 {% endfor %}
                             </select>
-                            <input type="hidden" name="client_lead_id" id="f_client_lead_id" value="{{ agreement.lead.id|default:selected_lead.id|default:'' }}">
+                            <input type="hidden" name="client_lead_id" id="f_client_lead_id" value="{{ current_lead_id }}">
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-200">
