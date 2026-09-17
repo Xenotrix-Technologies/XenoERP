@@ -740,6 +740,16 @@ def agreements_list_view(request):
 def create_agreement_view(request):
     org = request.user.profile.organization
     services = Service.objects.filter(organization=org)
+    clients = Lead.objects.filter(organization=org).order_by('company', 'name')
+    
+    lead_id = request.GET.get('lead_id')
+    selected_lead = None
+    if lead_id:
+        try:
+            selected_lead = Lead.objects.get(id=int(lead_id), organization=org)
+        except (ValueError, Lead.DoesNotExist):
+            pass
+
     if request.method == 'POST':
         try:
             # Generate Auto Agreement Number
@@ -755,9 +765,20 @@ def create_agreement_view(request):
                 except (ValueError, Service.DoesNotExist):
                     pass
             
+            client_lead_id = request.POST.get('client_lead_id')
+            lead = None
+            if client_lead_id:
+                try:
+                    lead = Lead.objects.get(id=int(client_lead_id), organization=org)
+                except (ValueError, Lead.DoesNotExist):
+                    pass
+            elif selected_lead:
+                lead = selected_lead
+
             agreement = Agreement.objects.create(
                 organization=org,
                 agreement_number=agreement_number,
+                lead=lead,
                 date=request.POST.get('date') or timezone.now().date(),
                 start_date=request.POST.get('start_date') or timezone.now().date(),
                 end_date=request.POST.get('end_date') or (timezone.now().date() + timedelta(days=365)),
@@ -828,7 +849,9 @@ def create_agreement_view(request):
     return render(request, 'agreement_form.html', {
         'action': 'Create',
         'agreement': None,
-        'services': services
+        'services': services,
+        'clients': clients,
+        'selected_lead': selected_lead
     })
 
 
@@ -838,6 +861,7 @@ def update_agreement_view(request, agreement_id):
     org = request.user.profile.organization
     agreement = get_object_or_404(Agreement, id=agreement_id, organization=org)
     services = Service.objects.filter(organization=org)
+    clients = Lead.objects.filter(organization=org).order_by('company', 'name')
     
     if request.method == 'POST':
         try:
@@ -851,6 +875,13 @@ def update_agreement_view(request, agreement_id):
             agreement.client_address = request.POST.get('client_address', '')
             agreement.gstin = request.POST.get('gstin', '')
             
+            client_lead_id = request.POST.get('client_lead_id')
+            if client_lead_id:
+                try:
+                    agreement.lead = Lead.objects.get(id=int(client_lead_id), organization=org)
+                except (ValueError, Lead.DoesNotExist):
+                    pass
+
             service_id = request.POST.get('service')
             service = None
             if service_id:
@@ -922,7 +953,8 @@ def update_agreement_view(request, agreement_id):
     return render(request, 'agreement_form.html', {
         'action': 'Update',
         'agreement': agreement,
-        'services': services
+        'services': services,
+        'clients': clients
     })
 
 

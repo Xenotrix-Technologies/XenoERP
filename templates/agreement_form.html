@@ -111,10 +111,38 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Client Entity -->
                     <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-4">
-                        <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-[16px] text-blue-600">person</span> Client (Second Party)
-                        </h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px] text-blue-600">person</span> Client (Second Party)
+                            </h4>
+                            <span id="clientAutoFillBadge" class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200 hidden">
+                                ✓ Client Master Loaded
+                            </span>
+                        </div>
+
+                        <!-- Client Master Select -->
+                        <div>
+                            <label class="block text-xs font-bold text-blue-950 uppercase mb-1">
+                                Load from Clients Master Table
+                            </label>
+                            <select id="client_selector" onchange="handleClientSelect(this.value)" class="w-full px-3.5 py-2.5 bg-white border border-blue-300 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-xs">
+                                <option value="">-- Select Client from Database (Auto-Fill) --</option>
+                                {% for client in clients %}
+                                <option value="{{ client.id }}" 
+                                    data-name="{{ client.name|escape }}" 
+                                    data-company="{{ client.company|default:client.name|escape }}" 
+                                    data-email="{{ client.email|default:''|escape }}" 
+                                    data-phone="{{ client.phone_number|default:client.alt_phone_number|default:''|escape }}" 
+                                    data-address="{{ client.location|default:''|escape }}"
+                                    {% if selected_lead and selected_lead.id == client.id or agreement.lead and agreement.lead.id == client.id %}selected{% endif %}>
+                                    {{ client.company|default:client.name }} {% if client.company and client.name and client.company != client.name %}({{ client.name }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" name="client_lead_id" id="f_client_lead_id" value="{{ agreement.lead.id|default:selected_lead.id|default:'' }}">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-200">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Contact Person Name *</label>
                                 <input type="text" name="client_name" id="f_client_name" required value="{{ agreement.client_name|default:'' }}" placeholder="e.g. Rahul Sharma" class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" />
@@ -482,6 +510,12 @@
     document.addEventListener("DOMContentLoaded", () => {
         renderServiceGrid();
         
+        // Auto-fill client if pre-selected or present
+        const clientSelector = document.getElementById("client_selector");
+        if (clientSelector && clientSelector.value) {
+            handleClientSelect(clientSelector.value);
+        }
+
         // Check if editing existing agreement
         const existingScope = "{{ agreement.scope_of_work|default:''|escapejs }}";
         if (existingScope && existingScope.trim().length > 0) {
@@ -493,6 +527,37 @@
             toggleService('srv_digital_marketing');
         }
     });
+
+    function handleClientSelect(clientId) {
+        const badge = document.getElementById("clientAutoFillBadge");
+        if (!clientId) {
+            document.getElementById("f_client_lead_id").value = "";
+            if (badge) badge.classList.add("hidden");
+            return;
+        }
+
+        const select = document.getElementById("client_selector");
+        const option = select.options[select.selectedIndex];
+        if (option) {
+            const name = option.getAttribute("data-name") || "";
+            const company = option.getAttribute("data-company") || "";
+            const email = option.getAttribute("data-email") || "";
+            const phone = option.getAttribute("data-phone") || "";
+            const address = option.getAttribute("data-address") || "";
+
+            document.getElementById("f_client_lead_id").value = clientId;
+            if (name) document.getElementById("f_client_name").value = name;
+            if (company) document.getElementById("f_company_name").value = company;
+            if (email) document.getElementById("f_client_email").value = email;
+            if (phone) document.getElementById("f_client_phone").value = phone;
+            if (address) document.getElementById("f_client_address").value = address;
+
+            if (badge) {
+                badge.classList.remove("hidden");
+                badge.innerText = `✓ Loaded: ${company || name}`;
+            }
+        }
+    }
 
     function goToStep(step) {
         document.querySelectorAll("section[id^='step-panel-']").forEach(el => el.classList.add("hidden"));
