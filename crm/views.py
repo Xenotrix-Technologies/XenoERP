@@ -846,12 +846,14 @@ def create_agreement_view(request):
         except Exception as e:
             messages.error(request, f"Error creating agreement: {str(e)}")
             
+    current_lead_id = selected_lead.id if selected_lead else ''
     return render(request, 'agreement_form.html', {
         'action': 'Create',
         'agreement': None,
         'services': services,
         'clients': clients,
-        'selected_lead': selected_lead
+        'selected_lead': selected_lead,
+        'current_lead_id': current_lead_id
     })
 
 
@@ -950,11 +952,13 @@ def update_agreement_view(request, agreement_id):
         except Exception as e:
             messages.error(request, f"Error updating agreement: {str(e)}")
             
+    current_lead_id = agreement.lead_id if agreement.lead_id else ''
     return render(request, 'agreement_form.html', {
         'action': 'Update',
         'agreement': agreement,
         'services': services,
-        'clients': clients
+        'clients': clients,
+        'current_lead_id': current_lead_id
     })
 
 
