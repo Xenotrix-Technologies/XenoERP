@@ -230,15 +230,29 @@
                                 {% if not item.is_optional %}
                                 <tr>
                                     <td class="py-2.5 px-3 border border-slate-200">
-                                        <p class="font-bold text-slate-900">{{ item.title }}</p>
-                                        {% if item.description %}<p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{{ item.description }}</p>{% endif %}
-                                        {% if item.deliverables %}<p class="text-[10px] text-blue-800 mt-1 font-medium leading-relaxed"><strong>Deliverables:</strong> {{ item.deliverables }}</p>{% endif %}
+                                        <p class="font-bold text-slate-900 text-xs">{{ item.title }}</p>
+                                        {% if item.deliverables %}
+                                        <div class="text-[10.5px] text-slate-600 mt-1 space-y-0.5">
+                                            {% for bullet in item.deliverables.splitlines %}
+                                                {% if '•' in bullet %}
+                                                    {% for subbullet in bullet.split|join:' ' %}
+                                                    {% endfor %}
+                                                {% endif %}
+                                                <p class="leading-relaxed">{{ bullet }}</p>
+                                            {% endfor %}
+                                        </div>
+                                        {% elif item.description %}
+                                        <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{{ item.description }}</p>
+                                        {% endif %}
+                                        {% if item.notes %}
+                                        <p class="text-[9.5px] text-blue-800 mt-1 font-medium"><strong>Terms:</strong> {{ item.notes }}</p>
+                                        {% endif %}
                                     </td>
-                                    <td class="py-2.5 px-3 text-center uppercase text-[10px] font-semibold text-slate-600 border border-slate-200">{{ item.pricing_type }}</td>
-                                    <td class="py-2.5 px-3 text-center font-medium border border-slate-200 font-mono text-[11px]">{{ item.quantity }} {{ item.unit }}</td>
-                                    <td class="py-2.5 px-3 text-right font-mono text-slate-700 border border-slate-200 text-[11px]">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.unit_price|floatformat:2 }}</td>
-                                    <td class="py-2.5 px-3 text-right font-mono text-slate-500 border border-slate-200 text-[11px]">{% if item.discount > 0 %}-{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.discount|floatformat:2 }}{% else %}-{% endif %}</td>
-                                    <td class="py-2.5 px-3 text-right font-bold font-mono text-slate-900 border border-slate-200 text-[11px]">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.line_total|floatformat:2 }}</td>
+                                    <td class="py-2.5 px-3 text-center uppercase text-[10px] font-semibold text-slate-600 border border-slate-200 align-top">{{ item.pricing_type }}</td>
+                                    <td class="py-2.5 px-3 text-center font-medium border border-slate-200 font-mono text-[11px] align-top">{{ item.quantity }} {{ item.unit }}</td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-slate-700 border border-slate-200 text-[11px] align-top">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.unit_price|floatformat:2 }}</td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-slate-500 border border-slate-200 text-[11px] align-top">{% if item.discount > 0 %}-{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.discount|floatformat:2 }}{% else %}-{% endif %}</td>
+                                    <td class="py-2.5 px-3 text-right font-bold font-mono text-slate-900 border border-slate-200 text-[11px] align-top">{% if quotation.currency == 'INR' %}₹{% elif quotation.currency == 'USD' %}${% elif quotation.currency == 'EUR' %}€{% else %}{{ quotation.currency }} {% endif %}{{ item.line_total|floatformat:2 }}</td>
                                 </tr>
                                 {% endif %}
                                 {% empty %}
