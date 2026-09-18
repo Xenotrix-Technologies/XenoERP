@@ -377,17 +377,17 @@
                 <div class="text-right flex flex-col items-end">
                     <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">For {{ doc_settings.company_name }}</p>
                     
-                    <div class="relative w-48 h-14 border-b border-dashed border-slate-300 mt-1 flex items-end justify-end pb-1">
+                    <div class="relative w-48 h-16 border-b border-dashed border-slate-300 mt-1 flex items-end justify-end pb-1">
                         <!-- Seal Stamp if enabled -->
                         {% if doc_settings.effective_seal_url %}
-                        <img src="{{ doc_settings.effective_seal_url }}" alt="Company Seal" class="absolute right-10 bottom-0.5 h-13 w-13 object-contain opacity-90 pointer-events-none">
+                        <img src="{{ doc_settings.effective_seal_url }}" alt="Company Seal" style="height: 52px; width: 52px; object-fit: contain;" class="absolute right-12 bottom-0 opacity-80 pointer-events-none z-0">
                         {% endif %}
 
-                        <!-- Signature if provided -->
+                        <!-- Signature -->
                         {% if doc_settings.effective_signature_url %}
-                        <img src="{{ doc_settings.effective_signature_url }}" alt="Authorized Signature" class="relative z-10 max-h-11 max-w-[140px] object-contain">
+                        <img src="{{ doc_settings.effective_signature_url }}" alt="Authorized Signature" style="height: 38px; max-width: 125px; object-fit: contain;" class="relative z-10">
                         {% else %}
-                        <span class="relative z-10 font-serif italic text-blue-900 text-sm font-bold">{{ doc_settings.authorized_person_name|default:"Authorized Signatory" }}</span>
+                        <img src="{% static 'images/signature.png' %}" alt="Authorized Signature" style="height: 38px; max-width: 125px; object-fit: contain;" class="relative z-10">
                         {% endif %}
                     </div>
 
