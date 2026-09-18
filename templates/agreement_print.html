@@ -497,8 +497,12 @@
             <div class="sig-block">
                 <p><strong>SERVICE PROVIDER (FIRST PARTY):</strong></p>
                 <p>{{ doc_settings.company_name }}</p>
-                <div class="sig-line">
-                    <span class="font-signature">Authorized Signatory</span>
+                <div class="sig-line" style="display: flex; align-items: flex-end; justify-content: center; min-height: 40px;">
+                    {% if doc_settings.effective_signature_url %}
+                    <img src="{{ doc_settings.effective_signature_url }}" alt="Authorized Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
+                    {% else %}
+                    <img src="{% static 'images/signature.png' %}" alt="Authorized Signature" style="max-height: 45px; max-width: 140px; object-fit: contain;">
+                    {% endif %}
                 </div>
                 <p>Authorized Representative</p>
                 <p>Date: {{ agreement.date|date:"M d, Y" }}</p>

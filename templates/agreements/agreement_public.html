@@ -206,10 +206,10 @@
                 <div class="text-right">
                     <p class="text-[10px] font-bold uppercase text-slate-400">SERVICE PROVIDER SIGNATURE</p>
                     <div class="h-16 border-b border-dashed border-slate-300 w-56 ml-auto mt-1 flex items-end justify-end pb-1">
-                        {% if doc_settings.authorized_signature_url %}
-                        <img src="{{ doc_settings.authorized_signature_url }}" alt="Authorized Signature" class="max-h-12 max-w-full">
+                        {% if doc_settings.effective_signature_url %}
+                        <img src="{{ doc_settings.effective_signature_url }}" alt="Authorized Signature" class="max-h-12 max-w-[140px] object-contain">
                         {% else %}
-                        <span class="font-signature text-2xl text-blue-900">{{ doc_settings.authorized_person_name }}</span>
+                        <img src="/static/images/signature.png" alt="Authorized Signature" class="max-h-12 max-w-[140px] object-contain">
                         {% endif %}
                     </div>
                     <p class="text-[10px] font-bold text-slate-800 mt-1">For {{ doc_settings.company_name }}</p>

@@ -868,8 +868,13 @@
                     <h5 class="font-bold text-slate-200 uppercase text-[11px]">${sec}. EXECUTION & DUAL SIGNATURES</h5>
                     <div class="grid grid-cols-2 gap-3 mt-2">
                         <div class="p-2.5 bg-slate-800 rounded-xl">
-                            <span class="text-[9px] uppercase text-slate-400 font-bold">First Party (Provider)</span>
-                            <p class="font-signature text-sm text-white mt-1">Authorized Signatory</p>
+                            <span class="text-[9px] uppercase text-slate-400 font-bold block mb-1">First Party (Provider)</span>
+                            {% if doc_settings.effective_signature_url %}
+                            <img src="{{ doc_settings.effective_signature_url }}" alt="Authorized Signature" class="max-h-9 max-w-[120px] object-contain invert brightness-200">
+                            {% else %}
+                            <img src="{% static 'images/signature.png' %}" alt="Authorized Signature" class="max-h-9 max-w-[120px] object-contain invert brightness-200">
+                            {% endif %}
+                            <p class="text-[10px] text-slate-300 font-semibold mt-0.5">{{ doc_settings.authorized_person_name|default:"Authorized Signatory" }}</p>
                         </div>
                         <div class="p-2.5 bg-slate-800 rounded-xl">
                             <span class="text-[9px] uppercase text-slate-400 font-bold">Second Party (Client)</span>

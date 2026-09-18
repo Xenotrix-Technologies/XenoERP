@@ -232,7 +232,7 @@ class DocumentSettings(models.Model):
             return self.signature_file.url
         if self.authorized_signature_url:
             return self.authorized_signature_url
-        return None
+        return '/static/images/signature.png'
 
 
 class DocumentTemplate(models.Model):
