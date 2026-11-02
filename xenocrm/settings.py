@@ -42,19 +42,48 @@ RENDER_EXTERNAL_HOSTNAME = env('RENDER_EXTERNAL_HOSTNAME', default=None)
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['https://xeno.xenotrix.in', 'https://www.xeno.xenotrix.in', 'https://*.xenotrix.in', 'https://*.onrender.com'])
-CSRF_TRUSTED_ORIGINS.extend([
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    'http://localhost:8001',
-    'http://127.0.0.1:8001',
-    'http://localhost:8080',
-    'http://127.0.0.1:8080',
-    'http://localhost',
-    'http://127.0.0.1'
-])
+CSRF_TRUSTED_ORIGINS = [
+    'https://xeno.xenotrix.in',
+    'http://xeno.xenotrix.in',
+    'https://www.xeno.xenotrix.in',
+    'http://www.xeno.xenotrix.in',
+    'https://*.xenotrix.in',
+    'http://*.xenotrix.in',
+    'https://*.onrender.com',
+    'http://*.onrender.com',
+]
+
+# Allow any custom origins specified in environment
+CUSTOM_CSRF_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+CSRF_TRUSTED_ORIGINS.extend(CUSTOM_CSRF_ORIGINS)
+
+# Localhost, loopback, and dev origins with standard ports
+DEV_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+DEV_PORTS = ['', ':80', ':443', ':8000', ':8001', ':8080', ':3000', ':5000', ':5173']
+
+for host in DEV_HOSTS:
+    for port in DEV_PORTS:
+        CSRF_TRUSTED_ORIGINS.append(f"http://{host}{port}")
+        CSRF_TRUSTED_ORIGINS.append(f"https://{host}{port}")
+
+# Dynamically add local LAN IP (e.g. 192.168.x.x) for development on local network / mobile devices
+import socket
+try:
+    _hostname = socket.gethostname()
+    _local_ip = socket.gethostbyname(_hostname)
+    if _local_ip and _local_ip not in ['127.0.0.1', '0.0.0.0']:
+        for port in DEV_PORTS:
+            CSRF_TRUSTED_ORIGINS.append(f"http://{_local_ip}{port}")
+            CSRF_TRUSTED_ORIGINS.append(f"https://{_local_ip}{port}")
+except Exception:
+    pass
+
 if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
+    CSRF_TRUSTED_ORIGINS.append(f"http://{RENDER_EXTERNAL_HOSTNAME}")
+
+# Remove duplicates while preserving order
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS))
 
 import sys
 
@@ -117,7 +146,9 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
+                'django.template.context_processors.csrf',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'crm.context_processors.unread_notifications_count',
@@ -239,6 +270,11 @@ LOGGING = {
         'django': {
             'handlers': ['console'],
             'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+        'django.security.csrf': {
+            'handlers': ['console'],
+            'level': 'WARNING',
             'propagate': False,
         },
     },
