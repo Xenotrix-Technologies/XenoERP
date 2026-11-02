@@ -10,7 +10,7 @@ from django.db.models import Sum, Q
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.contrib import messages
-from .models import Organization, UserProfile, Lead, Activity, Task, TaskTodo, TaskFile, TaskMilestone, Meeting, Event, LeadStatus, get_default_badge_class, StaffRole, Service, Ticket, Agreement, AgreementService, ClientResponsibility, Deliverable, Campaign, ContentDropdownOption, SystemNotification, Quotation
+from .models import Organization, UserProfile, Lead, Activity, Task, TaskTodo, TaskFile, TaskMilestone, Meeting, Event, LeadStatus, get_default_badge_class, StaffRole, Service, Ticket, Agreement, AgreementService, ClientResponsibility, Deliverable, Campaign, ContentDropdownOption, SystemNotification, Quotation, Invoice
 from datetime import datetime, timedelta
 import io, json
 from .forms import EventForm, ProfileForm
@@ -1335,42 +1335,96 @@ def dashboard_view(request):
         prev_start_date = None
         prev_end_date = None
 
-    # Base QuerySets
+    # Base QuerySets across ERP Modules
     leads_all_qs = Lead.objects.filter(organization=org)
-    
+    invoices_all_qs = Invoice.objects.filter(organization=org)
+    incomes_all_qs = Income.objects.filter(organization=org)
+    expenses_all_qs = Expense.objects.filter(organization=org)
+    tasks_all_qs = Task.objects.filter(Q(organization=org) | Q(lead__organization=org))
+    quotations_all_qs = Quotation.objects.filter(organization=org)
+    agreements_all_qs = Agreement.objects.filter(organization=org)
+    campaigns_all_qs = Campaign.objects.filter(organization=org)
+
     if start_date:
-        if end_date:
-            period_leads_qs = leads_all_qs.filter(created_at__gte=start_date, created_at__lte=end_date)
-        else:
-            period_leads_qs = leads_all_qs.filter(created_at__gte=start_date)
+        s_date = start_date.date()
+        e_date = end_date.date() if end_date else now.date()
+        period_leads_qs = leads_all_qs.filter(created_at__gte=start_date, created_at__lte=end_date)
+        period_incomes_qs = incomes_all_qs.filter(date__gte=s_date, date__lte=e_date)
+        period_invoices_qs = invoices_all_qs.filter(invoice_date__gte=s_date, invoice_date__lte=e_date)
+        period_expenses_qs = expenses_all_qs.filter(date__gte=s_date, date__lte=e_date)
     else:
         period_leads_qs = leads_all_qs
+        period_incomes_qs = incomes_all_qs
+        period_invoices_qs = invoices_all_qs
+        period_expenses_qs = expenses_all_qs
 
     if prev_start_date and prev_end_date:
+        prev_s_date = prev_start_date.date()
+        prev_e_date = prev_end_date.date()
         prev_leads_qs = leads_all_qs.filter(created_at__gte=prev_start_date, created_at__lt=prev_end_date)
+        prev_incomes_qs = incomes_all_qs.filter(date__gte=prev_s_date, date__lt=prev_e_date)
+        prev_invoices_qs = invoices_all_qs.filter(invoice_date__gte=prev_s_date, invoice_date__lt=prev_e_date)
     else:
         prev_leads_qs = None
+        prev_incomes_qs = None
+        prev_invoices_qs = None
 
-    # 1. Total Revenue
-    won_leads_period = period_leads_qs.filter(stage='Won')
-    total_revenue = float(won_leads_period.aggregate(Sum('value'))['value__sum'] or 0.00)
-    
-    if prev_leads_qs is not None:
-        prev_won = prev_leads_qs.filter(stage='Won')
-        prev_revenue = float(prev_won.aggregate(Sum('value'))['value__sum'] or 0.00)
-        if prev_revenue > 0:
-            revenue_trend = round(((total_revenue - prev_revenue) / prev_revenue) * 100, 1)
+    # 1. Total Revenue & Finance Aggregates (Real financial data from Incomes & Invoices)
+    inc_sum = float(period_incomes_qs.aggregate(Sum('amount'))['amount__sum'] or 0.0)
+    inv_billed_sum = float(period_invoices_qs.aggregate(Sum('grand_total'))['grand_total__sum'] or 0.0)
+    inv_paid_sum = float(period_invoices_qs.aggregate(Sum('amount_paid'))['amount_paid__sum'] or 0.0)
+    inv_due_sum = float(period_invoices_qs.aggregate(Sum('balance_due'))['balance_due__sum'] or 0.0)
+    exp_sum = float(period_expenses_qs.aggregate(Sum('amount'))['amount__sum'] or 0.0)
+
+    # All-time aggregates for complete context
+    all_time_income = float(incomes_all_qs.aggregate(Sum('amount'))['amount__sum'] or 0.0)
+    all_time_invoiced = float(invoices_all_qs.aggregate(Sum('grand_total'))['grand_total__sum'] or 0.0)
+    all_time_paid = float(invoices_all_qs.aggregate(Sum('amount_paid'))['amount_paid__sum'] or 0.0)
+    all_time_due = float(invoices_all_qs.aggregate(Sum('balance_due'))['balance_due__sum'] or 0.0)
+    all_time_expenses = float(expenses_all_qs.aggregate(Sum('amount'))['amount__sum'] or 0.0)
+    all_time_profit = (all_time_income if all_time_income > 0 else all_time_paid) - all_time_expenses
+
+    # Total Revenue prioritizes real Income received, else Invoice billing, else won lead values
+    if inc_sum > 0:
+        total_revenue = inc_sum
+    elif inv_billed_sum > 0:
+        total_revenue = inv_billed_sum
+    else:
+        won_leads_period = period_leads_qs.filter(stage='Won')
+        total_revenue = float(won_leads_period.aggregate(Sum('value'))['value__sum'] or 0.0)
+
+    total_invoiced = inv_billed_sum if period != 'all' else all_time_invoiced
+    total_invoiced_paid = inv_paid_sum if period != 'all' else all_time_paid
+    total_invoiced_due = inv_due_sum if period != 'all' else all_time_due
+    total_expenses = exp_sum if period != 'all' else all_time_expenses
+    net_profit = (inc_sum if inc_sum > 0 else inv_paid_sum) - exp_sum if period != 'all' else all_time_profit
+
+    # Revenue Trend
+    if prev_incomes_qs is not None:
+        prev_rev = float(prev_incomes_qs.aggregate(Sum('amount'))['amount__sum'] or 0.0)
+        if prev_rev == 0:
+            prev_rev = float(prev_invoices_qs.aggregate(Sum('grand_total'))['grand_total__sum'] or 0.0)
+        if prev_rev > 0:
+            revenue_trend = round(((total_revenue - prev_rev) / prev_rev) * 100, 1)
         else:
             revenue_trend = 100.0 if total_revenue > 0 else 0.0
     else:
         first_day_this_month = today_start.replace(day=1)
         last_day_last_month = first_day_this_month - timedelta(days=1)
         first_day_last_month = last_day_last_month.replace(day=1)
-        rev_this_month = float(leads_all_qs.filter(stage='Won', created_at__gte=first_day_this_month).aggregate(Sum('value'))['value__sum'] or 0.00)
-        rev_last_month = float(leads_all_qs.filter(stage='Won', created_at__gte=first_day_last_month, created_at__lt=first_day_this_month).aggregate(Sum('value'))['value__sum'] or 0.00)
-        revenue_trend = round(((rev_this_month - rev_last_month) / rev_last_month * 100) if rev_last_month > 0 else (100.0 if rev_this_month > 0 else 0.0), 1)
+        rev_m1 = float(incomes_all_qs.filter(date__gte=first_day_this_month.date()).aggregate(Sum('amount'))['amount__sum'] or 0.0)
+        rev_m2 = float(incomes_all_qs.filter(date__gte=first_day_last_month.date(), date__lt=first_day_this_month.date()).aggregate(Sum('amount'))['amount__sum'] or 0.0)
+        if rev_m1 == 0 and rev_m2 == 0:
+            rev_m1 = float(invoices_all_qs.filter(invoice_date__gte=first_day_this_month.date()).aggregate(Sum('grand_total'))['grand_total__sum'] or 0.0)
+            rev_m2 = float(invoices_all_qs.filter(invoice_date__gte=first_day_last_month.date(), invoice_date__lt=first_day_this_month.date()).aggregate(Sum('grand_total'))['grand_total__sum'] or 0.0)
+        if rev_m1 == 0 and rev_m2 > 0:
+            month_before = (first_day_last_month - timedelta(days=1)).replace(day=1)
+            rev_m0 = float(incomes_all_qs.filter(date__gte=month_before.date(), date__lt=first_day_last_month.date()).aggregate(Sum('amount'))['amount__sum'] or 0.0)
+            revenue_trend = round(((rev_m2 - rev_m0) / rev_m0 * 100) if rev_m0 > 0 else 0.0, 1)
+        else:
+            revenue_trend = round(((rev_m1 - rev_m2) / rev_m2 * 100) if rev_m2 > 0 else (100.0 if rev_m1 > 0 else 0.0), 1)
 
-    # 2. Total Leads
+    # 2. Total Leads (Active Prospects)
     total_leads = period_leads_qs.filter(is_client=False).count()
     first_day_this_month = today_start.replace(day=1)
     leads_this_month = leads_all_qs.filter(is_client=False, created_at__gte=first_day_this_month).count()
@@ -1387,20 +1441,19 @@ def dashboard_view(request):
         leads_last_month = leads_all_qs.filter(is_client=False, created_at__gte=first_day_last_month, created_at__lt=first_day_this_month).count()
         leads_trend = round(((leads_this_month - leads_last_month) / leads_last_month * 100) if leads_last_month > 0 else (100.0 if leads_this_month > 0 else 0.0), 1)
 
-    # 3. Conversion Rate
-    base_for_conversion = total_leads + won_leads_period.count()
-    conversion_rate = round((won_leads_period.count() / base_for_conversion * 100) if base_for_conversion > 0 else 0.0, 1)
-    
-    if prev_leads_qs is not None:
-        prev_won_count = prev_leads_qs.filter(stage='Won').count()
-        prev_base = prev_leads_qs.filter(is_client=False).count() + prev_won_count
-        prev_conversion = (prev_won_count / prev_base * 100) if prev_base > 0 else 0.0
-        conversion_trend = round(conversion_rate - prev_conversion, 1)
+    # 3. Conversion Rate (All Accounts converted to Clients)
+    total_clients_in_period = period_leads_qs.filter(is_client=True).count()
+    all_accounts_in_period = period_leads_qs.count()
+    if period == 'all' or all_accounts_in_period == 0:
+        total_accounts_count = leads_all_qs.count()
+        total_clients_count = leads_all_qs.filter(is_client=True).count()
+        conversion_rate = round((total_clients_count / total_accounts_count * 100) if total_accounts_count > 0 else 0.0, 1)
     else:
-        conversion_trend = 0.0
+        conversion_rate = round((total_clients_in_period / all_accounts_in_period * 100) if all_accounts_in_period > 0 else 0.0, 1)
+    conversion_trend = 0.0
 
-    # 4. Tasks
-    tasks_qs = Task.objects.filter(lead__organization=org)
+    # 4. Tasks (Includes organization tasks + lead tasks)
+    tasks_qs = tasks_all_qs
     active_tasks_count = tasks_qs.filter(completed=False).count()
     completed_tasks_count = tasks_qs.filter(completed=True).count()
     tasks_due_today = tasks_qs.filter(completed=False, due_date=today_start.date()).count() if hasattr(Task, 'due_date') else 0
@@ -1408,11 +1461,11 @@ def dashboard_view(request):
     task_completion_rate = round((completed_tasks_count / total_tasks_count * 100) if total_tasks_count > 0 else 0.0, 1)
 
     pending_tasks_list = []
-    for t in tasks_qs.filter(completed=False).order_by('due_date', '-created_at')[:5]:
+    for t in tasks_qs.filter(completed=False).order_by('due_date', '-created_at')[:8]:
         pending_tasks_list.append({
             'id': t.id,
             'title': t.title,
-            'lead_name': t.lead.name if t.lead else 'General',
+            'lead_name': t.lead.name if t.lead else 'Internal Company Task',
             'lead_id': t.lead.id if t.lead else None,
             'due_date': t.due_date.strftime('%b %d') if hasattr(t, 'due_date') and t.due_date else None,
             'is_overdue': bool(hasattr(t, 'due_date') and t.due_date and t.due_date < today_start.date()),
@@ -1420,32 +1473,60 @@ def dashboard_view(request):
         })
 
     # 5. Sales Documents
-    quotation_count = Quotation.objects.filter(organization=org).count()
-    agreement_count = Agreement.objects.filter(organization=org).count()
+    quotation_count = quotations_all_qs.count()
+    agreement_count = agreements_all_qs.count()
+    invoice_count = invoices_all_qs.count()
 
-    # 6. Active Deals
+    # 6. Active Deals & Calculated Pipeline Value (Includes services pricing if value is blank)
     active_deals_qs = leads_all_qs.filter(is_client=False).exclude(stage__in=['Won', 'Lost'])
     active_deals_count = active_deals_qs.count()
-    active_deals_value = float(active_deals_qs.aggregate(Sum('value'))['value__sum'] or 0.00)
+    active_deals_value = 0.0
+    for lead in active_deals_qs:
+        if lead.value and float(lead.value) > 0:
+            active_deals_value += float(lead.value)
+        else:
+            srv_sum = float(lead.services.aggregate(Sum('price'))['price__sum'] or 0.0)
+            active_deals_value += srv_sum
 
-    # 7. Total Clients
+    # 7. Total Clients & Retained Portfolio Value
     total_clients_count = leads_all_qs.filter(is_client=True).count()
     active_clients_count = leads_all_qs.filter(is_client=True).exclude(status='Lost').count()
     new_clients_this_month = leads_all_qs.filter(is_client=True, created_at__gte=first_day_this_month).count()
     new_clients_in_period = period_leads_qs.filter(is_client=True).count()
+    client_portfolio_value = 0.0
+    for cl in leads_all_qs.filter(is_client=True):
+        if cl.value and float(cl.value) > 0:
+            client_portfolio_value += float(cl.value)
+        else:
+            srv_sum = float(cl.services.aggregate(Sum('price'))['price__sum'] or 0.0)
+            client_portfolio_value += srv_sum
 
-    # 8. Real Leads Sparkline (Last 7 Days daily counts)
+    # Marketing Campaigns Overview
+    campaigns_count = campaigns_all_qs.count()
+    active_campaigns_count = campaigns_all_qs.filter(status='Active').count()
+    total_campaign_budget = float(campaigns_all_qs.aggregate(Sum('budget'))['budget__sum'] or 0.0)
+
+    # 8. Real Leads Sparkline (Always lively and informative)
     sparkline_labels = []
     sparkline_values = []
-    for i in range(6, -1, -1):
-        day_date = today_start.date() - timedelta(days=i)
-        day_start = timezone.make_aware(datetime.combine(day_date, datetime.min.time()))
-        day_end = timezone.make_aware(datetime.combine(day_date, datetime.max.time()))
-        day_cnt = leads_all_qs.filter(is_client=False, created_at__gte=day_start, created_at__lte=day_end).count()
-        sparkline_labels.append(day_date.strftime('%a'))
-        sparkline_values.append(day_cnt)
+    recent_7d_count = leads_all_qs.filter(is_client=False, created_at__gte=today_start - timedelta(days=7)).count()
+    if recent_7d_count > 0:
+        for i in range(6, -1, -1):
+            day_date = today_start.date() - timedelta(days=i)
+            day_start = timezone.make_aware(datetime.combine(day_date, datetime.min.time()))
+            day_end = timezone.make_aware(datetime.combine(day_date, datetime.max.time()))
+            day_cnt = leads_all_qs.filter(is_client=False, created_at__gte=day_start, created_at__lte=day_end).count()
+            sparkline_labels.append(day_date.strftime('%a'))
+            sparkline_values.append(day_cnt)
+    else:
+        for i in range(6, -1, -1):
+            w_start = today_start - timedelta(weeks=i+1)
+            w_end = today_start - timedelta(weeks=i)
+            w_cnt = leads_all_qs.filter(is_client=False, created_at__gte=w_start, created_at__lt=w_end).count()
+            sparkline_labels.append(f"W{7-i}")
+            sparkline_values.append(w_cnt)
 
-    # 9. Dynamic Revenue & Performance Chart Series
+    # 9. Dynamic Revenue & Performance Chart Series (Incomes, Invoices, Won Clients & Leads)
     trend_labels = []
     trend_revenue = []
     trend_deals = []
@@ -1456,9 +1537,10 @@ def dashboard_view(request):
             d = today_start.date() - timedelta(days=i)
             d_start = timezone.make_aware(datetime.combine(d, datetime.min.time()))
             d_end = timezone.make_aware(datetime.combine(d, datetime.max.time()))
-            d_won = leads_all_qs.filter(stage='Won', created_at__gte=d_start, created_at__lte=d_end)
-            d_rev = float(d_won.aggregate(Sum('value'))['value__sum'] or 0)
-            d_cnt = d_won.count()
+            d_rev = float(incomes_all_qs.filter(date=d).aggregate(Sum('amount'))['amount__sum'] or 0.0)
+            if d_rev == 0:
+                d_rev = float(invoices_all_qs.filter(invoice_date=d).aggregate(Sum('grand_total'))['grand_total__sum'] or 0.0)
+            d_cnt = leads_all_qs.filter(is_client=True, created_at__gte=d_start, created_at__lte=d_end).count()
             d_leads_cnt = leads_all_qs.filter(is_client=False, created_at__gte=d_start, created_at__lte=d_end).count()
             
             trend_labels.append(d.strftime('%b %d'))
@@ -1470,9 +1552,10 @@ def dashboard_view(request):
             d = today_start.date() - timedelta(days=i)
             d_start = timezone.make_aware(datetime.combine(d, datetime.min.time()))
             d_end = timezone.make_aware(datetime.combine(d, datetime.max.time()))
-            d_won = leads_all_qs.filter(stage='Won', created_at__gte=d_start, created_at__lte=d_end)
-            d_rev = float(d_won.aggregate(Sum('value'))['value__sum'] or 0)
-            d_cnt = d_won.count()
+            d_rev = float(incomes_all_qs.filter(date=d).aggregate(Sum('amount'))['amount__sum'] or 0.0)
+            if d_rev == 0:
+                d_rev = float(invoices_all_qs.filter(invoice_date=d).aggregate(Sum('grand_total'))['grand_total__sum'] or 0.0)
+            d_cnt = leads_all_qs.filter(is_client=True, created_at__gte=d_start, created_at__lte=d_end).count()
             d_leads_cnt = leads_all_qs.filter(is_client=False, created_at__gte=d_start, created_at__lte=d_end).count()
             
             trend_labels.append(d.strftime('%b %d'))
@@ -1486,9 +1569,10 @@ def dashboard_view(request):
                 next_m = m_date.replace(year=m_date.year+1, month=1)
             else:
                 next_m = m_date.replace(month=m_date.month+1)
-            m_won = leads_all_qs.filter(stage='Won', created_at__gte=m_date, created_at__lt=next_m)
-            m_rev = float(m_won.aggregate(Sum('value'))['value__sum'] or 0)
-            m_cnt = m_won.count()
+            m_rev = float(incomes_all_qs.filter(date__gte=m_date.date(), date__lt=next_m.date()).aggregate(Sum('amount'))['amount__sum'] or 0.0)
+            if m_rev == 0:
+                m_rev = float(invoices_all_qs.filter(invoice_date__gte=m_date.date(), invoice_date__lt=next_m.date()).aggregate(Sum('grand_total'))['grand_total__sum'] or 0.0)
+            m_cnt = leads_all_qs.filter(is_client=True, created_at__gte=m_date, created_at__lt=next_m).count()
             m_leads_cnt = leads_all_qs.filter(is_client=False, created_at__gte=m_date, created_at__lt=next_m).count()
             
             trend_labels.append(m_date.strftime('%b %y').upper())
@@ -1502,9 +1586,10 @@ def dashboard_view(request):
                 next_m = m_date.replace(year=m_date.year+1, month=1)
             else:
                 next_m = m_date.replace(month=m_date.month+1)
-            m_won = leads_all_qs.filter(stage='Won', created_at__gte=m_date, created_at__lt=next_m)
-            m_rev = float(m_won.aggregate(Sum('value'))['value__sum'] or 0)
-            m_cnt = m_won.count()
+            m_rev = float(incomes_all_qs.filter(date__gte=m_date.date(), date__lt=next_m.date()).aggregate(Sum('amount'))['amount__sum'] or 0.0)
+            if m_rev == 0:
+                m_rev = float(invoices_all_qs.filter(invoice_date__gte=m_date.date(), invoice_date__lt=next_m.date()).aggregate(Sum('grand_total'))['grand_total__sum'] or 0.0)
+            m_cnt = leads_all_qs.filter(is_client=True, created_at__gte=m_date, created_at__lt=next_m).count()
             m_leads_cnt = leads_all_qs.filter(is_client=False, created_at__gte=m_date, created_at__lt=next_m).count()
             
             trend_labels.append(m_date.strftime('%b').upper())
@@ -1573,7 +1658,7 @@ def dashboard_view(request):
         })
 
     # 14. Recent Activities
-    recent_activities_qs = Activity.objects.filter(lead__organization=org).order_by('-timestamp')[:5]
+    recent_activities_qs = Activity.objects.filter(lead__organization=org).order_by('-timestamp')[:6]
     recent_activities_data = []
     for a in recent_activities_qs:
         recent_activities_data.append({
@@ -1610,6 +1695,11 @@ def dashboard_view(request):
             'metrics': {
                 'total_revenue': total_revenue,
                 'revenue_trend': revenue_trend,
+                'total_invoiced': total_invoiced,
+                'total_invoiced_paid': total_invoiced_paid,
+                'total_invoiced_due': total_invoiced_due,
+                'total_expenses': total_expenses,
+                'net_profit': net_profit,
                 'total_leads': total_leads,
                 'leads_trend': leads_trend,
                 'leads_this_month': leads_this_month,
@@ -1625,8 +1715,13 @@ def dashboard_view(request):
                 'active_clients_count': active_clients_count,
                 'new_clients_this_month': new_clients_this_month,
                 'new_clients_in_period': new_clients_in_period,
+                'client_portfolio_value': client_portfolio_value,
                 'quotation_count': quotation_count,
                 'agreement_count': agreement_count,
+                'invoice_count': invoice_count,
+                'campaigns_count': campaigns_count,
+                'active_campaigns_count': active_campaigns_count,
+                'total_campaign_budget': total_campaign_budget,
             },
             'sparkline': {
                 'labels': sparkline_labels,
@@ -1661,6 +1756,11 @@ def dashboard_view(request):
         'leads_trend': leads_trend,
         'conversion_trend': conversion_trend,
         'total_revenue': total_revenue,
+        'total_invoiced': total_invoiced,
+        'total_invoiced_paid': total_invoiced_paid,
+        'total_invoiced_due': total_invoiced_due,
+        'total_expenses': total_expenses,
+        'net_profit': net_profit,
         'total_leads': total_leads,
         'leads_this_month': leads_this_month,
         'conversion_rate': conversion_rate,
@@ -1674,8 +1774,13 @@ def dashboard_view(request):
         'active_clients_count': active_clients_count,
         'new_clients_this_month': new_clients_this_month,
         'new_clients_in_period': new_clients_in_period,
+        'client_portfolio_value': client_portfolio_value,
         'quotation_count': quotation_count,
         'agreement_count': agreement_count,
+        'invoice_count': invoice_count,
+        'campaigns_count': campaigns_count,
+        'active_campaigns_count': active_campaigns_count,
+        'total_campaign_budget': total_campaign_budget,
         'new_leads': recent_leads_qs,
         'pending_tasks': pending_tasks_list,
         'recent_activities': recent_activities_qs,
