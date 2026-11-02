@@ -153,6 +153,61 @@
         </div>
     </div>
 
+    <!-- Quick Executive Highlights Ribbon -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <a href="{% url 'campaign_dashboard' %}" class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs hover:border-purple-300 hover:shadow-xs transition-all flex items-center justify-between group">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                    <i data-lucide="megaphone" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Marketing Campaigns</span>
+                    <strong class="text-sm font-bold text-slate-900" id="ribbonActiveCampaigns">{{ active_campaigns_count }} Active</strong>
+                </div>
+            </div>
+            <span class="text-[11px] font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200" id="ribbonTotalCampaigns">{{ campaigns_count }} Total</span>
+        </a>
+
+        <a href="{% url 'invoice_dashboard' %}" class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs hover:border-emerald-300 hover:shadow-xs transition-all flex items-center justify-between group">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                    <i data-lucide="receipt" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Receivables Due</span>
+                    <strong class="text-sm font-bold text-rose-600" id="ribbonReceivablesDue">₹{{ total_invoiced_due|floatformat:0 }}</strong>
+                </div>
+            </div>
+            <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200" id="ribbonInvoiceCount">{{ invoice_count }} Invoices</span>
+        </a>
+
+        <a href="{% url 'projects' %}" class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs hover:border-blue-300 hover:shadow-xs transition-all flex items-center justify-between group">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <i data-lucide="folder-kanban" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Active Projects</span>
+                    <strong class="text-sm font-bold text-slate-900" id="ribbonActiveTasks">{{ active_tasks_count }} Actionable</strong>
+                </div>
+            </div>
+            <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">On Track</span>
+        </a>
+
+        <a href="{% url 'finance_dashboard' %}" class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs hover:border-brand-300 hover:shadow-xs transition-all flex items-center justify-between group">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-brand-50 text-brand-600 rounded-lg group-hover:bg-brand-600 group-hover:text-white transition-colors">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Net Operating Profit</span>
+                    <strong class="text-sm font-bold text-brand-700" id="ribbonNetProfit">₹{{ net_profit|floatformat:0 }}</strong>
+                </div>
+            </div>
+            <span class="text-[11px] font-bold text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded-full border border-brand-200">Finance &rarr;</span>
+        </a>
+    </div>
+
     <!-- Executive KPI Grid (Stripe / Linear Grid) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8 min-w-0">
         <!-- 1. Revenue KPI -->
@@ -173,8 +228,12 @@
                 </span>
             </div>
             <h2 id="kpiTotalRevenue" class="text-3xl font-extrabold text-slate-900 tracking-tight">₹{{ total_revenue|floatformat:0 }}</h2>
-            <div class="mt-2 text-[11px] text-slate-400 flex items-center justify-between">
-                <span>Period Won Deals</span>
+            <div class="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                <span>Billed: <strong class="text-slate-800 font-bold" id="kpiInvoicedVal">₹{{ total_invoiced|floatformat:0 }}</strong></span>
+                <span>Collected: <strong class="text-emerald-600 font-bold" id="kpiCollectedVal">₹{{ total_invoiced_paid|floatformat:0 }}</strong></span>
+            </div>
+            <div class="mt-1.5 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Period Net Profit: <strong class="text-brand-600 font-semibold" id="kpiNetProfit">₹{{ net_profit|floatformat:0 }}</strong></span>
                 <span class="font-medium text-slate-600" id="kpiPeriodIndicator">{{ period|title|default:"All Time" }}</span>
             </div>
         </div>
@@ -197,7 +256,10 @@
                 </span>
             </div>
             <div class="flex items-end justify-between">
-                <h2 id="kpiTotalLeads" class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ total_leads }}</h2>
+                <div>
+                    <h2 id="kpiTotalLeads" class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ total_leads }}</h2>
+                    <span class="text-[11px] text-slate-400 font-medium block mt-1">Active Prospects</span>
+                </div>
                 <div class="w-24 h-9">
                     <canvas id="leadsSparkline"></canvas>
                 </div>
@@ -213,7 +275,7 @@
                     </div>
                     <div>
                         <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Conversion Rate</span>
-                        <span class="text-[10px] text-slate-400 font-medium">Lead-to-Win Ratio</span>
+                        <span class="text-[10px] text-slate-400 font-medium">Lead-to-Client Ratio</span>
                     </div>
                 </div>
                 <span class="bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-semibold px-2 py-0.5 rounded-full">
@@ -221,7 +283,10 @@
                 </span>
             </div>
             <div class="flex items-end justify-between">
-                <h2 id="kpiConversionRate" class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ conversion_rate|floatformat:1 }}%</h2>
+                <div>
+                    <h2 id="kpiConversionRate" class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ conversion_rate|floatformat:1 }}%</h2>
+                    <p class="text-[11px] text-slate-400 mt-1"><span id="kpiWonCount" class="font-bold text-slate-700">{{ total_clients_count }}</span> won from <span id="kpiTotalAccounts" class="font-bold text-slate-700">{{ total_leads|add:total_clients_count }}</span> accounts</p>
+                </div>
                 <div id="conversionCircleMeter" class="w-12 h-12 rounded-full border-4 border-amber-500/20 border-t-amber-500 flex items-center justify-center text-xs font-bold text-amber-700 transition-all">
                     <span id="kpiConversionPill">{{ conversion_rate|floatformat:0 }}%</span>
                 </div>
@@ -247,7 +312,7 @@
             <h2 id="kpiActiveTasks" class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ active_tasks_count }}</h2>
             <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600">
                 <span>Completed: <strong id="kpiCompletedTasks" class="text-emerald-600 font-bold">{{ completed_tasks_count }}</strong></span>
-                <span>Due Today: <strong id="kpiDueTodayTasks" class="text-amber-600 font-bold">{{ tasks_due_today }}</strong></span>
+                <span>Due / Actionable: <strong id="kpiDueTodayTasks" class="text-amber-600 font-bold">{{ active_tasks_count }}</strong></span>
             </div>
         </div>
 
@@ -260,18 +325,22 @@
                     </div>
                     <div>
                         <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Sales Documents</span>
-                        <a href="{% url 'quotation_list' %}" class="text-[10px] text-blue-600 hover:underline font-bold">Manage Suite →</a>
+                        <a href="{% url 'invoice_dashboard' %}" class="text-[10px] text-blue-600 hover:underline font-bold">Manage Suite →</a>
                     </div>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-                <div class="p-2 bg-white rounded-xl border border-slate-100 shadow-2xs">
-                    <span class="text-[10px] text-slate-400 font-semibold block">Quotations</span>
-                    <a href="{% url 'quotation_list' %}" id="kpiQuotationCount" class="text-lg font-extrabold text-slate-900 hover:text-blue-600">{{ quotation_count|default:0 }}</a>
+            <div class="grid grid-cols-3 gap-2 text-xs">
+                <div class="p-2 bg-white rounded-xl border border-slate-100 shadow-2xs text-center">
+                    <span class="text-[10px] text-slate-400 font-semibold block">Quotes</span>
+                    <a href="{% url 'quotation_list' %}" id="kpiQuotationCount" class="text-base font-extrabold text-slate-900 hover:text-blue-600">{{ quotation_count|default:0 }}</a>
                 </div>
-                <div class="p-2 bg-white rounded-xl border border-slate-100 shadow-2xs">
+                <div class="p-2 bg-white rounded-xl border border-slate-100 shadow-2xs text-center">
                     <span class="text-[10px] text-slate-400 font-semibold block">Agreements</span>
-                    <a href="{% url 'agreements' %}" id="kpiAgreementCount" class="text-lg font-extrabold text-slate-900 hover:text-blue-600">{{ agreement_count|default:0 }}</a>
+                    <a href="{% url 'agreements' %}" id="kpiAgreementCount" class="text-base font-extrabold text-slate-900 hover:text-blue-600">{{ agreement_count|default:0 }}</a>
+                </div>
+                <div class="p-2 bg-white rounded-xl border border-slate-100 shadow-2xs text-center">
+                    <span class="text-[10px] text-slate-400 font-semibold block">Invoices</span>
+                    <a href="{% url 'invoice_dashboard' %}" id="kpiInvoiceCount" class="text-base font-extrabold text-emerald-600 hover:text-emerald-700">{{ invoice_count|default:0 }}</a>
                 </div>
             </div>
         </div>
@@ -295,7 +364,7 @@
             <h2 id="kpiActiveDeals" class="text-3xl font-extrabold text-slate-900 tracking-tight">{{ active_deals_count }}</h2>
             <div class="mt-3 p-2 bg-sky-50/70 rounded-xl border border-sky-100 flex items-center justify-between text-xs text-sky-900 font-semibold">
                 <span>Pipeline Value:</span>
-                <span id="kpiPipelineValue">₹{{ active_deals_value|floatformat:0 }}</span>
+                <span id="kpiPipelineValue" class="font-bold text-sky-800">₹{{ active_deals_value|floatformat:0 }}</span>
             </div>
         </div>
 
@@ -308,7 +377,7 @@
                     </div>
                     <div>
                         <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total Clients</span>
-                        <span class="text-[10px] text-slate-400 font-medium">Customer Base</span>
+                        <span class="text-[10px] text-slate-400 font-medium">Active Customer Base</span>
                     </div>
                 </div>
                 <a href="{% url 'clients' %}" class="text-xs text-emerald-600 hover:underline font-semibold flex items-center gap-0.5">
@@ -317,15 +386,20 @@
             </div>
             <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                 <h2 id="kpiTotalClients" class="text-3xl font-extrabold text-emerald-700 tracking-tight">{{ total_clients_count }}</h2>
-                <div class="flex items-center gap-4 text-xs text-slate-600 bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100">
+                <div class="flex items-center gap-3 text-xs text-slate-600 bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100 flex-wrap">
                     <div>
-                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Active Clients</span>
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Active</span>
                         <strong id="kpiActiveClients" class="text-emerald-700 text-sm font-extrabold">{{ active_clients_count }}</strong>
                     </div>
                     <div class="h-6 w-px bg-emerald-200"></div>
                     <div>
                         <span class="text-[10px] text-slate-400 block uppercase font-bold">New This Month</span>
                         <strong id="kpiNewClientsMonth" class="text-brand-600 text-sm font-extrabold">{{ new_clients_this_month }}</strong>
+                    </div>
+                    <div class="h-6 w-px bg-emerald-200"></div>
+                    <div>
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Portfolio Value</span>
+                        <strong id="kpiClientPortfolio" class="text-slate-900 text-sm font-extrabold">₹{{ client_portfolio_value|floatformat:0 }}</strong>
                     </div>
                 </div>
             </div>
@@ -981,18 +1055,34 @@
             // 1. Update KPI Values with CountUp animation
             const m = data.metrics;
             animateValue('kpiTotalRevenue', m.total_revenue, '₹', '', 0);
+            animateValue('kpiInvoicedVal', m.total_invoiced, '₹', '', 0);
+            animateValue('kpiCollectedVal', m.total_invoiced_paid, '₹', '', 0);
+            animateValue('kpiNetProfit', m.net_profit, '₹', '', 0);
             animateValue('kpiTotalLeads', m.total_leads, '', '', 0);
             animateValue('kpiConversionRate', m.conversion_rate, '', '%', 1);
             animateValue('kpiActiveTasks', m.active_tasks_count, '', '', 0);
             animateValue('kpiCompletedTasks', m.completed_tasks_count, '', '', 0);
-            animateValue('kpiDueTodayTasks', m.tasks_due_today, '', '', 0);
+            animateValue('kpiDueTodayTasks', m.active_tasks_count, '', '', 0);
             animateValue('kpiQuotationCount', m.quotation_count, '', '', 0);
             animateValue('kpiAgreementCount', m.agreement_count, '', '', 0);
+            animateValue('kpiInvoiceCount', m.invoice_count, '', '', 0);
             animateValue('kpiActiveDeals', m.active_deals_count, '', '', 0);
             animateValue('kpiPipelineValue', m.active_deals_value, '₹', '', 0);
             animateValue('kpiTotalClients', m.total_clients_count, '', '', 0);
             animateValue('kpiActiveClients', m.active_clients_count, '', '', 0);
             animateValue('kpiNewClientsMonth', m.new_clients_this_month, '', '', 0);
+            animateValue('kpiClientPortfolio', m.client_portfolio_value, '₹', '', 0);
+            animateValue('ribbonActiveCampaigns', m.active_campaigns_count, '', ' Active', 0);
+            animateValue('ribbonTotalCampaigns', m.campaigns_count, '', ' Total', 0);
+            animateValue('ribbonReceivablesDue', m.total_invoiced_due, '₹', '', 0);
+            animateValue('ribbonInvoiceCount', m.invoice_count, '', ' Invoices', 0);
+            animateValue('ribbonActiveTasks', m.active_tasks_count, '', ' Actionable', 0);
+            animateValue('ribbonNetProfit', m.net_profit, '₹', '', 0);
+            
+            const wonCountEl = document.getElementById('kpiWonCount');
+            if (wonCountEl) wonCountEl.textContent = m.total_clients_count;
+            const totalAccEl = document.getElementById('kpiTotalAccounts');
+            if (totalAccEl) totalAccEl.textContent = (m.total_leads + m.total_clients_count);
 
             // Update Period Subtitle Indicator
             const periodNames = {
