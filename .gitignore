@@ -54,3 +54,11 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Test outputs, dumps & logs
+*.log
+*test_results*.txt
+test_output_log.txt
+*dump*.json
+*fixture*.json
+*.xlsx
