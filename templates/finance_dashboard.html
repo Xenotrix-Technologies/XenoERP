@@ -39,89 +39,8 @@
         </div>
     </div>
 
-    <!-- Current Bank Balance Hero Banner Card -->
-    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-brand-950 p-6 md:p-8 text-white shadow-xl mb-8 border border-slate-800">
-        <div class="absolute -right-12 -top-12 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -left-12 -bottom-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        
-        <div class="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-            <div class="space-y-3">
-                <div class="flex items-center gap-3">
-                    <div class="p-3 bg-white/10 backdrop-blur-md rounded-2xl text-emerald-400 border border-white/10">
-                        <i data-lucide="landmark" class="w-6 h-6"></i>
-                    </div>
-                    <div>
-                        <span class="text-xs font-semibold text-slate-300 uppercase tracking-widest">Primary Treasury Account</span>
-                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                            {{ bank_name }}
-                            {% if account_number %}
-                            <span class="text-xs font-mono bg-white/10 text-slate-300 px-2 py-0.5 rounded-md border border-white/10">A/C: •••• {{ account_number|slice:"-4:" }}</span>
-                            {% endif %}
-                        </h2>
-                    </div>
-                </div>
-                
-                <div class="pt-2">
-                    <div class="text-xs font-medium text-slate-400 mb-1">Current Bank Balance</div>
-                    <div class="flex items-baseline gap-3">
-                        <h1 class="text-4xl md:text-5xl font-black text-white tracking-tight">₹{{ current_bank_balance|floatformat:2 }}</h1>
-                        {% if current_bank_balance >= 0 %}
-                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-                            Solvent Balance
-                        </span>
-                        {% else %}
-                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
-                            Deficit Warning
-                        </span>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                {% if account_name or ifsc_code or upi_id %}
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 pt-1">
-                    {% if account_name %}<span><strong class="text-slate-300">Account:</strong> {{ account_name }}</span>{% endif %}
-                    {% if ifsc_code %}<span><strong class="text-slate-300">IFSC:</strong> <span class="font-mono text-slate-200">{{ ifsc_code }}</span></span>{% endif %}
-                    {% if upi_id %}<span><strong class="text-slate-300">UPI:</strong> <span class="font-mono text-slate-200">{{ upi_id }}</span></span>{% endif %}
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Summary Cash Metrics Pillar -->
-            <div class="w-full lg:w-auto flex flex-wrap sm:flex-nowrap gap-4 bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-                <div class="flex-1 min-w-[120px] px-3 py-2 border-r border-white/10 last:border-0">
-                    <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Opening Balance</div>
-                    <div class="text-base font-bold text-slate-200 mt-1">₹{{ opening_balance|floatformat:2 }}</div>
-                </div>
-                <div class="flex-1 min-w-[120px] px-3 py-2 border-r border-white/10 last:border-0">
-                    <div class="text-[11px] font-medium text-emerald-400 uppercase tracking-wider">Total Inflow</div>
-                    <div class="text-base font-bold text-emerald-400 mt-1">+₹{{ total_revenue|floatformat:0 }}</div>
-                </div>
-                <div class="flex-1 min-w-[120px] px-3 py-2">
-                    <div class="text-[11px] font-medium text-rose-400 uppercase tracking-wider">Total Outflow</div>
-                    <div class="text-base font-bold text-rose-400 mt-1">-₹{{ total_outflow|floatformat:0 }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Bento Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-
-        <!-- KPI: Current Bank Balance -->
-        <div class="fin-card p-6 border-l-4 border-l-brand-600 bg-white">
-            <div class="flex justify-between items-start mb-3">
-                <div class="p-2.5 bg-brand-50 text-brand-600 rounded-xl">
-                    <i data-lucide="building-2" class="w-5 h-5"></i>
-                </div>
-                <a href="{% url 'document_settings' %}" class="text-[11px] font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full border border-brand-200 hover:bg-brand-100 transition-colors">
-                    Bank Settings
-                </a>
-            </div>
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Bank Balance</p>
-            <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight mt-1">₹{{ current_bank_balance|floatformat:2 }}</h2>
-        </div>
 
         <!-- KPI: Total Revenue -->
         <div class="fin-card p-6">
