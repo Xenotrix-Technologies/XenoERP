@@ -97,13 +97,45 @@ class Task(models.Model):
 
     @property
     def calculated_progress(self):
-        total_todos = self.todos.count()
-        if total_todos > 0:
-            completed_todos = self.todos.filter(completed=True).count()
-            return int((completed_todos / total_todos) * 100)
+        total_t = self.todos.count()
+        total_m = self.milestones.count()
+        total = total_t + total_m
+        if total > 0:
+            done_t = self.todos.filter(completed=True).count()
+            done_m = self.milestones.filter(completed=True).count()
+            return int(((done_t + done_m) / total) * 100)
         if self.progress is not None and self.progress > 0:
             return self.progress
         return 100 if self.completed else 0
+
+    @property
+    def deliverables_total(self):
+        return self.todos.count() + self.milestones.count()
+
+    @property
+    def deliverables_done(self):
+        return self.todos.filter(completed=True).count() + self.milestones.filter(completed=True).count()
+
+    @property
+    def unified_deliverables(self):
+        items = []
+        for m in self.milestones.all().order_by('due_date', 'id'):
+            items.append({
+                'id': m.id,
+                'kind': 'milestone',
+                'title': m.title,
+                'completed': m.completed,
+                'due_date': m.due_date,
+            })
+        for t in self.todos.all().order_by('created_at', 'id'):
+            items.append({
+                'id': t.id,
+                'kind': 'todo',
+                'title': t.title,
+                'completed': t.completed,
+                'due_date': self.due_date,
+            })
+        return items
 
 
 class TaskTodo(models.Model):

@@ -188,7 +188,16 @@
             <button onclick="resetFilters()" class="text-xs text-blue-600 font-medium hover:underline">Reset All Filters</button>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Corporate Client</label>
+                <select id="filter-client" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Clients & In-house</option>
+                    {% for c in clients %}
+                    <option value="{{ c.company|lower }}">{{ c.company }} ({{ c.name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
             <div>
                 <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Status</label>
                 <select id="filter-status" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -293,80 +302,159 @@
         <!-- TAB 1: OVERVIEW (Project Cards Grid) -->
         <div id="view-overview" class="space-y-6">
             {% if tasks %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="overview-cards-container">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="overview-cards-container">
                 {% for task in tasks %}
-                <div class="project-card bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                <div class="project-card bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between group"
                      data-title="{{ task.title|escapejs }}"
                      data-priority="{{ task.priority }}"
-                     data-status="{% if task.status %}{{ task.status.name }}{% elif task.completed %}Completed{% else %}Pending{% endif %}"
-                     onclick="openDrawer('{{ task.id }}')">
+                     data-status="{% if task.status %}{{ task.status.name }}{% elif task.completed %}Completed{% else %}In Progress{% endif %}"
+                     data-client="{% if task.lead %}{{ task.lead.company|default:task.lead.name|lower }}{% else %}inhouse{% endif %}">
                     
-                    <div>
-                        <!-- Header row -->
-                        <div class="flex items-start justify-between gap-3 mb-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-blue-500/20">
+                    <!-- Card Top & Middle Content -->
+                    <div class="space-y-4">
+                        <!-- Top Header Row -->
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3.5 min-w-0">
+                                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-blue-500/20 shrink-0">
                                     {{ task.title|slice:":2"|upper }}
                                 </div>
-                                <div>
-                                    <h3 class="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
-                                        {{ task.title }}
-                                    </h3>
-                                    <p class="text-xs text-slate-400 font-medium">
-                                        {% if task.lead %}{{ task.lead.name }}{% else %}In-house Workspace{% endif %}
-                                    </p>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h3 class="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate cursor-pointer" onclick="openDrawer('{{ task.id }}')">
+                                            {{ task.title }}
+                                        </h3>
+                                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/60">
+                                            {% if task.lead and task.lead.service %}{{ task.lead.service.name }}{% else %}Core Initiative{% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="mt-1 flex items-center gap-2 text-xs">
+                                        {% if task.lead %}
+                                        <span class="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200">
+                                            <i data-lucide="building-2" class="w-3 h-3 text-blue-600"></i>
+                                            <span class="truncate max-w-[200px]">{{ task.lead.company|default:task.lead.name }}</span>
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center gap-1 font-medium text-slate-500 bg-slate-100/70 px-2.5 py-0.5 rounded-full border border-slate-200/70">
+                                            <i data-lucide="layers" class="w-3 h-3 text-slate-400"></i>
+                                            <span>In-house Workspace</span>
+                                        </span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
-                            <button type="button" onclick="toggleTaskStar('{{ task.id }}', event, this)" class="p-1 rounded-lg transition-colors {% if task.is_starred %}text-amber-400{% else %}text-slate-300 hover:text-amber-400{% endif %}" title="Star/Favorite Project">
+
+                            <!-- Star Favorite Button -->
+                            <button type="button" onclick="toggleTaskStar('{{ task.id }}', event, this)" class="p-2 rounded-xl transition-all {% if task.is_starred %}text-amber-400 bg-amber-50 hover:bg-amber-100{% else %}text-slate-300 hover:text-amber-400 hover:bg-slate-50{% endif %} shrink-0" title="Star / Favorite Initiative">
                                 <i data-lucide="star" class="w-4 h-4 {% if task.is_starred %}fill-amber-400 text-amber-400{% endif %}"></i>
                             </button>
                         </div>
 
                         <!-- Description -->
-                        <p class="text-xs text-slate-600 line-clamp-2 mb-4 font-normal leading-relaxed">
+                        <p class="text-xs text-slate-600 line-clamp-2 font-normal leading-relaxed">
                             {{ task.description|default:"No task description provided for this initiative." }}
                         </p>
 
                         <!-- Badges Row -->
-                        <div class="flex flex-wrap items-center gap-2 mb-4">
+                        <div class="flex flex-wrap items-center gap-2 pt-0.5">
                             <!-- Priority Badge -->
-                            <span class="text-[11px] px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wider
-                                {% if task.priority == 'High' %}badge-high{% elif task.priority == 'Medium' %}badge-medium{% else %}badge-low{% endif %}">
+                            <span class="text-[11px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider
+                                {% if task.priority == 'High' %}bg-rose-50 text-rose-700 border border-rose-200{% elif task.priority == 'Medium' %}bg-amber-50 text-amber-700 border border-amber-200{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
                                 {{ task.priority }}
                             </span>
 
                             <!-- Risk Level Badge -->
                             <span class="text-[11px] px-2.5 py-0.5 rounded-full font-semibold border
-                                {% if task.risk_level == 'High' %}bg-rose-50 text-rose-700 border-rose-200{% elif task.risk_level == 'Medium' %}bg-amber-50 text-amber-700 border-amber-200{% else %}bg-emerald-50 text-emerald-700 border-emerald-200{% endif %}">
+                                {% if task.risk_level == 'High' %}bg-red-50 text-red-600 border-red-200{% elif task.risk_level == 'Medium' %}bg-amber-50 text-amber-600 border-amber-200{% else %}bg-emerald-50 text-emerald-600 border-emerald-200{% endif %}">
                                 {{ task.risk_level }} Risk
                             </span>
 
-                            <!-- Custom Status Badge -->
+                            <!-- Status Badge -->
                             {% if task.status %}
                             <span class="text-[11px] px-2.5 py-0.5 rounded-full font-semibold {{ task.status.badge_class }}">
                                 {{ task.status.name }}
                             </span>
                             {% else %}
-                            <span class="text-[11px] px-2.5 py-0.5 rounded-full font-semibold {% if task.completed %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
-                                {% if task.completed %}Completed{% else %}Pending{% endif %}
+                            <span class="text-[11px] px-2.5 py-0.5 rounded-full font-semibold {% if task.completed %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                                {% if task.completed %}Completed{% else %}In Progress{% endif %}
+                            </span>
+                            {% endif %}
+
+                            <!-- Target Due Date Pill -->
+                            {% if task.due_date %}
+                            <span class="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-slate-50 text-slate-600 border border-slate-200/80 inline-flex items-center gap-1.5 ml-auto">
+                                <i data-lucide="calendar" class="w-3 h-3 text-blue-500"></i>
+                                <span>Target: {{ task.due_date|date:"M d, Y" }}</span>
                             </span>
                             {% endif %}
                         </div>
 
-                        <!-- Progress Bar -->
-                        <div class="space-y-1.5 mb-5">
-                            <div class="flex justify-between text-xs font-semibold text-slate-600">
-                                <span>Progress</span>
-                                <span class="text-blue-600 font-bold" id="card-progress-text-{{ task.id }}">{{ task.calculated_progress }}%</span>
+                        <!-- Progress Bar & Metrics -->
+                        <div class="space-y-1.5 pt-1">
+                            <div class="flex items-center justify-between text-xs font-semibold">
+                                <span class="text-slate-600">Progress Pacing</span>
+                                <span class="text-blue-600 font-bold tabular-nums" id="card-progress-text-{{ task.id }}">{{ task.calculated_progress }}%</span>
                             </div>
                             <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 h-full rounded-full transition-all duration-500" id="card-progress-bar-{{ task.id }}" style="width: {{ task.calculated_progress }}%;"></div>
+                                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 h-full rounded-full transition-all duration-500" id="card-progress-bar-{{ task.id }}" style="width: {{ task.calculated_progress }}%;"></div>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                                <span>Deliverables: <strong id="card-deliv-count-{{ task.id }}" class="text-slate-700 font-semibold">{{ task.deliverables_done }}/{{ task.deliverables_total }}</strong> Done</span>
+                                <span class="font-mono text-slate-400">#PRJ-{{ task.id }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Milestone Deliverables Sign-Off Checklist (Accordion) -->
+                        <div class="pt-2 border-t border-slate-100" onclick="event.stopPropagation()">
+                            <!-- Toggle Button & Add Trigger -->
+                            <div class="flex items-center justify-between">
+                                <button type="button" onclick="toggleCardDeliverables('{{ task.id }}')" class="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-blue-600 transition-colors">
+                                    <i data-lucide="chevron-down" id="chevron-task-{{ task.id }}" class="w-3.5 h-3.5 transition-transform"></i>
+                                    <span>Sprint Deliverables (<span id="m-count-{{ task.id }}">{{ task.deliverables_total }}</span>)</span>
+                                </button>
+                                <button type="button" onclick="openInlineAddMilestone('{{ task.id }}')" class="text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1">
+                                    <i data-lucide="plus" class="w-3 h-3"></i> Add Deliverable
+                                </button>
+                            </div>
+
+                            <!-- Expandable Checklist List -->
+                            <div id="card-milestones-list-{{ task.id }}" class="hidden space-y-2 mt-3 pt-3 border-t border-slate-100 animate-in fade-in duration-150">
+                                {% for d in task.unified_deliverables %}
+                                <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs gap-2.5 hover:bg-white hover:shadow-xs transition-all" id="deliv-row-{{ d.kind }}-{{ d.id }}">
+                                    <label class="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1">
+                                        <input type="checkbox" {% if d.completed %}checked{% endif %} onchange="toggleDeliverableAjax('{{ d.kind }}', '{{ d.id }}', '{{ task.id }}', this)" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0" />
+                                        <span class="truncate {% if d.completed %}line-through text-slate-400{% else %}text-slate-700 font-medium{% endif %}" id="deliv-title-{{ d.kind }}-{{ d.id }}">{{ d.title }}</span>
+                                    </label>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        {% if d.due_date %}
+                                        <span class="text-[10px] font-mono text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200/60">{{ d.due_date|date:"M d" }}</span>
+                                        {% endif %}
+                                        <button type="button" onclick="deleteDeliverableAjax('{{ d.kind }}', '{{ d.id }}', '{{ task.id }}')" class="text-slate-300 hover:text-rose-500 p-1 rounded transition-colors" title="Delete deliverable">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-[11px] text-slate-400 italic p-3 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200" id="no-deliv-msg-{{ task.id }}">
+                                    No sprint deliverables yet. Click '+ Add Deliverable' to track milestones.
+                                </div>
+                                {% endfor %}
+
+                                <!-- Inline Add Form -->
+                                <div id="inline-add-m-{{ task.id }}" class="hidden mt-2.5 p-3 bg-slate-100 rounded-xl space-y-2.5 border border-slate-200">
+                                    <input type="text" id="inline-m-title-{{ task.id }}" placeholder="Deliverable / Milestone title..." class="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 placeholder-slate-400" />
+                                    <div class="flex items-center gap-2">
+                                        <input type="date" id="inline-m-date-{{ task.id }}" value="{{ task.due_date|date:'Y-m-d' }}" class="px-2.5 py-1 text-xs bg-white border border-slate-200 rounded-lg text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                        <button type="button" onclick="submitInlineDeliverable('{{ task.id }}')" class="px-3.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors ml-auto shadow-xs flex items-center gap-1">
+                                            <i data-lucide="plus" class="w-3 h-3"></i> Save Deliverable
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Footer Details -->
-                    <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs text-slate-500 font-medium">
+                    <!-- Card Footer Details (Strictly Inside the Card) -->
+                    <div class="border-t border-slate-100 pt-3.5 mt-4 flex items-center justify-between text-xs text-slate-500 font-medium">
                         <!-- Assignee Avatars -->
                         <div class="flex items-center -space-x-2">
                             {% if task.assignees.all %}
@@ -385,20 +473,20 @@
                             {% endif %}
                         </div>
 
-                        <!-- Meta Info (Tasks, Files, Date) -->
-                        <div class="flex items-center gap-3 text-slate-400">
-                            <div class="flex items-center gap-1" title="Subtasks">
+                        <!-- Meta Info & Manage Button -->
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-1 text-slate-400" title="Subtasks">
                                 <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
-                                <span>{{ task.todos.count }}</span>
+                                <span>{{ task.deliverables_total }}</span>
                             </div>
-                            <div class="flex items-center gap-1" title="Files">
+                            <div class="flex items-center gap-1 text-slate-400" title="Files">
                                 <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                                <span>2</span>
+                                <span>{{ task.files.count|default:"0" }}</span>
                             </div>
-                            <div class="flex items-center gap-1 text-slate-600 font-semibold" title="Due Date">
-                                <i data-lucide="calendar" class="w-3.5 h-3.5 text-blue-500"></i>
-                                <span>{{ task.due_date|date:"M d" }}</span>
-                            </div>
+                            <button type="button" onclick="openDrawer('{{ task.id }}')" class="px-3 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1 ml-1">
+                                <span>Manage</span>
+                                <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -1582,22 +1670,25 @@
     }
 
     function applyFilters() {
-        const statusVal = document.getElementById('filter-status').value.toLowerCase();
-        const priorityVal = document.getElementById('filter-priority').value.toLowerCase();
-        const searchVal = document.getElementById('filter-search').value.toLowerCase();
+        const statusVal = document.getElementById('filter-status')?.value.toLowerCase() || '';
+        const priorityVal = document.getElementById('filter-priority')?.value.toLowerCase() || '';
+        const clientVal = document.getElementById('filter-client')?.value.toLowerCase() || '';
+        const searchVal = document.getElementById('filter-search')?.value.toLowerCase() || '';
 
         const cards = document.querySelectorAll('.project-card');
         let count = 0;
         cards.forEach(card => {
-            const title = card.getAttribute('data-title').toLowerCase();
-            const priority = card.getAttribute('data-priority').toLowerCase();
-            const status = card.getAttribute('data-status').toLowerCase();
+            const title = (card.getAttribute('data-title') || '').toLowerCase();
+            const priority = (card.getAttribute('data-priority') || '').toLowerCase();
+            const status = (card.getAttribute('data-status') || '').toLowerCase();
+            const client = (card.getAttribute('data-client') || '').toLowerCase();
 
             const matchesStatus = !statusVal || status.includes(statusVal);
             const matchesPriority = !priorityVal || priority === priorityVal;
+            const matchesClient = !clientVal || client.includes(clientVal);
             const matchesSearch = !searchVal || title.includes(searchVal);
 
-            if (matchesStatus && matchesPriority && matchesSearch) {
+            if (matchesStatus && matchesPriority && matchesClient && matchesSearch) {
                 card.style.display = 'flex';
                 count++;
             } else {
@@ -1606,17 +1697,20 @@
         });
 
         const badge = document.getElementById('active-filter-badge');
-        if (statusVal || priorityVal || searchVal) {
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
+        if (badge) {
+            if (statusVal || priorityVal || clientVal || searchVal) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
         }
     }
 
     function resetFilters() {
-        document.getElementById('filter-status').value = '';
-        document.getElementById('filter-priority').value = '';
-        document.getElementById('filter-search').value = '';
+        if (document.getElementById('filter-status')) document.getElementById('filter-status').value = '';
+        if (document.getElementById('filter-priority')) document.getElementById('filter-priority').value = '';
+        if (document.getElementById('filter-client')) document.getElementById('filter-client').value = '';
+        if (document.getElementById('filter-search')) document.getElementById('filter-search').value = '';
         applyFilters();
     }
 
@@ -2424,6 +2518,145 @@
         } else {
             bar.classList.add('hidden');
         }
+    }
+
+    // Deliverables & Roadmap Handlers (XenoPlan Architecture)
+    function toggleCardDeliverables(taskId) {
+        const list = document.getElementById(`card-milestones-list-${taskId}`);
+        const chevron = document.getElementById(`chevron-task-${taskId}`);
+        if (!list) return;
+        
+        if (list.classList.contains('hidden')) {
+            list.classList.remove('hidden');
+            if (chevron) chevron.classList.add('rotate-180');
+        } else {
+            list.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
+        }
+    }
+
+    function openInlineAddMilestone(taskId) {
+        const form = document.getElementById(`inline-add-m-${taskId}`);
+        const list = document.getElementById(`card-milestones-list-${taskId}`);
+        const chevron = document.getElementById(`chevron-task-${taskId}`);
+        if (list && list.classList.contains('hidden')) {
+            list.classList.remove('hidden');
+            if (chevron) chevron.classList.add('rotate-180');
+        }
+        if (form) {
+            form.classList.toggle('hidden');
+            if (!form.classList.contains('hidden')) {
+                const inp = document.getElementById(`inline-m-title-${taskId}`);
+                if (inp) inp.focus();
+            }
+        }
+    }
+
+    async function toggleDeliverableAjax(kind, id, taskId, cb) {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+        const url = kind === 'milestone' ? `/task/milestone/${id}/toggle/` : `/task/todo/${id}/toggle/`;
+        const titleSpan = document.getElementById(`deliv-title-${kind}-${id}`);
+        
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.completed) {
+                    if (titleSpan) titleSpan.className = 'truncate line-through text-slate-400';
+                } else {
+                    if (titleSpan) titleSpan.className = 'truncate text-slate-700 font-medium';
+                }
+                
+                // Update progress on card
+                if (data.progress !== undefined) {
+                    const progText = document.getElementById(`card-progress-text-${taskId}`);
+                    const progBar = document.getElementById(`card-progress-bar-${taskId}`);
+                    if (progText) progText.textContent = `${data.progress}%`;
+                    if (progBar) progBar.style.width = `${data.progress}%`;
+                }
+                if (data.deliverables_done !== undefined && data.deliverables_total !== undefined) {
+                    const countElem = document.getElementById(`card-deliv-count-${taskId}`);
+                    if (countElem) countElem.textContent = `${data.deliverables_done}/${data.deliverables_total}`;
+                }
+            } else {
+                cb.checked = !cb.checked;
+            }
+        } catch(err) {
+            cb.checked = !cb.checked;
+        }
+    }
+
+    async function deleteDeliverableAjax(kind, id, taskId) {
+        if (!confirm('Are you sure you want to delete this deliverable?')) return;
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+        const url = kind === 'milestone' ? `/task/milestone/${id}/delete/` : `/task/todo/${id}/delete/`;
+        const row = document.getElementById(`deliv-row-${kind}-${id}`);
+        
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (row) row.remove();
+                if (data.progress !== undefined) {
+                    const progText = document.getElementById(`card-progress-text-${taskId}`);
+                    const progBar = document.getElementById(`card-progress-bar-${taskId}`);
+                    if (progText) progText.textContent = `${data.progress}%`;
+                    if (progBar) progBar.style.width = `${data.progress}%`;
+                }
+                if (data.deliverables_done !== undefined && data.deliverables_total !== undefined) {
+                    const countElem = document.getElementById(`card-deliv-count-${taskId}`);
+                    const mCountElem = document.getElementById(`m-count-${taskId}`);
+                    if (countElem) countElem.textContent = `${data.deliverables_done}/${data.deliverables_total}`;
+                    if (mCountElem) mCountElem.textContent = `${data.deliverables_total}`;
+                }
+            }
+        } catch(err) {
+            console.error('Delete deliverable error:', err);
+        }
+    }
+
+    async function submitInlineDeliverable(taskId) {
+        const titleInput = document.getElementById(`inline-m-title-${taskId}`);
+        const dateInput = document.getElementById(`inline-m-date-${taskId}`);
+        const title = (titleInput?.value || '').trim();
+        const dueDate = dateInput?.value || '';
+
+        if (!title) return;
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('due_date', dueDate);
+
+        try {
+            const res = await fetch(`/task/${taskId}/milestone/add/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to add deliverable.');
+            }
+        } catch(err) {
+            alert('Server error adding deliverable.');
+        }
+    }
+
+    // Compatibility wrappers
+    function toggleMilestoneAjax(milestoneId, taskId, cb) {
+        return toggleDeliverableAjax('milestone', milestoneId, taskId, cb);
+    }
+    function submitInlineMilestone(taskId) {
+        return submitInlineDeliverable(taskId);
     }
 </script>
 {% endblock %}

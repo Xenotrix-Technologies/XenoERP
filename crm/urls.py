@@ -57,6 +57,8 @@ urlpatterns = [
     path('lead/quick-create/', views.quick_create_lead, name='quick_create_lead'),
 
     path('clients/', views.clients_view, name='clients'),
+    path('clients/quick-create-ajax/', views.quick_create_client_ajax, name='quick_create_client_ajax'),
+    path('clients/edit-ajax/<int:client_id>/', views.edit_client_ajax, name='edit_client_ajax'),
     path('clients/profile/<path:company_name>/', views.client_profile_view, name='client_profile'),
     path('clients/service/<str:service_id>/', views.service_clients_view, name='service_clients'),
     path('clients/edit-company/', views.edit_client_company, name='edit_client_company'),
