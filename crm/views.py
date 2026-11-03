@@ -637,11 +637,8 @@ def projects_view(request):
     overdue_projects = tasks.filter(completed=False, due_date__lt=today).exclude(status__name__iexact='Completed').count()
     
     in_progress_projects = tasks.filter(
-        Q(completed=False) & (Q(status__name__iexact='In Progress') | Q(status__isnull=True))
-    ).exclude(due_date__lt=today).count()
-    
-    if in_progress_projects == 0 and total_projects > (completed_projects + overdue_projects):
-        in_progress_projects = total_projects - completed_projects - overdue_projects
+        Q(completed=False) & ~Q(status__name__iexact='Completed')
+    ).count()
 
     team_members_count = staff.count()
     
@@ -768,8 +765,8 @@ def project_board_view(request):
     completed_projects = tasks.filter(Q(completed=True) | Q(status__name__iexact='Completed')).count()
     overdue_projects = tasks.filter(completed=False, due_date__lt=today).exclude(status__name__iexact='Completed').count()
     in_progress_projects = tasks.filter(
-        Q(completed=False) & (Q(status__name__iexact='In Progress') | Q(status__isnull=True))
-    ).exclude(due_date__lt=today).count()
+        Q(completed=False) & ~Q(status__name__iexact='Completed')
+    ).count()
     team_members_count = staff.count()
 
     backlog_tasks = tasks.filter(status__name__iexact='Backlog')
@@ -2621,19 +2618,19 @@ def toggle_task_todo(request, todo_id):
         todo.save()
 
         calc_prog = task.calculated_progress
+        task.progress = calc_prog
         if calc_prog == 100 and not task.completed:
             task.completed = True
-            task.save()
         elif calc_prog < 100 and task.completed:
             task.completed = False
-            task.save()
+        task.save()
 
         return JsonResponse({
             'success': True,
             'completed': todo.completed,
             'progress': calc_prog,
-            'total_todos': task.todos.count(),
-            'completed_todos': task.todos.filter(completed=True).count()
+            'deliverables_done': task.deliverables_done,
+            'deliverables_total': task.deliverables_total
         })
     return JsonResponse({'success': False, 'error': 'Invalid method.'})
 
@@ -2675,12 +2672,19 @@ def delete_task_todo(request, todo_id):
             return JsonResponse({'success': False, 'error': 'Access denied.'}, status=403)
 
         todo.delete()
+        calc_prog = task.calculated_progress
+        task.progress = calc_prog
+        if calc_prog == 100 and not task.completed:
+            task.completed = True
+        elif calc_prog < 100 and task.completed:
+            task.completed = False
+        task.save()
 
         return JsonResponse({
             'success': True,
-            'progress': task.calculated_progress,
-            'total_todos': task.todos.count(),
-            'completed_todos': task.todos.filter(completed=True).count()
+            'progress': calc_prog,
+            'deliverables_done': task.deliverables_done,
+            'deliverables_total': task.deliverables_total
         })
     return JsonResponse({'success': False, 'error': 'Invalid method.'})
 
@@ -2954,10 +2958,9 @@ def add_task_milestone(request, task_id):
             due_date=due_date
         )
 
-        # Recompute progress
-        total_m = task.milestones.count()
-        done_m = task.milestones.filter(completed=True).count()
-        task.progress = int((done_m / (total_m or 1)) * 100)
+        # Recompute progress using unified deliverables
+        calc_prog = task.calculated_progress
+        task.progress = calc_prog
         task.save()
 
         if task.lead:
@@ -2972,12 +2975,13 @@ def add_task_milestone(request, task_id):
             'milestone': {
                 'id': tm.id,
                 'title': tm.title,
-                'due_date': tm.due_date.strftime('%b %d, %Y'),
-                'completed': tm.completed
+                'due_date': tm.due_date.strftime('%b %d'),
+                'completed': tm.completed,
+                'kind': 'milestone'
             },
-            'progress': task.progress,
-            'milestones_done': done_m,
-            'milestones_total': total_m
+            'progress': calc_prog,
+            'deliverables_done': task.deliverables_done,
+            'deliverables_total': task.deliverables_total
         })
     return JsonResponse({'success': False, 'error': 'Invalid method.'})
 
@@ -2995,21 +2999,20 @@ def toggle_task_milestone(request, milestone_id):
         tm.save()
 
         # Recompute task progress matching XenoPlan architecture
-        total_m = task.milestones.count()
-        done_m = task.milestones.filter(completed=True).count()
-        task.progress = int((done_m / (total_m or 1)) * 100)
-        if task.progress == 100:
+        calc_prog = task.calculated_progress
+        task.progress = calc_prog
+        if calc_prog == 100 and not task.completed:
             task.completed = True
-        elif task.completed and task.progress < 100:
+        elif calc_prog < 100 and task.completed:
             task.completed = False
         task.save()
 
         return JsonResponse({
             'success': True,
             'completed': tm.completed,
-            'progress': task.progress,
-            'milestones_done': done_m,
-            'milestones_total': total_m
+            'progress': calc_prog,
+            'deliverables_done': task.deliverables_done,
+            'deliverables_total': task.deliverables_total
         })
     return JsonResponse({'success': False, 'error': 'Invalid method.'})
 
@@ -3025,17 +3028,20 @@ def delete_task_milestone(request, milestone_id):
 
         tm.delete()
 
-        # Recompute progress
-        total_m = task.milestones.count()
-        done_m = task.milestones.filter(completed=True).count()
-        task.progress = int((done_m / (total_m or 1)) * 100) if total_m > 0 else 0
+        # Recompute progress using unified deliverables
+        calc_prog = task.calculated_progress
+        task.progress = calc_prog
+        if calc_prog == 100 and not task.completed:
+            task.completed = True
+        elif calc_prog < 100 and task.completed:
+            task.completed = False
         task.save()
 
         return JsonResponse({
             'success': True,
-            'progress': task.progress,
-            'milestones_done': done_m,
-            'milestones_total': total_m
+            'progress': calc_prog,
+            'deliverables_done': task.deliverables_done,
+            'deliverables_total': task.deliverables_total
         })
     return JsonResponse({'success': False, 'error': 'Invalid method.'})
 
