@@ -1,399 +1,394 @@
 {% extends 'base.html' %}
-{% block title %}Calendar - XenoCRM{% endblock %}
+{% block title %}Agency Operations Calendar | XenoERP{% endblock %}
 
 {% block extra_css %}
 <style>
-  /* Premium Base Resets */
   :root {
-    --cal-primary: #2563EB;
-    --cal-bg: #F8FAFC;
-    --cal-text: #0F172A;
-    --cal-sec-text: #64748B;
-    --cal-border: #E2E8F0;
+    --cal-primary: #0284c7;
+    --cal-bg: #f8fafc;
+    --cal-border: #e2e8f0;
   }
   
-  /* FullCalendar Toolbar Enhancements */
+  /* FullCalendar Toolbar & View Styling */
   .fc .fc-toolbar.fc-header-toolbar {
-    margin-bottom: 1.5rem !important;
+    margin-bottom: 1.25rem !important;
     gap: 0.75rem;
     flex-wrap: wrap;
   }
   .fc .fc-button-group > .fc-button {
     background-color: #ffffff !important;
     border: 1px solid var(--cal-border) !important;
-    color: var(--cal-sec-text) !important;
-    font-weight: 600 !important;
-    text-transform: capitalize !important;
-    padding: 0.45rem 1rem !important;
-    font-size: 0.85rem !important;
+    color: #475569 !important;
+    font-weight: 700 !important;
+    font-size: 0.8rem !important;
+    padding: 0.45rem 0.9rem !important;
+    border-radius: 10px !important;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04) !important;
     transition: all 0.2s ease;
   }
   .fc .fc-button-group > .fc-button.fc-button-active,
   .fc .fc-button-group > .fc-button:hover {
     background-color: #f1f5f9 !important;
-    color: var(--cal-text) !important;
+    color: #0f172a !important;
     border-color: #cbd5e1 !important;
     z-index: 10 !important;
   }
   .fc .fc-button-primary:not(.fc-button-group .fc-button) {
     background-color: #ffffff !important;
     border: 1px solid var(--cal-border) !important;
-    color: var(--cal-sec-text) !important;
-    font-weight: 600 !important;
+    color: #475569 !important;
+    font-weight: 700 !important;
     border-radius: 10px !important;
     padding: 0.45rem 1rem !important;
-    font-size: 0.85rem !important;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04) !important;
-    text-transform: capitalize !important;
+    font-size: 0.8rem !important;
   }
   .fc .fc-button-primary:not(.fc-button-group .fc-button):hover {
     background-color: #f1f5f9 !important;
-    color: var(--cal-text) !important;
-    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
   }
   .fc .fc-toolbar-title {
-    font-size: 1.35rem !important;
+    font-size: 1.25rem !important;
     font-weight: 800 !important;
-    color: var(--cal-text) !important;
+    color: #0f172a !important;
     letter-spacing: -0.02em;
   }
   
-  /* Prevent Internal Scrollbars & Misalignments */
-  .fc .fc-scroller {
-    overflow: visible !important;
-  }
-  .fc .fc-scroller-harness {
-    overflow: visible !important;
-  }
   .fc-theme-standard td, .fc-theme-standard th {
     border-color: var(--cal-border) !important;
   }
   .fc-theme-standard th {
-    padding: 10px 0 !important;
+    padding: 8px 0 !important;
     font-size: 0.75rem !important;
     text-transform: uppercase !important;
     letter-spacing: 0.05em !important;
-    color: var(--cal-sec-text) !important;
+    color: #64748b !important;
     font-weight: 700 !important;
     background-color: #f8fafc !important;
-    border-bottom: 1px solid var(--cal-border) !important;
   }
   .fc .fc-daygrid-day-frame {
-    min-height: 115px !important;
-    padding: 6px !important;
+    min-height: 110px !important;
+    padding: 4px !important;
   }
   .fc .fc-daygrid-day-number {
     font-size: 0.8rem !important;
-    font-weight: 600 !important;
-    color: var(--cal-sec-text) !important;
-    padding: 3px 8px !important;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    padding: 4px 6px !important;
   }
   .fc .fc-daygrid-day.fc-day-today {
-    background-color: #F0F9FF !important;
+    background-color: #f0f9ff !important;
   }
   .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
-    color: var(--cal-primary) !important;
-    font-weight: 700 !important;
-    background: #DBEAFE !important;
+    color: #0284c7 !important;
+    font-weight: 800 !important;
+    background: #e0f2fe !important;
     border-radius: 6px;
   }
 
-  /* Events */
+  /* Event Pills */
   .fc-event {
     border: none !important;
     border-radius: 6px !important;
-    padding: 4px 8px !important;
+    padding: 3px 6px !important;
     font-size: 11px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     cursor: pointer !important;
-    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
-    margin-bottom: 3px !important;
+    transition: all 0.15s ease !important;
+    margin-bottom: 2px !important;
   }
   .fc-event:hover {
     transform: translateY(-1px) !important;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+    box-shadow: 0 4px 8px -1px rgb(0 0 0 / 0.12) !important;
     z-index: 5 !important;
   }
-  .fc-event:active {
-    cursor: grabbing !important;
-  }
-  .fc-daygrid-event-dot {
-    border-color: currentColor !important;
+  
+  .category-pill-active {
+    background-color: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #0284c7 !important;
   }
 </style>
 <script src="https://unpkg.com/lucide@latest"></script>
 {% endblock %}
 
 {% block content %}
-<div class="p-6 md:p-8 flex-1 flex flex-col bg-slate-50 overflow-y-auto custom-scrollbar w-full min-w-0">
-  <div class="w-full max-w-[1600px] mx-auto min-w-0">
-    <!-- Header Title & Action Bar -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+<div class="p-4 md:p-8 flex-1 flex flex-col bg-slate-50 min-h-screen custom-scrollbar w-full min-w-0">
+  <div class="w-full max-w-[1600px] mx-auto min-w-0 space-y-5">
+    
+    <!-- Top Header & Action Controls -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2 border-b border-slate-200">
       <div>
         <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-          <a href="{% url 'dashboard' %}" class="hover:text-brand-600 transition-colors">Organization</a>
+          <a href="{% url 'dashboard' %}" class="hover:text-sky-600 transition-colors">Workspace</a>
           <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-          <span class="text-brand-600 font-bold">Calendar</span>
+          <span class="text-sky-600 font-bold">Calendar</span>
         </div>
-        <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Organization Calendar</h1>
-        <p class="text-xs md:text-sm text-slate-500 mt-1">Schedule and manage meetings, demos, and deadlines dynamically.</p>
+        <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
+          Agency Operations Calendar
+          <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
+            {{ analytics.total_scheduled }} Items Scheduled
+          </span>
+        </h1>
+        <p class="text-xs md:text-sm text-slate-500 mt-0.5">
+          Synchronize client syncs, deliverable milestones, marketing campaigns, and review deadlines.
+        </p>
       </div>
-      <div class="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
-        <!-- Filter Dropdown -->
-        <div class="relative">
-          <button type="button" onclick="document.getElementById('filter-dropdown').classList.toggle('hidden')" class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold shadow-xs hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2">
-            <i data-lucide="filter" class="w-4 h-4 text-slate-500"></i>
-            <span>Filter</span>
-          </button>
-          
-          <div id="filter-dropdown" class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 hidden z-[200] p-3">
-            <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">Event Types</h4>
-            <div id="filter-categories-container" class="space-y-3 px-1">
-              {% for status in calendar_statuses %}
-              <label class="flex items-center gap-3 cursor-pointer group">
-                  <div class="relative flex items-center">
-                    <input type="checkbox" checked value="{{ status.color }}" onchange="filterEvents()" class="filter-checkbox peer sr-only" />
-                    <div class="w-4 h-4 rounded border border-slate-300 bg-white peer-checked:bg-brand-600 peer-checked:border-brand-600 transition-colors flex items-center justify-center">
-                        <i data-lucide="check" class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity"></i>
-                    </div>
-                  </div>
-                  <span class="w-2.5 h-2.5 rounded-full" style="background-color: {{ status.color }};"></span>
-                  <span class="text-xs font-medium text-slate-600 group-hover:text-slate-900 transition-colors">{{ status.name }}</span>
-              </label>
-              {% empty %}
-              <label class="flex items-center gap-3 cursor-pointer group">
-                  <div class="relative flex items-center">
-                    <input type="checkbox" checked value="#2563EB" onchange="filterEvents()" class="filter-checkbox peer sr-only" />
-                    <div class="w-4 h-4 rounded border border-slate-300 bg-white peer-checked:bg-brand-600 peer-checked:border-brand-600 transition-colors flex items-center justify-center">
-                        <i data-lucide="check" class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity"></i>
-                    </div>
-                  </div>
-                  <span class="w-2.5 h-2.5 rounded-full" style="background-color: #2563EB;"></span>
-                  <span class="text-xs font-medium text-slate-600 group-hover:text-slate-900 transition-colors">Meetings</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer group">
-                  <div class="relative flex items-center">
-                    <input type="checkbox" checked value="#10B981" onchange="filterEvents()" class="filter-checkbox peer sr-only" />
-                    <div class="w-4 h-4 rounded border border-slate-300 bg-white peer-checked:bg-brand-600 peer-checked:border-brand-600 transition-colors flex items-center justify-center">
-                        <i data-lucide="check" class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity"></i>
-                    </div>
-                  </div>
-                  <span class="w-2.5 h-2.5 rounded-full" style="background-color: #10B981;"></span>
-                  <span class="text-xs font-medium text-slate-600 group-hover:text-slate-900 transition-colors">Calls</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer group">
-                  <div class="relative flex items-center">
-                    <input type="checkbox" checked value="#EF4444" onchange="filterEvents()" class="filter-checkbox peer sr-only" />
-                    <div class="w-4 h-4 rounded border border-slate-300 bg-white peer-checked:bg-brand-600 peer-checked:border-brand-600 transition-colors flex items-center justify-center">
-                        <i data-lucide="check" class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity"></i>
-                    </div>
-                  </div>
-                  <span class="w-2.5 h-2.5 rounded-full" style="background-color: #EF4444;"></span>
-                  <span class="text-xs font-medium text-slate-600 group-hover:text-slate-900 transition-colors">Deadlines</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer group">
-                  <div class="relative flex items-center">
-                    <input type="checkbox" checked value="#8B5CF6" onchange="filterEvents()" class="filter-checkbox peer sr-only" />
-                    <div class="w-4 h-4 rounded border border-slate-300 bg-white peer-checked:bg-brand-600 peer-checked:border-brand-600 transition-colors flex items-center justify-center">
-                        <i data-lucide="check" class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity"></i>
-                    </div>
-                  </div>
-                  <span class="w-2.5 h-2.5 rounded-full" style="background-color: #8B5CF6;"></span>
-                  <span class="text-xs font-medium text-slate-600 group-hover:text-slate-900 transition-colors">Follow-ups</span>
-              </label>
-              <label class="flex items-center gap-3 cursor-pointer group">
-                  <div class="relative flex items-center">
-                    <input type="checkbox" checked value="#14B8A6" onchange="filterEvents()" class="filter-checkbox peer sr-only" />
-                    <div class="w-4 h-4 rounded border border-slate-300 bg-white peer-checked:bg-brand-600 peer-checked:border-brand-600 transition-colors flex items-center justify-center">
-                        <i data-lucide="check" class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity"></i>
-                    </div>
-                  </div>
-                  <span class="w-2.5 h-2.5 rounded-full" style="background-color: #14B8A6;"></span>
-                  <span class="text-xs font-medium text-slate-600 group-hover:text-slate-900 transition-colors">Personal</span>
-              </label>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-        
-        <button onclick="openAddModal()" class="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-xl hover:bg-brand-700 shadow-xs transition-all active:scale-[0.98] shrink-0">
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
+        <a href="{% url 'calendar_list' %}" class="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-xl transition-all shadow-xs flex items-center gap-1.5">
+          <i data-lucide="list" class="w-4 h-4 text-slate-500"></i>
+          <span>Agenda List</span>
+        </a>
+        <button type="button" onclick="openAddModal()" class="flex items-center gap-2 px-4 py-2 bg-sky-600 text-white text-xs font-bold rounded-xl hover:bg-sky-700 shadow-xs transition-all active:scale-[0.98] shrink-0">
           <i data-lucide="plus" class="w-4 h-4"></i>
           <span>Add Event</span>
         </button>
       </div>
     </div>
 
-    <!-- Main Layout (3:1 Grid on xl: Calendar / Analytics Sidebar) -->
+    <!-- Client Filter & Category Filter Bar (XenoPlan Architecture) -->
+    <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs">
+      
+      <!-- Category Pills -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0" id="category-pills-container">
+        <button type="button" onclick="filterByCategory('all')" id="cat-pill-all" class="category-pill category-pill-active px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 transition-all shrink-0">
+          All Events
+        </button>
+        <button type="button" onclick="filterByCategory('client_meeting')" id="cat-pill-client_meeting" class="category-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all flex items-center gap-1.5 shrink-0">
+          <span class="w-2 h-2 rounded-full bg-[#00BAFF]"></span>
+          <span>Meetings</span>
+        </button>
+        <button type="button" onclick="filterByCategory('milestone_deliverable')" id="cat-pill-milestone_deliverable" class="category-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all flex items-center gap-1.5 shrink-0">
+          <span class="w-2 h-2 rounded-full bg-[#10B981]"></span>
+          <span>Deliverables</span>
+        </button>
+        <button type="button" onclick="filterByCategory('social_post')" id="cat-pill-social_post" class="category-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all flex items-center gap-1.5 shrink-0">
+          <span class="w-2 h-2 rounded-full bg-[#00D0C6]"></span>
+          <span>Social</span>
+        </button>
+        <button type="button" onclick="filterByCategory('ad_campaign')" id="cat-pill-ad_campaign" class="category-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all flex items-center gap-1.5 shrink-0">
+          <span class="w-2 h-2 rounded-full bg-[#06B6D4]"></span>
+          <span>Campaigns</span>
+        </button>
+        <button type="button" onclick="filterByCategory('payment_followup')" id="cat-pill-payment_followup" class="category-pill px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all flex items-center gap-1.5 shrink-0">
+          <span class="w-2 h-2 rounded-full bg-[#FB923C]"></span>
+          <span>Follow-ups</span>
+        </button>
+      </div>
+
+      <!-- Client Association Selector -->
+      <div class="flex items-center gap-2">
+        <label for="calendar-client-filter" class="text-xs font-bold text-slate-500 whitespace-nowrap">Filter by Client:</label>
+        <select id="calendar-client-filter" onchange="applyClientFilter()" class="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-1.5 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+          <option value="all">All Corporate Clients</option>
+          {% for client in clients %}
+          <option value="{{ client.id }}">{{ client.company }} ({{ client.name }})</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Main Layout (3:1 Grid on xl: Calendar Main & Sidebar Analytics) -->
     <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start w-full min-w-0">
-      <!-- Calendar Main Card (75% on xl) -->
+      
+      <!-- Calendar Container (75% width on xl) -->
       <div class="xl:col-span-3 min-w-0 w-full overflow-x-auto custom-scrollbar">
-        <div class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200/80 shadow-xs min-w-[620px] xl:min-w-0">
+        <div class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200/90 shadow-xs min-w-[640px] xl:min-w-0">
           <div id="calendar" class="w-full"></div>
         </div>
       </div>
 
-      <!-- Right Sidebar (25% on xl) -->
-      <div class="xl:col-span-1 space-y-6 w-full min-w-0">
-        <!-- Calendar Analytics -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-          <h3 class="font-bold text-sm text-slate-900 mb-4 flex items-center gap-2">
-            <i data-lucide="bar-chart-2" class="w-4 h-4 text-brand-600"></i>
-            <span>Calendar Analytics</span>
+      <!-- Right Sidebar: Analytics & Quick Templates -->
+      <div class="xl:col-span-1 space-y-5 w-full min-w-0">
+        <!-- Analytics Card -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs space-y-4">
+          <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+            <i data-lucide="bar-chart-2" class="w-4 h-4 text-sky-600"></i>
+            <span>Calendar Metrics</span>
           </h3>
-          <div class="space-y-3" id="analytics-container">
-            <div class="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 flex items-center justify-between shadow-xs mb-3">
-              <div>
-                  <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Total Scheduled Events</span>
-                  <span class="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5 block">0</span>
-              </div>
-              <div class="p-2.5 bg-brand-50 text-brand-600 rounded-xl shrink-0">
-                  <i data-lucide="calendar" class="w-5 h-5"></i>
-              </div>
+          
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Pipeline Items</span>
+              <span class="text-2xl font-extrabold text-slate-900 tracking-tight block mt-0.5" id="metric-total-count">{{ analytics.total_scheduled }}</span>
             </div>
-            <div class="p-3 bg-white rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-3">
-              <div class="flex items-center gap-2.5">
-                  <div class="p-1.5 rounded-lg shrink-0 bg-blue-50 text-blue-600">
-                    <i data-lucide="users" class="w-4 h-4"></i>
-                  </div>
-                  <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Meetings</span>
-              </div>
-              <span class="text-base font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">0</span>
+            <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+              <i data-lucide="calendar" class="w-5 h-5"></i>
             </div>
-            <div class="p-3 bg-white rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-3">
-              <div class="flex items-center gap-2.5">
-                  <div class="p-1.5 rounded-lg shrink-0 bg-emerald-50 text-emerald-600">
-                    <i data-lucide="phone" class="w-4 h-4"></i>
-                  </div>
-                  <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Calls</span>
+          </div>
+
+          <div class="space-y-2.5 pt-1 text-xs">
+            <div class="p-3 bg-white rounded-xl border border-slate-200/80 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#00BAFF]"></span>
+                <span class="font-semibold text-slate-700">Client Meetings</span>
               </div>
-              <span class="text-base font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">0</span>
+              <span class="font-mono font-bold text-slate-900" id="metric-meetings-count">{{ analytics.meetings_count }}</span>
             </div>
-            <div class="p-3 bg-white rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-3">
-              <div class="flex items-center gap-2.5">
-                  <div class="p-1.5 rounded-lg shrink-0 bg-rose-50 text-rose-600">
-                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
-                  </div>
-                  <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Deadlines</span>
+
+            <div class="p-3 bg-white rounded-xl border border-slate-200/80 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span>
+                <span class="font-semibold text-slate-700">Deliverable Deadlines</span>
               </div>
-              <span class="text-base font-extrabold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">0</span>
+              <span class="font-mono font-bold text-emerald-600" id="metric-deliverables-count">{{ analytics.deliverables_count }}</span>
             </div>
-            <div class="p-3 bg-white rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-3">
-              <div class="flex items-center gap-2.5">
-                  <div class="p-1.5 rounded-lg shrink-0 bg-purple-50 text-purple-600">
-                    <i data-lucide="corner-up-right" class="w-4 h-4"></i>
-                  </div>
-                  <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Follow-ups</span>
+
+            <div class="p-3 bg-white rounded-xl border border-slate-200/80 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#06B6D4]"></span>
+                <span class="font-semibold text-slate-700">Ad & Social Campaigns</span>
               </div>
-              <span class="text-base font-extrabold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md">0</span>
+              <span class="font-mono font-bold text-cyan-600" id="metric-campaigns-count">{{ analytics.campaigns_count }}</span>
+            </div>
+
+            <div class="p-3 bg-white rounded-xl border border-slate-200/80 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#FB923C]"></span>
+                <span class="font-semibold text-slate-700">Follow-ups & Syncs</span>
+              </div>
+              <span class="font-mono font-bold text-orange-600" id="metric-followups-count">{{ analytics.followups_count }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-          <h3 class="font-bold text-sm text-slate-900 mb-4 flex items-center gap-2">
+        <!-- Quick Event Templates (XenoPlan Style) -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs space-y-3">
+          <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
             <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
-            <span>Quick Actions</span>
+            <span>Quick Event Presets</span>
           </h3>
-          <div class="space-y-2.5" id="quick-templates-container">
-            <!-- Dynamically rendered -->
+          <p class="text-xs text-slate-500">Click to instantly prefill event form with standard terms.</p>
+          
+          <div class="space-y-2 pt-1">
+            <button type="button" onclick="useQuickPreset('Client Bi-Weekly Sync', 'Performance review and sprint planning.', '#00BAFF', 'client_meeting')" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-sky-300 hover:bg-sky-50/50 transition-all flex items-center justify-between group">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                  <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                </div>
+                <span class="text-xs font-semibold text-slate-800 truncate">Client Sync</span>
+              </div>
+              <i data-lucide="plus" class="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-600"></i>
+            </button>
+
+            <button type="button" onclick="useQuickPreset('Deliverable Review & Signoff', 'Final review of milestones before staging deployment.', '#10B981', 'milestone_deliverable')" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all flex items-center justify-between group">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                </div>
+                <span class="text-xs font-semibold text-slate-800 truncate">Deliverable Signoff</span>
+              </div>
+              <i data-lucide="plus" class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600"></i>
+            </button>
+
+            <button type="button" onclick="useQuickPreset('Monthly Marketing Campaign Launch', 'Ad sets go live across Meta & Google.', '#06B6D4', 'ad_campaign')" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-cyan-300 hover:bg-cyan-50/50 transition-all flex items-center justify-between group">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-7 h-7 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
+                  <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                </div>
+                <span class="text-xs font-semibold text-slate-800 truncate">Campaign Launch</span>
+              </div>
+              <i data-lucide="plus" class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-600"></i>
+            </button>
           </div>
         </div>
+
       </div>
     </div>
+
   </div>
 </div>
 
-<!-- Event Modal -->
-<div id="event-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[100] flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
-  <div class="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl border border-slate-200/80 transform scale-95 transition-transform duration-300">
-    <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
-      <h3 id="modal-title" class="text-base font-bold text-slate-900">Event Details</h3>
-      <button onclick="closeModal()" type="button" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-        <i data-lucide="x" class="w-4 h-4"></i>
+<!-- EVENT DETAIL & EDIT MODAL (XenoPlan Style) -->
+<div id="event-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-[150] hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
+    
+    <div class="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+      <div>
+        <h3 id="modal-title" class="text-base font-bold text-slate-900">Create Event</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Schedule a client sync, deliverable deadline, or team meeting.</p>
+      </div>
+      <button type="button" onclick="closeEventModal()" class="p-1.5 text-slate-400 hover:text-slate-800 rounded-xl hover:bg-slate-200/50 transition-colors">
+        <i data-lucide="x" class="w-5 h-5"></i>
       </button>
     </div>
-    
-    <form id="event-modal-form" method="POST" class="space-y-4">
+
+    <form id="event-form" onsubmit="submitEventForm(event)" class="p-5 space-y-4">
       {% csrf_token %}
-      <input type="hidden" id="event-id" name="event_id" value="" />
-      
-      <div>
-        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Event Title</label>
-        <input type="text" id="event-title" name="title" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" placeholder="e.g. Contract Sign-off with Acme"/>
-      </div>
+      <input type="hidden" id="event-id" value="" />
 
       <div>
-        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Description</label>
-        <textarea id="event-desc" name="description" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" placeholder="Add discussion topics or details..."></textarea>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Event Title <span class="text-rose-500">*</span></label>
+        <input type="text" id="event-title" required placeholder="e.g. Monthly Marketing Review with Nivin Garments" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Start Time</label>
-          <input type="datetime-local" id="event-start" name="start_time" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"/>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Event Category</label>
+          <select id="event-category" onchange="syncCategoryColor()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+            <option value="#00BAFF">Client Meeting (Sky Blue)</option>
+            <option value="#10B981">Milestone Deliverable (Emerald)</option>
+            <option value="#00D0C6">Social Post (Teal)</option>
+            <option value="#06B6D4">Ad Campaign (Cyan)</option>
+            <option value="#FBBF24">SEO Deliverable (Amber)</option>
+            <option value="#FB7185">Content Review (Rose)</option>
+            <option value="#FB923C">Payment Follow-up (Orange)</option>
+            <option value="#94A3B8">Internal Meeting (Slate)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Associate Client</label>
+          <select id="event-client-select" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+            <option value="">-- No Client (Internal) --</option>
+            {% for c in clients %}
+            <option value="{{ c.company }}">{{ c.company }} ({{ c.name }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Start Time <span class="text-rose-500">*</span></label>
+          <input type="datetime-local" id="event-start" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">End Time</label>
-          <input type="datetime-local" id="event-end" name="end_time" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"/>
+          <label class="block text-xs font-bold text-slate-700 mb-1">End Time</label>
+          <input type="datetime-local" id="event-end" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
         </div>
       </div>
 
       <div>
-        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Category / Color</label>
-        <select id="event-color" name="color" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
-          {% for status in calendar_statuses %}
-          <option value="{{ status.color }}">{{ status.name }}</option>
-          {% empty %}
-          <option value="#2563EB">Meeting</option>
-          <option value="#10B981">Call</option>
-          <option value="#EF4444">Deadline</option>
-          <option value="#8B5CF6">Follow-up</option>
-          <option value="#14B8A6">Personal</option>
-          {% endfor %}
-        </select>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Google Meet / Video Link</label>
+        <div class="relative">
+          <i data-lucide="video" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="url" id="event-meeting-link" placeholder="https://meet.google.com/xyz-abcd-efg" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
+        </div>
       </div>
 
-      <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center gap-3">
-        <!-- Delete Button (Only shown during edit) -->
-        <button type="button" id="delete-event-btn" onclick="deleteEvent()" class="px-4 py-2 border border-rose-200 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-50 transition-all hidden">
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Agenda & Notes</label>
+        <textarea id="event-desc" rows="3" placeholder="Meeting discussion points, deliverables review..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"></textarea>
+      </div>
+
+      <div id="event-modal-error" class="hidden text-xs text-rose-600 font-semibold p-2 bg-rose-50 rounded-lg border border-rose-200"></div>
+
+      <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
+        <button type="button" id="event-delete-btn" onclick="deleteCurrentEvent()" class="hidden px-3.5 py-2 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl transition-colors">
           Delete Event
         </button>
-        
-        <div class="ml-auto flex items-center gap-3">
-          <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all">Cancel</button>
-          <button type="submit" id="save-event-btn" class="px-5 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-brand-700 transition-all">Save Event</button>
+        <div class="flex items-center gap-2 ml-auto">
+          <button type="button" onclick="closeEventModal()" class="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-100 transition-colors">
+            Cancel
+          </button>
+          <button type="submit" id="event-submit-btn" class="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5">
+            <span>Save Event</span>
+          </button>
         </div>
       </div>
     </form>
-  </div>
-</div>
-
-<!-- Day Events Modal -->
-<div id="day-events-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[90] flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
-  <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl border border-slate-200/80 transform scale-95 transition-transform duration-300">
-    <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-      <div>
-        <h3 id="day-modal-title" class="text-base font-bold text-slate-900">Events</h3>
-        <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Schedule for this day</p>
-      </div>
-      <button onclick="closeDayModal()" type="button" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-        <i data-lucide="x" class="w-4 h-4"></i>
-      </button>
-    </div>
-    
-    <!-- Day Events List -->
-    <div id="day-events-list" class="space-y-3 max-h-60 overflow-y-auto custom-scrollbar pr-1 mb-6">
-      <!-- Dynamically filled -->
-    </div>
-
-    <div class="flex justify-between items-center pt-4 border-t border-slate-100">
-      <button type="button" onclick="closeDayModal()" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all">Close</button>
-      <button type="button" id="day-add-event-btn" class="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-xl shadow-xs hover:bg-brand-700 transition-all flex items-center gap-1.5">
-        <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Event
-      </button>
-    </div>
   </div>
 </div>
 {% endblock %}
@@ -401,533 +396,264 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script>
-  let calendar;
-  window.calendarStatuses = [
-    {% for status in calendar_statuses %}
-    { name: "{{ status.name|escapejs }}", color: "{{ status.color|escapejs }}" },
-    {% endfor %}
-  ];
+  let calendar = null;
+  let activeCategory = 'all';
+  let activeClientId = 'all';
 
-  function renderCalendarStatuses() {
-      // Handled by Django backend
-      renderQuickTemplatesList();
-  }
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.lucide) lucide.createIcons();
 
-  function renderQuickTemplatesList() {
-      const defaultTemplates = [
-          { title: 'Client Call', description: 'Scheduled call with client.', color: '#10B981', icon: 'phone' },
-          { title: 'Weekly Sync', description: 'Internal team synchronization.', color: '#2563EB', icon: 'users' },
-          { title: 'Proposal Deadline', description: 'Project proposal deadline.', color: '#EF4444', icon: 'alert-circle' },
-          { title: 'Post Follow-up', description: 'Follow up with lead on content.', color: '#8B5CF6', icon: 'corner-up-right' },
-          { title: 'Client Meeting', description: 'High-priority strategy meeting.', color: '#2563EB', icon: 'briefcase' }
-      ];
-
-      const container = document.getElementById('quick-templates-container');
-      if (container) {
-          container.innerHTML = '';
-          defaultTemplates.forEach(tpl => {
-              const btn = document.createElement('button');
-              btn.type = 'button';
-              btn.onclick = function() {
-                  useQuickTemplate(tpl.title, tpl.description || '', tpl.color);
-              };
-              btn.className = 'w-full text-left px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50/80 transition-all flex items-center justify-between group cursor-pointer shadow-2xs';
-              btn.innerHTML = `
-                  <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background-color: ${tpl.color}15; color: ${tpl.color};">
-                        <i data-lucide="${tpl.icon}" class="w-4 h-4"></i>
-                    </div>
-                    <span class="block text-xs font-semibold text-slate-700 group-hover:text-slate-900 truncate transition-colors">${tpl.title}</span>
-                  </div>
-                  <div class="w-6 h-6 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-slate-700 transition-all shrink-0">
-                      <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                  </div>
-              `;
-              container.appendChild(btn);
-          });
-          lucide.createIcons();
-      }
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    renderCalendarStatuses();
-    lucide.createIcons();
-    
     const calendarEl = document.getElementById('calendar');
     calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
       height: 'auto',
-      contentHeight: 'auto',
-      expandRows: true,
-      aspectRatio: 1.35,
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
       editable: true,
+      droppable: true,
       eventDrop: function(info) {
-          const ev = info.event;
-          const url = `/calendar/edit-ajax/${ev.id}/`;
-          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-          
-          const formData = new URLSearchParams();
-          formData.append('title', ev.title);
-          formData.append('start_time', getLocalDateTimeString(ev.start));
-          formData.append('end_time', ev.end ? getLocalDateTimeString(ev.end) : getLocalDateTimeString(ev.start));
-          formData.append('description', ev.extendedProps.description || '');
-          formData.append('color', ev.backgroundColor || '#2563EB');
-          formData.append('recurring', 'false');
-          
-          fetch(url, {
-              method: 'POST',
-              headers: {
-                  'X-Requested-With': 'XMLHttpRequest',
-                  'X-CSRFToken': csrfToken,
-                  'Content-Type': 'application/x-www-form-urlencoded'
-              },
-              body: formData
-          })
-          .then(res => res.json())
-          .then(data => {
-              if(!data.success) {
-                  showToast('Failed to move event', 'error');
-                  info.revert();
-              }
-          })
-          .catch(err => {
-              showToast('Network error', 'error');
-              info.revert();
-          });
+        handleEventDragResize(info);
+      },
+      eventResize: function(info) {
+        handleEventDragResize(info);
       },
       events: function(info, successCallback, failureCallback) {
-        fetch("{% url 'calendar_events_json' %}?t=" + new Date().getTime(), { cache: 'no-store' })
+        let url = `{% url 'calendar_events_json' %}?t=${Date.now()}`;
+        if (activeClientId !== 'all') url += `&client_id=${encodeURIComponent(activeClientId)}`;
+        if (activeCategory !== 'all') url += `&category=${encodeURIComponent(activeCategory)}`;
+
+        fetch(url)
           .then(res => res.json())
           .then(events => {
-            // Update Stat Counters in sidebar dynamically
-            updateStatCounters(events);
-
-            // Filter events based on active category checkboxes
-            const checkedColors = Array.from(document.querySelectorAll('.filter-checkbox:checked')).map(cb => cb.value.toUpperCase());
-            const filtered = events.filter(e => checkedColors.includes((e.color || '').toUpperCase()));
-            successCallback(filtered);
+            successCallback(events);
           })
           .catch(err => {
             console.error(err);
             failureCallback(err);
           });
       },
-      selectable: true,
-      select: function(info) {
-        const clickedDateStr = info.startStr.split('T')[0];
-        window.location.href = `/calendar/list/?date=${clickedDateStr}`;
-      },
       eventClick: function(info) {
-        openEditModal(info.event);
-      }
-    });
-    calendar.render();
-    window.calendarObj = calendar;
-    
-    // Keyboard Shortcuts
-    document.addEventListener('keydown', function(e) {
-        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
-        
-        switch(e.key.toLowerCase()) {
-            case 'n':
-                openAddModal();
-                break;
-            case 'm':
-                calendar.changeView('dayGridMonth');
-                break;
-            case 'w':
-                calendar.changeView('timeGridWeek');
-                break;
-            case 'd':
-                calendar.changeView('timeGridDay');
-                break;
-            case 'arrowleft':
-                calendar.prev();
-                break;
-            case 'arrowright':
-                calendar.next();
-                break;
-        }
-    });
-  });
-
-  // Dynamically update analytics cards based on calendar events
-  function updateStatCounters(events) {
-      const analyticsContainer = document.getElementById('analytics-container');
-      if (!analyticsContainer) return;
-
-      const defaultCategories = [
-          { name: 'Meetings', colors: ['#2563EB', '#004AC6', '#0053DB'], icon: 'users', primaryColor: '#2563EB' },
-          { name: 'Calls', colors: ['#10B981', '#22C55E'], icon: 'phone', primaryColor: '#10B981' },
-          { name: 'Deadlines', colors: ['#EF4444', '#DC2626'], icon: 'alert-circle', primaryColor: '#EF4444' },
-          { name: 'Follow-ups', colors: ['#8B5CF6', '#7C3AED'], icon: 'corner-up-right', primaryColor: '#8B5CF6' }
-      ];
-
-      // Build categories list from dynamic window.calendarStatuses if available
-      let categoriesToDisplay = [];
-      if (window.calendarStatuses && window.calendarStatuses.length > 0) {
-          categoriesToDisplay = window.calendarStatuses.map(s => {
-              const nameUpper = (s.name || '').toUpperCase();
-              let icon = 'calendar';
-              let color = s.color || '#2563EB';
-              let aliasColors = [color.toUpperCase()];
-
-              if (nameUpper.includes('MEETING')) {
-                  icon = 'users';
-                  aliasColors.push('#2563EB', '#004AC6', '#0053DB');
-              } else if (nameUpper.includes('CALL')) {
-                  icon = 'phone';
-                  aliasColors.push('#10B981', '#22C55E');
-              } else if (nameUpper.includes('DEADLINE')) {
-                  icon = 'alert-circle';
-                  aliasColors.push('#EF4444', '#DC2626');
-              } else if (nameUpper.includes('FOLLOW')) {
-                  icon = 'corner-up-right';
-                  aliasColors.push('#8B5CF6', '#7C3AED');
-              }
-
-              return {
-                  name: s.name,
-                  primaryColor: color,
-                  colors: aliasColors,
-                  icon: icon
-              };
-          });
-      } else {
-          categoriesToDisplay = defaultCategories;
-      }
-
-      let html = `
-          <div class="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 flex items-center justify-between shadow-xs mb-3">
-            <div>
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Total Scheduled Events</span>
-                <span class="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5 block">${events.length}</span>
-            </div>
-            <div class="p-2.5 bg-brand-50 text-brand-600 rounded-xl shrink-0">
-                <i data-lucide="calendar" class="w-5 h-5"></i>
-            </div>
-          </div>
-      `;
-
-      categoriesToDisplay.forEach(cat => {
-          const count = events.filter(e => {
-              const eventColor = (e.color || '').toUpperCase();
-              if (cat.colors && cat.colors.some(c => c.toUpperCase() === eventColor)) {
-                  return true;
-              }
-              if (eventColor === (cat.primaryColor || '').toUpperCase()) {
-                  return true;
-              }
-              return false;
-          }).length;
-
-          const themeColor = cat.primaryColor || '#2563EB';
-
-          html += `
-              <div class="p-3 bg-white rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-3 min-w-0">
-                  <div class="flex items-center gap-2.5 min-w-0 truncate">
-                      <div class="p-1.5 rounded-lg shrink-0" style="background-color: ${themeColor}15; color: ${themeColor};">
-                        <i data-lucide="${cat.icon}" class="w-4 h-4"></i>
-                      </div>
-                      <span class="text-xs font-bold text-slate-700 uppercase tracking-wider truncate" title="${cat.name}">${cat.name}</span>
-                  </div>
-                  <span class="text-base font-extrabold shrink-0 px-2 py-0.5 rounded-md" style="color: ${themeColor}; background-color: ${themeColor}15;">${count}</span>
-              </div>
-          `;
-      });
-
-      analyticsContainer.innerHTML = html;
-      if (window.lucide) {
-          lucide.createIcons();
-      }
-  }
-
-  // Refetch events on checkbox toggling
-  function filterEvents() {
-    if (calendar) {
-      calendar.refetchEvents();
-    }
-  }
-
-  // Pre-fill quick template
-  function useQuickTemplate(title, description, color) {
-    openAddModal();
-    document.getElementById('event-title').value = title;
-    document.getElementById('event-desc').value = description;
-    document.getElementById('event-color').value = color;
-  }
-
-  const modal = document.getElementById('event-modal');
-  const eventIdInput = document.getElementById('event-id');
-  const titleInput = document.getElementById('event-title');
-  const descInput = document.getElementById('event-desc');
-  const startInput = document.getElementById('event-start');
-  const endInput = document.getElementById('event-end');
-  const colorSelect = document.getElementById('event-color');
-  const deleteBtn = document.getElementById('delete-event-btn');
-  const modalTitle = document.getElementById('modal-title');
-
-  function showModal() {
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-      modal.classList.remove('opacity-0');
-      modal.querySelector('div').classList.remove('scale-95');
-    }, 10);
-  }
-
-  function hideModal() {
-    modal.classList.add('opacity-0');
-    modal.querySelector('div').classList.add('scale-95');
-    setTimeout(() => {
-      modal.classList.add('hidden');
-    }, 300);
-  }
-
-  function openAddModal(startVal = '', endVal = '') {
-    renderCalendarStatuses();
-    eventIdInput.value = '';
-    titleInput.value = '';
-    descInput.value = '';
-    startInput.value = startVal || getLocalDateTimeString(new Date());
-    endInput.value = endVal || getLocalDateTimeString(new Date(Date.now() + 3600000));
-    
-    let defaultColor = '#2563EB';
-    try {
-        const list = JSON.parse(localStorage.getItem('status_list_calendar')) || [];
-        if (list.length > 0) defaultColor = list[0].color;
-    } catch(e){}
-    colorSelect.value = defaultColor;
-    
-    deleteBtn.classList.add('hidden');
-    modalTitle.textContent = 'Create Calendar Event';
-    showModal();
-  }
-
-  function openEditModal(event) {
-    renderCalendarStatuses();
-    eventIdInput.value = event.id;
-    titleInput.value = event.title;
-    descInput.value = event.extendedProps.description || '';
-    
-    startInput.value = getLocalDateTimeString(event.start);
-    endInput.value = event.end ? getLocalDateTimeString(event.end) : getLocalDateTimeString(event.start);
-    colorSelect.value = event.backgroundColor || '#2563EB';
-    deleteBtn.classList.remove('hidden');
-    modalTitle.textContent = 'Edit Calendar Event';
-    showModal();
-  }
-
-  function closeModal() {
-    hideModal();
-  }
-
-  function getLocalDateTimeString(date) {
-    const tzOffset = date.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(date - tzOffset)).toISOString().slice(0, 16);
-    return localISOTime;
-  }
-
-  document.getElementById('event-modal-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const evId = eventIdInput.value;
-    const url = evId ? `/calendar/edit-ajax/${evId}/` : "{% url 'event_create_ajax' %}";
-    
-    const formData = new FormData(this);
-    formData.set('recurring', 'false');
-    
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-      },
-      body: new URLSearchParams(formData)
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        closeModal();
-        calendar.refetchEvents();
-        showToast(evId ? 'Event updated successfully.' : 'Event created successfully.', 'success');
-      } else {
-        let errorMsg = 'Failed to save event.';
-        if (data.errors) {
-          errorMsg = Object.values(data.errors).map(errs => errs.map(e => e.message).join(', ')).join('. ');
-        }
-        showToast(errorMsg, 'error');
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      showToast('Network error occurred.', 'error');
-    });
-  });
-
-  function deleteEvent() {
-    const evId = eventIdInput.value;
-    if (!evId) return;
-    if (!confirm('Are you sure you want to delete this event?')) return;
-    
-    const url = `/calendar/delete-ajax/${evId}/`;
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRFToken': csrfToken
-      }
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        closeModal();
-        calendar.refetchEvents();
-        showToast('Event deleted successfully.', 'success');
-      } else {
-        showToast(data.error || 'Failed to delete event.', 'error');
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      showToast('Network error occurred.', 'error');
-    });
-  }
-
-  const dayModal = document.getElementById('day-events-modal');
-  const dayTitle = document.getElementById('day-modal-title');
-  const dayList = document.getElementById('day-events-list');
-  const dayAddBtn = document.getElementById('day-add-event-btn');
-
-  function showDayModal() {
-    dayModal.classList.remove('hidden');
-    setTimeout(() => {
-      dayModal.classList.remove('opacity-0');
-      dayModal.querySelector('div').classList.remove('scale-95');
-    }, 10);
-  }
-
-  function closeDayModal() {
-    dayModal.classList.add('opacity-0');
-    dayModal.querySelector('div').classList.add('scale-95');
-    setTimeout(() => {
-      dayModal.classList.add('hidden');
-    }, 300);
-  }
-
-  function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-  }
-
-  function openDayEventsModal(dateStr, events) {
-      const d = new Date(dateStr + 'T00:00:00');
-      const formattedDate = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-      dayTitle.textContent = formattedDate;
-
-      dayList.innerHTML = '';
-      if (events.length === 0) {
-          dayList.innerHTML = `
-              <div class="p-8 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                  <i data-lucide="calendar" class="w-8 h-8 mx-auto mb-1.5 opacity-40"></i>
-                  <p class="text-xs font-bold">No events scheduled.</p>
-              </div>
-          `;
-          lucide.createIcons();
-      } else {
-          events.forEach(ev => {
-              const categoryColor = ev.backgroundColor || '#2563EB';
-              const desc = ev.extendedProps.description || 'No description.';
-              const startTimeStr = ev.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              const endTimeStr = ev.end ? ev.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-              const durationStr = endTimeStr ? `${startTimeStr} - ${endTimeStr}` : startTimeStr;
-
-              const item = document.createElement('div');
-              item.className = 'p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-start justify-between hover:border-brand-300 transition-all';
-              item.innerHTML = `
-                  <div class="flex items-start gap-2.5 flex-1 min-w-0">
-                      <span class="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" style="background-color: ${categoryColor};"></span>
-                      <div class="min-w-0 flex-1">
-                          <button onclick="editEventFromDayList('${ev.id}')" class="text-xs font-bold text-brand-600 hover:underline text-left block w-full truncate" title="Edit Event">${escapeHtml(ev.title)}</button>
-                          <span class="text-[10px] text-slate-500 font-medium block mt-0.5">${durationStr}</span>
-                          <p class="text-[10px] text-slate-500 mt-1 truncate">${escapeHtml(desc)}</p>
-                      </div>
-                  </div>
-                  <button onclick="deleteEventFromDayList('${ev.id}')" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all ml-2 shrink-0" title="Delete Event">
-                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                  </button>
-              `;
-              dayList.appendChild(item);
-          });
-          lucide.createIcons();
-      }
-
-      dayAddBtn.onclick = function() {
-          closeDayModal();
-          openAddModal(`${dateStr}T09:00`, `${dateStr}T10:00`);
-      };
-
-      showDayModal();
-  }
-
-  function editEventFromDayList(id) {
-      closeDayModal();
-      const allEvents = calendar.getEvents();
-      const ev = allEvents.find(e => e.id == id);
-      if (ev) {
+        const ev = info.event;
+        if (ev.extendedProps.is_milestone) {
+          // Open project milestone notice
+          alert(`Milestone Deliverable:\n${ev.title}\nClient: ${ev.extendedProps.client_name}\nStatus: ${ev.extendedProps.status}\nProgress: ${ev.extendedProps.progress}%\nDue Date: ${ev.startStr}`);
+        } else {
           openEditModal(ev);
+        }
       }
+    });
+
+    calendar.render();
+  });
+
+  // Category Filtering
+  function filterByCategory(category) {
+    activeCategory = category;
+    document.querySelectorAll('.category-pill').forEach(btn => {
+      btn.classList.remove('category-pill-active');
+    });
+    const activeBtn = document.getElementById(`cat-pill-${category}`);
+    if (activeBtn) activeBtn.classList.add('category-pill-active');
+    if (calendar) calendar.refetchEvents();
   }
 
-  function deleteEventFromDayList(id) {
-      if (!confirm('Are you sure you want to delete this event?')) return;
-      closeDayModal();
-      
-      const url = `/calendar/delete-ajax/${id}/`;
-      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-      
-      fetch(url, {
+  // Client Filtering
+  function applyClientFilter() {
+    activeClientId = document.getElementById('calendar-client-filter').value;
+    if (calendar) calendar.refetchEvents();
+  }
+
+  // Handle Event Drag & Drop / Resize Rescheduling
+  async function handleEventDragResize(info) {
+    const ev = info.event;
+    if (ev.extendedProps.is_milestone) {
+      alert('Milestone deliverables are synchronized directly with project tasks.');
+      info.revert();
+      return;
+    }
+
+    const rawId = ev.extendedProps.raw_id || ev.id.replace('event-', '');
+    const url = `/calendar/edit-ajax/${rawId}/`;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+
+    const formData = new FormData();
+    formData.append('title', ev.title);
+    formData.append('start_time', ev.start.toISOString());
+    if (ev.end) {
+      formData.append('end_time', ev.end.toISOString());
+    } else {
+      formData.append('end_time', ev.start.toISOString());
+    }
+
+    try {
+      const res = await fetch(url, {
         method: 'POST',
         headers: {
-          'X-Requested-With': 'XMLHttpRequest',
           'X-CSRFToken': csrfToken
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          calendar.refetchEvents();
-          showToast('Event deleted successfully.', 'success');
-        } else {
-          showToast(data.error || 'Failed to delete event.', 'error');
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        showToast('Network error occurred.', 'error');
+        },
+        body: formData
       });
+      const data = await res.json();
+      if (!data.success) {
+        info.revert();
+      }
+    } catch(e) {
+      info.revert();
+    }
   }
 
-  window.onclick = function(event) {
-    if (event.target === modal) {
-      closeModal();
-    } else if (event.target === dayModal) {
-      closeDayModal();
+  // Modal Handlers
+  function openAddModal() {
+    document.getElementById('event-modal-error').classList.add('hidden');
+    document.getElementById('event-form').reset();
+    document.getElementById('event-id').value = '';
+    document.getElementById('modal-title').textContent = 'Create Calendar Event';
+    document.getElementById('event-delete-btn').classList.add('hidden');
+
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    const startStr = (new Date(now - tzOffset)).toISOString().slice(0, 16);
+    const endStr = (new Date(now.getTime() + 3600000 - tzOffset)).toISOString().slice(0, 16);
+
+    document.getElementById('event-start').value = startStr;
+    document.getElementById('event-end').value = endStr;
+    document.getElementById('event-category').value = '#00BAFF';
+
+    document.getElementById('event-modal').classList.remove('hidden');
+  }
+
+  function openEditModal(ev) {
+    document.getElementById('event-modal-error').classList.add('hidden');
+    document.getElementById('event-form').reset();
+
+    const rawId = ev.extendedProps.raw_id || ev.id.replace('event-', '');
+    document.getElementById('event-id').value = rawId;
+    document.getElementById('modal-title').textContent = 'Edit Calendar Event';
+    document.getElementById('event-delete-btn').classList.remove('hidden');
+
+    document.getElementById('event-title').value = ev.title;
+    document.getElementById('event-category').value = ev.backgroundColor || '#00BAFF';
+
+    const desc = ev.extendedProps.description || '';
+    document.getElementById('event-desc').value = desc;
+
+    if (ev.start) {
+      const tzOffset = ev.start.getTimezoneOffset() * 60000;
+      document.getElementById('event-start').value = (new Date(ev.start - tzOffset)).toISOString().slice(0, 16);
+    }
+    if (ev.end) {
+      const tzOffset = ev.end.getTimezoneOffset() * 60000;
+      document.getElementById('event-end').value = (new Date(ev.end - tzOffset)).toISOString().slice(0, 16);
     }
 
-    const filterDropdown = document.getElementById('filter-dropdown');
-    const filterBtn = filterDropdown ? filterDropdown.previousElementSibling : null;
-    if (filterDropdown && filterBtn && !filterDropdown.classList.contains('hidden')) {
-      if (!filterDropdown.contains(event.target) && !filterBtn.contains(event.target)) {
-        filterDropdown.classList.add('hidden');
+    // Try finding client association
+    if (ev.extendedProps.client_name && ev.extendedProps.client_name !== 'Internal Sync') {
+      document.getElementById('event-client-select').value = ev.extendedProps.client_name;
+    }
+
+    document.getElementById('event-modal').classList.remove('hidden');
+  }
+
+  function closeEventModal() {
+    document.getElementById('event-modal').classList.add('hidden');
+  }
+
+  function useQuickPreset(title, desc, color, categorySlug) {
+    openAddModal();
+    document.getElementById('event-title').value = title;
+    document.getElementById('event-desc').value = desc;
+    document.getElementById('event-category').value = color;
+  }
+
+  function syncCategoryColor() {
+    // Dropdown value is the color
+  }
+
+  // Submit Event Form
+  async function submitEventForm(e) {
+    e.preventDefault();
+    const errDiv = document.getElementById('event-modal-error');
+    errDiv.classList.add('hidden');
+
+    const eventId = document.getElementById('event-id').value;
+    const isEditing = Boolean(eventId);
+    const url = isEditing ? `/calendar/edit-ajax/${eventId}/` : `{% url 'event_create_ajax' %}`;
+
+    const formData = new FormData();
+    formData.append('title', document.getElementById('event-title').value.trim());
+    formData.append('color', document.getElementById('event-category').value);
+    formData.append('start_time', document.getElementById('event-start').value);
+    formData.append('end_time', document.getElementById('event-end').value);
+    formData.append('client_name', document.getElementById('event-client-select').value);
+    formData.append('meeting_link', document.getElementById('event-meeting-link').value.trim());
+    formData.append('description', document.getElementById('event-desc').value.trim());
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken
+        },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeEventModal();
+        if (calendar) calendar.refetchEvents();
+      } else {
+        errDiv.textContent = data.error || 'Failed to save event.';
+        errDiv.classList.remove('hidden');
+      }
+    } catch(err) {
+      errDiv.textContent = 'Server error. Please try again.';
+      errDiv.classList.remove('hidden');
+    }
+  }
+
+  // Delete Event
+  async function deleteCurrentEvent() {
+    const eventId = document.getElementById('event-id').value;
+    if (!eventId) return;
+    if (!confirm('Are you sure you want to delete this event?')) return;
+
+    const url = `/calendar/delete-ajax/${eventId}/`;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeEventModal();
+        if (calendar) calendar.refetchEvents();
+      }
+    } catch(err) {
+      alert('Failed to delete event.');
+    }
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
       }
     }
+    return cookieValue;
   }
 </script>
 {% endblock %}

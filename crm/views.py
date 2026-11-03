@@ -86,83 +86,270 @@ def clients_view(request):
     org = request.user.profile.organization
     
     services_qs = Service.objects.filter(organization=org)
-    leads = Lead.objects.filter(organization=org, is_client=True)
-    
-    clients_dict = {}
-    for lead in leads:
-        comp = lead.company
-        if not comp:
-            continue
-        if comp not in clients_dict:
-            clients_dict[comp] = {
-                'company': comp,
-                'contacts_count': 0,
-                'total_value': 0.0,
-                'total_paid': 0.0,
-                'avg_score': 0,
-                'leads': [],
-                'service_ids': set()
-            }
-        clients_dict[comp]['contacts_count'] += 1
-        clients_dict[comp]['total_value'] += float(lead.value or 0.0)
-        clients_dict[comp]['total_paid'] += float(lead.paid_amount or 0.0)
-        clients_dict[comp]['avg_score'] += lead.score
-        clients_dict[comp]['leads'].append(lead)
-        lead_services = lead.services.all()
-        if lead_services.exists():
-            for s in lead_services:
-                clients_dict[comp]['service_ids'].add(s.id)
-        else:
-            clients_dict[comp]['service_ids'].add(0)
+    leads = Lead.objects.filter(organization=org, is_client=True).order_by('-created_at')
     
     clients_list = []
-    for comp, data in clients_dict.items():
-        if data['contacts_count'] > 0:
-            data['avg_score'] = int(data['avg_score'] / data['contacts_count'])
-        data['service_ids_str'] = " ".join(f"service-{sid}" for sid in data['service_ids'])
-        clients_list.append(data)
+    total_mrr = 0.0
+    total_contract_value = 0.0
+    active_count = 0
+    onboarding_count = 0
+    paused_count = 0
 
-    # Calculate statistics per service
-    service_stats = {}
-    for service in services_qs:
-        service_stats[service.id] = {
-            'id': service.id,
-            'name': service.name,
-            'description': service.description,
-            'price': service.price,
-            'client_count': 0,
-            'total_value': 0.0,
-        }
-    
-    uncategorized_stats = {
-        'id': 0,
-        'name': 'Uncategorized',
-        'description': 'Clients without an assigned service.',
-        'price': 0.0,
-        'client_count': 0,
-        'total_value': 0.0,
-    }
+    for lead in leads:
+        company_name = lead.company or lead.name
+        total_val = float(lead.value or 0.0)
+        paid_val = float(lead.paid_amount or 0.0)
+        total_contract_value += total_val
 
-    for client in clients_list:
-        for sid in client['service_ids']:
-            if sid in service_stats:
-                service_stats[sid]['client_count'] += 1
-                service_stats[sid]['total_value'] += client['total_value']
-            elif sid == 0:
-                uncategorized_stats['client_count'] += 1
-                uncategorized_stats['total_value'] += client['total_value']
+        # Linked agreements
+        agreement = Agreement.objects.filter(
+            Q(lead=lead) | (Q(company_name__iexact=company_name) if company_name else Q(id=0)),
+            organization=org
+        ).first()
 
-    services_list = list(service_stats.values())
-    if uncategorized_stats['client_count'] > 0:
-        services_list.append(uncategorized_stats)
+        monthly_retainer = float(agreement.monthly_fee) if agreement and agreement.monthly_fee else (
+            round(total_val / 12, 2) if total_val > 50000 else total_val
+        )
+        if monthly_retainer == 0 and total_val > 0:
+            monthly_retainer = total_val
 
-    services_list.sort(key=lambda s: s['client_count'], reverse=True)
+        # Status normalization matching XenoPlan
+        st = (lead.status or '').strip().lower()
+        if st in ['active', 'contracted', 'won', 'completed']:
+            status_tab = 'active'
+            active_count += 1
+            total_mrr += monthly_retainer
+        elif st in ['qualified', 'new', 'onboarding', 'proposal']:
+            status_tab = 'onboarding'
+            onboarding_count += 1
+        else:
+            status_tab = 'paused'
+            paused_count += 1
 
+        # Tier calculation
+        if total_val >= 100000 or monthly_retainer >= 50000:
+            tier = 'Enterprise'
+        elif total_val >= 30000 or monthly_retainer >= 15000:
+            tier = 'Growth'
+        elif total_val >= 15000:
+            tier = 'Pro'
+        else:
+            tier = 'Starter'
+
+        # Services list
+        services_list = [s.name for s in lead.services.all()]
+        if not services_list:
+            if agreement and agreement.service:
+                services_list.append(agreement.service.name)
+            elif agreement and agreement.agreement_type:
+                services_list.append(agreement.agreement_type.replace(' Agreement', ''))
+            else:
+                services_list.append('Digital Marketing')
+
+        # Linked tasks / projects for this client
+        linked_tasks = Task.objects.filter(
+            Q(lead=lead) | (Q(title__icontains=company_name) if company_name else Q(id=0)),
+            organization=org
+        ).order_by('-created_at')
+
+        projects_data = []
+        active_tasks_count = 0
+        total_deliverables = 0
+        completed_deliverables = 0
+
+        for t in linked_tasks:
+            if not t.completed:
+                active_tasks_count += 1
+            m_total = t.milestones.count()
+            m_done = t.milestones.filter(completed=True).count()
+            todos_total = t.todos.count()
+            todos_done = t.todos.filter(completed=True).count()
+            
+            deliv_count = m_total + todos_total
+            deliv_done = m_done + todos_done
+            total_deliverables += deliv_count
+            completed_deliverables += deliv_done
+
+            projects_data.append({
+                'id': t.id,
+                'name': t.title,
+                'description': t.description or '',
+                'progress': t.progress or (int((deliv_done / deliv_count * 100)) if deliv_count > 0 else (100 if t.completed else 0)),
+                'target_end_date': t.due_date.strftime('%Y-%m-%d') if t.due_date else '',
+                'priority': t.priority,
+                'status': t.status.name if t.status else ('Completed' if t.completed else 'In Progress'),
+                'deliverables_done': deliv_done,
+                'deliverables_total': deliv_count
+            })
+
+        overall_progress = int((completed_deliverables / total_deliverables * 100)) if total_deliverables > 0 else (75 if status_tab == 'active' else 25)
+
+        # Linked upcoming meetings & events
+        client_events = []
+        for e in Event.objects.filter(
+            Q(title__icontains=company_name) | Q(description__icontains=company_name) | Q(title__icontains=lead.name),
+            organization=org
+        ).order_by('start_time')[:6]:
+            client_events.append({
+                'id': e.id,
+                'title': e.title,
+                'start_time': e.start_time.strftime('%b %d, %Y • %I:%M %p') if e.start_time else '',
+                'color': e.color or '#00BAFF',
+                'description': e.description or ''
+            })
+
+        clients_list.append({
+            'id': lead.id,
+            'name': lead.name,
+            'company': company_name,
+            'email': lead.email or '',
+            'phone': lead.phone_number or '',
+            'status': lead.status,
+            'status_tab': status_tab,
+            'tier': tier,
+            'monthly_retainer': monthly_retainer,
+            'contract_value': total_val,
+            'paid_amount': paid_val,
+            'services': services_list,
+            'agreement_start_date': agreement.start_date.strftime('%b %d, %Y') if agreement and agreement.start_date else (lead.created_at.strftime('%b %d, %Y') if lead.created_at else ''),
+            'agreement_end_date': agreement.end_date.strftime('%b %d, %Y') if agreement and agreement.end_date else 'Perpetual Retainer',
+            'projects': projects_data,
+            'projects_count': len(projects_data),
+            'active_tasks_count': active_tasks_count,
+            'deliverables_progress': overall_progress,
+            'upcoming_events': client_events,
+            'notes': lead.notes or ''
+        })
+
+    # Available services for filtering & onboarding
+    all_service_names = list(services_qs.values_list('name', flat=True))
+    if not all_service_names:
+        all_service_names = ['Digital Marketing', 'SEO Retainer', 'Website Development', 'Content Strategy', 'Social Media', 'E-Commerce']
+
+    avg_retainer = round(total_mrr / active_count, 2) if active_count > 0 else 0.0
+
+    import json
     context = {
         'clients': clients_list,
-        'services': services_list,
+        'clients_json': json.dumps(clients_list, default=str),
+        'services': all_service_names,
+        'metrics': {
+            'total_clients': len(clients_list),
+            'active_clients': active_count,
+            'onboarding_clients': onboarding_count,
+            'paused_clients': paused_count,
+            'total_mrr': total_mrr,
+            'total_contract_value': total_contract_value,
+            'avg_retainer': avg_retainer
+        }
     }
     return render(request, 'clients.html', context)
+
+
+@login_required
+def quick_create_client_ajax(request):
+    """AJAX endpoint for onboarding a new client with retainer and services."""
+    if request.method == 'POST':
+        org = request.user.profile.organization
+        name = request.POST.get('name', '').strip()
+        company = request.POST.get('company', '').strip() or name
+        email = request.POST.get('email', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        status = request.POST.get('status', 'Active').strip()
+        tier = request.POST.get('tier', 'Growth').strip()
+        notes = request.POST.get('notes', '').strip()
+        
+        try:
+            monthly_retainer = float(request.POST.get('monthly_retainer', 0.0))
+        except (ValueError, TypeError):
+            monthly_retainer = 0.0
+
+        if not name:
+            return JsonResponse({'success': False, 'error': 'Client contact name is required.'})
+
+        # Create or update Lead record with is_client=True
+        lead = Lead.objects.create(
+            organization=org,
+            name=name,
+            company=company,
+            email=email,
+            phone_number=phone,
+            status=status,
+            stage='Won' if status.lower() in ['active', 'contracted'] else 'New',
+            value=monthly_retainer * 12 if monthly_retainer > 0 else 50000.0,
+            is_client=True,
+            notes=notes
+        )
+
+        # Attach services if provided
+        selected_services = request.POST.getlist('services[]') or request.POST.getlist('services')
+        if selected_services:
+            for s_name in selected_services:
+                service_obj, _ = Service.objects.get_or_create(organization=org, name=s_name.strip())
+                lead.services.add(service_obj)
+
+        return JsonResponse({
+            'success': True,
+            'message': f"Client '{company}' onboarded successfully.",
+            'client_id': lead.id
+        })
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+
+@login_required
+def edit_client_ajax(request, client_id):
+    """AJAX endpoint for updating an existing client's contact, status, retainer, and services."""
+    if request.method == 'POST':
+        org = request.user.profile.organization
+        lead = get_object_or_404(Lead, id=client_id, organization=org, is_client=True)
+
+        name = request.POST.get('name', '').strip()
+        company = request.POST.get('company', '').strip()
+        email = request.POST.get('email', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        status = request.POST.get('status', '').strip()
+        notes = request.POST.get('notes', '').strip()
+
+        if name:
+            lead.name = name
+        if company:
+            lead.company = company
+        if email:
+            lead.email = email
+        if phone:
+            lead.phone_number = phone
+        if status:
+            lead.status = status
+            if status.lower() in ['active', 'contracted']:
+                lead.stage = 'Won'
+        if notes:
+            lead.notes = notes
+
+        retainer_val = request.POST.get('monthly_retainer')
+        if retainer_val:
+            try:
+                monthly_fee = float(retainer_val)
+                lead.value = monthly_fee * 12
+            except (ValueError, TypeError):
+                pass
+
+        lead.save()
+
+        # Update services if passed
+        selected_services = request.POST.getlist('services[]') or request.POST.getlist('services')
+        if selected_services:
+            lead.services.clear()
+            for s_name in selected_services:
+                service_obj, _ = Service.objects.get_or_create(organization=org, name=s_name.strip())
+                lead.services.add(service_obj)
+
+        return JsonResponse({
+            'success': True,
+            'message': f"Client '{lead.company}' updated successfully."
+        })
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 
 @login_required
@@ -441,6 +628,7 @@ def projects_view(request):
     tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).order_by('due_date')
     staff = UserProfile.objects.filter(organization=org)
     leads = Lead.objects.filter(organization=org)
+    clients = Lead.objects.filter(organization=org, is_client=True).order_by('company')
     project_statuses = ProjectStatus.objects.filter(organization=org).order_by('position')
     
     today = timezone.now().date()
@@ -539,6 +727,7 @@ def projects_view(request):
         'tasks': tasks,
         'staff': staff,
         'leads': leads,
+        'clients': clients,
         'project_statuses': project_statuses,
         'total_projects': total_projects,
         'completed_projects': completed_projects,
@@ -571,6 +760,7 @@ def project_board_view(request):
     tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).order_by('due_date')
     staff = UserProfile.objects.filter(organization=org)
     leads = Lead.objects.filter(organization=org)
+    clients = Lead.objects.filter(organization=org, is_client=True).order_by('company')
     project_statuses = ProjectStatus.objects.filter(organization=org).order_by('position')
     
     today = timezone.now().date()
@@ -613,6 +803,7 @@ def project_timeline_view(request):
     tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).order_by('due_date')
     staff = UserProfile.objects.filter(organization=org)
     leads = Lead.objects.filter(organization=org)
+    clients = Lead.objects.filter(organization=org, is_client=True).order_by('company')
     project_statuses = ProjectStatus.objects.filter(organization=org).order_by('position')
 
     return render(request, 'project_timeline.html', {
@@ -665,6 +856,7 @@ def project_tasks_view(request):
     tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).order_by('due_date')
     staff = UserProfile.objects.filter(organization=org)
     leads = Lead.objects.filter(organization=org)
+    clients = Lead.objects.filter(organization=org, is_client=True).order_by('company')
     project_statuses = ProjectStatus.objects.filter(organization=org).order_by('position')
     
     return render(request, 'project_tasks.html', {
@@ -2762,11 +2954,18 @@ def add_task_milestone(request, task_id):
             due_date=due_date
         )
 
-        Activity.objects.create(
-            lead=task.lead,
-            type='Task',
-            description=f"Added milestone '{tm.title}' to project '{task.title}'"
-        )
+        # Recompute progress
+        total_m = task.milestones.count()
+        done_m = task.milestones.filter(completed=True).count()
+        task.progress = int((done_m / (total_m or 1)) * 100)
+        task.save()
+
+        if task.lead:
+            Activity.objects.create(
+                lead=task.lead,
+                type='Task',
+                description=f"Added milestone '{tm.title}' to project '{task.title}'"
+            )
 
         return JsonResponse({
             'success': True,
@@ -2775,7 +2974,10 @@ def add_task_milestone(request, task_id):
                 'title': tm.title,
                 'due_date': tm.due_date.strftime('%b %d, %Y'),
                 'completed': tm.completed
-            }
+            },
+            'progress': task.progress,
+            'milestones_done': done_m,
+            'milestones_total': total_m
         })
     return JsonResponse({'success': False, 'error': 'Invalid method.'})
 
@@ -2792,7 +2994,23 @@ def toggle_task_milestone(request, milestone_id):
         tm.completed = not tm.completed
         tm.save()
 
-        return JsonResponse({'success': True, 'completed': tm.completed})
+        # Recompute task progress matching XenoPlan architecture
+        total_m = task.milestones.count()
+        done_m = task.milestones.filter(completed=True).count()
+        task.progress = int((done_m / (total_m or 1)) * 100)
+        if task.progress == 100:
+            task.completed = True
+        elif task.completed and task.progress < 100:
+            task.completed = False
+        task.save()
+
+        return JsonResponse({
+            'success': True,
+            'completed': tm.completed,
+            'progress': task.progress,
+            'milestones_done': done_m,
+            'milestones_total': total_m
+        })
     return JsonResponse({'success': False, 'error': 'Invalid method.'})
 
 
@@ -2806,7 +3024,19 @@ def delete_task_milestone(request, milestone_id):
             return JsonResponse({'success': False, 'error': 'Access denied.'}, status=403)
 
         tm.delete()
-        return JsonResponse({'success': True})
+
+        # Recompute progress
+        total_m = task.milestones.count()
+        done_m = task.milestones.filter(completed=True).count()
+        task.progress = int((done_m / (total_m or 1)) * 100) if total_m > 0 else 0
+        task.save()
+
+        return JsonResponse({
+            'success': True,
+            'progress': task.progress,
+            'milestones_done': done_m,
+            'milestones_total': total_m
+        })
     return JsonResponse({'success': False, 'error': 'Invalid method.'})
 
 
@@ -3045,11 +3275,47 @@ def quick_create_lead(request):
 @login_required
 @page_permission_required('calendar')
 def calendar_view(request):
-    """Display calendar with events for the user's organization."""
+    """Display modern agency operations calendar with client filtering, event categories, and project milestones."""
     org = request.user.profile.organization
     events = Event.objects.filter(organization=org).order_by('start_time')
     calendar_statuses = get_or_create_dynamic_statuses(org, 'calendar', CalendarStatus)
-    return render(request, 'calendar.html', {'events': events, 'calendar_statuses': calendar_statuses})
+    clients = Lead.objects.filter(organization=org, is_client=True).order_by('company')
+    
+    # Milestone deliverables count
+    milestone_count = Task.objects.filter(Q(lead__organization=org) | Q(organization=org), due_date__isnull=False).count()
+    events_count = events.count()
+    total_scheduled = events_count + milestone_count
+    
+    # Meetings count
+    meetings_count = events.filter(Q(color__in=['#00BAFF', '#004ac6', '#2563EB']) | Q(title__icontains='Meeting')).count()
+    campaigns_count = events.filter(color__in=['#06B6D4', '#00D0C6']).count()
+    followups_count = events.filter(color__in=['#FB923C', '#8b5cf6', '#FBBF24']).count()
+
+    categories_list = [
+        {'id': 'client_meeting', 'label': 'Client Meetings', 'color': '#00BAFF', 'badge': 'bg-sky-50 text-sky-700 border-sky-200'},
+        {'id': 'milestone_deliverable', 'label': 'Milestone Deliverables', 'color': '#10B981', 'badge': 'bg-emerald-50 text-emerald-700 border-emerald-200'},
+        {'id': 'social_post', 'label': 'Social Posts', 'color': '#00D0C6', 'badge': 'bg-teal-50 text-teal-700 border-teal-200'},
+        {'id': 'ad_campaign', 'label': 'Ad Campaigns', 'color': '#06B6D4', 'badge': 'bg-cyan-50 text-cyan-700 border-cyan-200'},
+        {'id': 'website_milestone', 'label': 'Website Milestones', 'color': '#34D399', 'badge': 'bg-emerald-50 text-emerald-700 border-emerald-200'},
+        {'id': 'seo_task', 'label': 'SEO Deliverables', 'color': '#FBBF24', 'badge': 'bg-amber-50 text-amber-700 border-amber-200'},
+        {'id': 'payment_followup', 'label': 'Payment Follow-ups', 'color': '#FB923C', 'badge': 'bg-orange-50 text-orange-700 border-orange-200'},
+        {'id': 'internal_meeting', 'label': 'Internal Syncs', 'color': '#94A3B8', 'badge': 'bg-slate-100 text-slate-700 border-slate-200'},
+    ]
+
+    context = {
+        'events': events,
+        'calendar_statuses': calendar_statuses,
+        'clients': clients,
+        'categories': categories_list,
+        'analytics': {
+            'total_scheduled': total_scheduled,
+            'meetings_count': meetings_count,
+            'deliverables_count': milestone_count,
+            'campaigns_count': campaigns_count,
+            'followups_count': followups_count
+        }
+    }
+    return render(request, 'calendar.html', context)
 
 
 @login_required
@@ -3190,87 +3456,252 @@ def profile_edit_view(request):
 @login_required
 @page_permission_required('calendar')
 def calendar_events_json_view(request):
-    """Return JSON list of organization events for FullCalendar."""
+    """Return JSON list of organization events and milestone deliverables for FullCalendar."""
     org = request.user.profile.organization
+    client_id_filter = request.GET.get('client_id', '').strip()
+    category_filter = request.GET.get('category', '').strip()
+
     events = Event.objects.filter(organization=org)
     events_data = []
+
+    # Map color to category slug
+    def get_category_info(evt_color, desc):
+        color_map = {
+            '#00baff': ('client_meeting', 'Client Meeting'),
+            '#004ac6': ('client_meeting', 'Client Meeting'),
+            '#2563eb': ('client_meeting', 'Client Meeting'),
+            '#10b981': ('milestone_deliverable', 'Milestone Deliverable'),
+            '#c6f24e': ('milestone_deliverable', 'Milestone Deliverable'),
+            '#00d0c6': ('social_post', 'Social Post'),
+            '#06b6d4': ('ad_campaign', 'Ad Campaign'),
+            '#34d399': ('website_milestone', 'Website Milestone'),
+            '#fbbf24': ('seo_task', 'SEO Deliverable'),
+            '#fb7185': ('content_review', 'Content Review'),
+            '#fb923c': ('payment_followup', 'Payment Follow-up'),
+            '#8b5cf6': ('payment_followup', 'Payment Follow-up'),
+            '#94a3b8': ('internal_meeting', 'Internal Meeting'),
+        }
+        c = (evt_color or '#00baff').lower()
+        return color_map.get(c, ('client_meeting', 'Client Meeting'))
+
+    # Load clients map for fast lookup
+    clients_map = {c.id: c.company for c in Lead.objects.filter(organization=org, is_client=True)}
+
+    # Process Events
     for event in events:
+        desc = event.description or ''
+        cat_slug, cat_label = get_category_info(event.color, desc)
+
+        # Check client tag in description or title
+        event_client_id = None
+        event_client_name = 'Internal Sync'
+        for cid, cname in clients_map.items():
+            if cname and (cname.lower() in event.title.lower() or cname.lower() in desc.lower()):
+                event_client_id = cid
+                event_client_name = cname
+                break
+
+        # Apply client filter if selected
+        if client_id_filter and client_id_filter != 'all':
+            if str(event_client_id) != str(client_id_filter) and (str(client_id_filter) not in desc):
+                continue
+
+        # Apply category filter if selected
+        if category_filter and category_filter != 'all':
+            if cat_slug != category_filter:
+                continue
+
         events_data.append({
-            'id': event.id,
+            'id': f"event-{event.id}",
+            'raw_id': event.id,
             'title': event.title,
             'start': event.start_time.strftime('%Y-%m-%dT%H:%M:%S') if event.start_time else None,
             'end': event.end_time.strftime('%Y-%m-%dT%H:%M:%S') if event.end_time else None,
-            'description': event.description or '',
+            'description': desc,
             'recurring': event.recurring,
-            'color': event.color,
+            'color': event.color or '#00BAFF',
+            'is_milestone': False,
+            'category': cat_slug,
+            'category_label': cat_label,
+            'client_id': event_client_id,
+            'client_name': event_client_name,
             'owner': event.owner.get_full_name() or event.owner.username
         })
+
+    # Include Project & Task Deliverables as Calendar Milestones (XenoPlan Architecture)
+    if not category_filter or category_filter in ['all', 'milestone_deliverable']:
+        tasks = Task.objects.filter(
+            Q(lead__organization=org) | Q(organization=org),
+            due_date__isnull=False
+        ).select_related('lead', 'status')
+
+        for task in tasks:
+            task_client_id = task.lead.id if task.lead else None
+            task_client_name = task.lead.company if task.lead else 'Internal Project'
+
+            if client_id_filter and client_id_filter != 'all':
+                if str(task_client_id) != str(client_id_filter):
+                    continue
+
+            status_name = task.status.name if task.status else ('Completed' if task.completed else 'In Progress')
+            events_data.append({
+                'id': f"milestone-{task.id}",
+                'raw_id': task.id,
+                'title': f"[Deliverable] {task.title}",
+                'start': task.due_date.strftime('%Y-%m-%d'),
+                'end': task.due_date.strftime('%Y-%m-%d'),
+                'description': f"Deliverable Deadline for {task_client_name}. Status: {status_name}. Progress: {task.progress}%.",
+                'color': '#10B981',
+                'is_milestone': True,
+                'allDay': True,
+                'category': 'milestone_deliverable',
+                'category_label': 'Milestone Deliverable',
+                'client_id': task_client_id,
+                'client_name': task_client_name,
+                'priority': task.priority,
+                'status': status_name,
+                'progress': task.progress
+            })
+
     return JsonResponse(events_data, safe=False)
 
 
 @login_required
 def event_create_ajax(request):
-    """Create a new event via AJAX and return JSON."""
+    """Create a new event via AJAX and return JSON with category and client tags."""
     if request.method == 'POST':
         org = request.user.profile.organization
-        form = EventForm(request.POST)
-        if form.is_valid():
-            event = form.save(commit=False)
-            event.owner = request.user
-            event.organization = org
-            event.save()
-            try:
-                from .event_notifications import check_and_send_event_notifications
-                check_and_send_event_notifications(event)
-            except Exception:
-                pass
-            return JsonResponse({
-                'success': True,
-                'event': {
-                    'id': event.id,
-                    'title': event.title,
-                    'start': event.start_time.strftime('%Y-%m-%dT%H:%M:%S') if event.start_time else None,
-                    'end': event.end_time.strftime('%Y-%m-%dT%H:%M:%S') if event.end_time else None,
-                    'description': event.description or '',
-                    'recurring': event.recurring,
-                    'color': event.color,
-                    'owner': event.owner.get_full_name() or event.owner.username
-                }
-            })
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors.get_json_data()})
+        title = request.POST.get('title', '').strip()
+        start_time_str = request.POST.get('start_time', '').strip()
+        end_time_str = request.POST.get('end_time', '').strip()
+        color = request.POST.get('color', '#00BAFF').strip()
+        description = request.POST.get('description', '').strip()
+        client_name = request.POST.get('client_name', '').strip()
+        meeting_link = request.POST.get('meeting_link', '').strip()
+
+        if not title:
+            return JsonResponse({'success': False, 'error': 'Event title is required.'})
+
+        # Append structured meeting link and client name if provided
+        extra_lines = []
+        if client_name:
+            extra_lines.append(f"Client: {client_name}")
+        if meeting_link:
+            extra_lines.append(f"Meeting Link: {meeting_link}")
+        if extra_lines:
+            description = (description + "\n\n" + "\n".join(extra_lines)).strip()
+
+        from datetime import datetime
+        try:
+            # Handle ISO string with potential 'Z' or offset
+            clean_start = start_time_str.replace('Z', '+00:00')
+            if 'T' in clean_start:
+                start_dt = datetime.fromisoformat(clean_start)
+            else:
+                start_dt = datetime.strptime(clean_start, '%Y-%m-%d %H:%M')
+        except Exception:
+            start_dt = timezone.now()
+
+        try:
+            clean_end = end_time_str.replace('Z', '+00:00') if end_time_str else ''
+            if clean_end and 'T' in clean_end:
+                end_dt = datetime.fromisoformat(clean_end)
+            elif clean_end:
+                end_dt = datetime.strptime(clean_end, '%Y-%m-%d %H:%M')
+            else:
+                end_dt = start_dt + timezone.timedelta(hours=1)
+        except Exception:
+            end_dt = start_dt + timezone.timedelta(hours=1)
+
+        event = Event.objects.create(
+            organization=org,
+            owner=request.user,
+            title=title,
+            start_time=start_dt,
+            end_time=end_dt,
+            color=color,
+            description=description
+        )
+
+        try:
+            from .event_notifications import check_and_send_event_notifications
+            check_and_send_event_notifications(event)
+        except Exception:
+            pass
+
+        return JsonResponse({
+            'success': True,
+            'event': {
+                'id': f"event-{event.id}",
+                'raw_id': event.id,
+                'title': event.title,
+                'start': event.start_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                'end': event.end_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                'color': event.color,
+                'description': event.description
+            }
+        })
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 
 @login_required
 def event_edit_ajax(request, event_id):
-    """Edit an event via AJAX and return JSON."""
+    """Edit an event via AJAX, supporting full drag-and-drop rescheduling and category updates."""
     org = request.user.profile.organization
     event = get_object_or_404(Event, id=event_id, organization=org)
+    
     if request.method == 'POST':
-        form = EventForm(request.POST, instance=event)
-        if form.is_valid():
-            event = form.save()
+        title = request.POST.get('title')
+        if title:
+            event.title = title.strip()
+
+        start_time_str = request.POST.get('start_time')
+        if start_time_str:
+            from datetime import datetime
             try:
-                from .event_notifications import check_and_send_event_notifications
-                check_and_send_event_notifications(event)
+                clean_start = start_time_str.replace('Z', '+00:00')
+                if 'T' in clean_start:
+                    event.start_time = datetime.fromisoformat(clean_start)
+                else:
+                    event.start_time = datetime.strptime(clean_start, '%Y-%m-%d %H:%M')
             except Exception:
                 pass
-            return JsonResponse({
-                'success': True,
-                'event': {
-                    'id': event.id,
-                    'title': event.title,
-                    'start': event.start_time.strftime('%Y-%m-%dT%H:%M:%S') if event.start_time else None,
-                    'end': event.end_time.strftime('%Y-%m-%dT%H:%M:%S') if event.end_time else None,
-                    'description': event.description or '',
-                    'recurring': event.recurring,
-                    'color': event.color,
-                    'owner': event.owner.get_full_name() or event.owner.username
-                }
-            })
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors.get_json_data()})
+
+        end_time_str = request.POST.get('end_time')
+        if end_time_str:
+            from datetime import datetime
+            try:
+                clean_end = end_time_str.replace('Z', '+00:00')
+                if 'T' in clean_end:
+                    event.end_time = datetime.fromisoformat(clean_end)
+                else:
+                    event.end_time = datetime.strptime(clean_end, '%Y-%m-%d %H:%M')
+            except Exception:
+                pass
+
+        color = request.POST.get('color')
+        if color:
+            event.color = color.strip()
+
+        description = request.POST.get('description')
+        if description is not None:
+            event.description = description.strip()
+
+        event.save()
+
+        return JsonResponse({
+            'success': True,
+            'event': {
+                'id': f"event-{event.id}",
+                'raw_id': event.id,
+                'title': event.title,
+                'start': event.start_time.strftime('%Y-%m-%dT%H:%M:%S') if event.start_time else None,
+                'end': event.end_time.strftime('%Y-%m-%dT%H:%M:%S') if event.end_time else None,
+                'color': event.color,
+                'description': event.description
+            }
+        })
+
     return JsonResponse({'success': False, 'error': 'Invalid request method.'})
 
 

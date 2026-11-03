@@ -1,63 +1,773 @@
 {% extends 'base.html' %}
 
-{% block title %}Clients Directory | XenoCRM ERP{% endblock %}
+{% block title %}Clients Directory & Operations Manager | XenoERP{% endblock %}
+
+{% block extra_css %}
+<style>
+    .glass-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-card:hover {
+        border-color: #0284c7;
+        box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.1), 0 8px 10px -6px rgba(2, 132, 199, 0.05);
+        transform: translateY(-2px);
+    }
+    .status-tab-active {
+        background-color: #0284c7;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+    }
+    .drawer-open {
+        transform: translateX(0) !important;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 9999px;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="p-margin-edge min-h-screen flex flex-col bg-slate-50">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div>
-            <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                <a href="{% url 'dashboard' %}" class="hover:text-brand-600 transition-colors">Accounts</a>
-                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <span class="text-brand-600 font-bold">Clients</span>
-            </div>
-            <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Clients Directory</h1>
-            <p class="text-xs md:text-sm text-slate-500 mt-1">Manage corporate clients, accounts, and service category relationships.</p>
-        </div>
-    </div>
+<div class="p-4 md:p-8 flex-1 flex flex-col bg-slate-50 min-h-screen custom-scrollbar w-full min-w-0">
+    <div class="w-full max-w-[1600px] mx-auto min-w-0 space-y-6">
 
-    <!-- Service Categories Section -->
-    <div class="mb-8">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Service Categories & Accounts</h2>
+        <!-- Top Header & Breadcrumbs -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+            <div>
+                <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    <a href="{% url 'dashboard' %}" class="hover:text-sky-600 transition-colors">Workspace</a>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    <span class="text-sky-600 font-bold">Clients</span>
+                </div>
+                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+                    Clients Directory & Retainers
+                    <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
+                        {{ metrics.total_clients }} Active Accounts
+                    </span>
+                </h1>
+                <p class="text-xs md:text-sm text-slate-500 mt-0.5">
+                    Manage client retainers, deliverable roadmaps, contracted service lines, and real-time operations.
+                </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2.5 shrink-0">
+                <a href="{% url 'agreements' %}" class="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-xl transition-all shadow-xs flex items-center gap-1.5">
+                    <i data-lucide="file-text" class="w-4 h-4 text-slate-500"></i>
+                    <span>Agreements</span>
+                </a>
+                <button type="button" onclick="openClientModal()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2 active:scale-95">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Onboard Client</span>
+                </button>
+            </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {% for service in services %}
-            <a href="{% url 'service_clients' service_id=service.id %}" class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-brand-500/50 transition-all flex flex-col justify-between group">
+
+        <!-- KPI Metrics Grid (XenoPlan Style) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
                 <div>
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="p-3 bg-brand-50 text-brand-600 rounded-xl group-hover:scale-105 transition-transform">
-                            <i data-lucide="briefcase" class="w-6 h-6"></i>
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Total Clients</span>
+                    <span class="text-2xl font-extrabold text-slate-900 tracking-tight mt-1 block">{{ metrics.total_clients }}</span>
+                    <span class="text-[11px] font-medium text-emerald-600 flex items-center gap-1 mt-1">
+                        <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i> All accounts synchronized
+                    </span>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Active Retainers</span>
+                    <span class="text-2xl font-extrabold text-emerald-600 tracking-tight mt-1 block">{{ metrics.active_clients }}</span>
+                    <span class="text-[11px] font-medium text-slate-500 mt-1 block">{{ metrics.onboarding_clients }} in onboarding</span>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Monthly Retainer MRR</span>
+                    <span class="text-2xl font-extrabold text-slate-900 tracking-tight mt-1 block">₹{{ metrics.total_mrr|floatformat:0 }}</span>
+                    <span class="text-[11px] font-medium text-sky-600 mt-1 block">Avg ₹{{ metrics.avg_retainer|floatformat:0 }}/client</span>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="wallet" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Total Contract Value</span>
+                    <span class="text-2xl font-extrabold text-slate-900 tracking-tight mt-1 block">₹{{ metrics.total_contract_value|floatformat:0 }}</span>
+                    <span class="text-[11px] font-medium text-slate-500 mt-1 block">Annualized portfolio</span>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="trending-up" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs">
+            <!-- Status Tabs -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0" id="status-tabs-container">
+                <button type="button" onclick="filterByTab('all')" id="tab-btn-all" class="status-tab-btn status-tab-active px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0">
+                    <span>All</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 text-white font-mono">{{ metrics.total_clients }}</span>
+                </button>
+                <button type="button" onclick="filterByTab('active')" id="tab-btn-active" class="status-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all flex items-center gap-1.5 shrink-0">
+                    <span>Active</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700 font-mono">{{ metrics.active_clients }}</span>
+                </button>
+                <button type="button" onclick="filterByTab('onboarding')" id="tab-btn-onboarding" class="status-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all flex items-center gap-1.5 shrink-0">
+                    <span>Onboarding</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700 font-mono">{{ metrics.onboarding_clients }}</span>
+                </button>
+                <button type="button" onclick="filterByTab('paused')" id="tab-btn-paused" class="status-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all flex items-center gap-1.5 shrink-0">
+                    <span>Paused</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700 font-mono">{{ metrics.paused_clients }}</span>
+                </button>
+            </div>
+
+            <!-- Search & Service Filter -->
+            <div class="flex items-center gap-2.5">
+                <div class="relative flex-1 sm:w-64">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input
+                        type="text"
+                        id="client-search-input"
+                        onkeyup="applyClientFilters()"
+                        placeholder="Search brand, contact, service..."
+                        class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                    />
+                </div>
+
+                <select id="service-filter-select" onchange="applyClientFilters()" class="bg-slate-50 border border-slate-200 text-slate-700 rounded-xl px-3 py-1.5 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                    <option value="all">All Services</option>
+                    {% for svc in services %}
+                    <option value="{{ svc|lower }}">{{ svc }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Clients Card Grid (XenoPlan Style) -->
+        <div id="clients-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {% for client in clients %}
+            <div
+                class="client-card glass-card rounded-2xl p-5 space-y-4 cursor-pointer relative group flex flex-col justify-between"
+                data-tab="{{ client.status_tab }}"
+                data-company="{{ client.company|lower }}"
+                data-name="{{ client.name|lower }}"
+                data-email="{{ client.email|lower }}"
+                data-services="{% for s in client.services %}{{ s|lower }} {% endfor %}"
+                data-client-id="{{ client.id }}"
+                onclick="openClientDrawer('{{ client.id }}')"
+            >
+                <div class="space-y-3">
+                    <!-- Top Line: Brand Name, Avatar, Status Pill & Tier -->
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                                {{ client.company|slice:":2"|upper }}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-bold text-sm text-slate-900 group-hover:text-sky-600 transition-colors truncate">
+                                        {{ client.company }}
+                                    </h3>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono uppercase tracking-tight
+                                        {% if client.status_tab == 'active' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                                        {% elif client.status_tab == 'onboarding' %}bg-amber-50 text-amber-700 border border-amber-200
+                                        {% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
+                                        {{ client.status|default:client.status_tab }}
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 truncate mt-0.5 flex items-center gap-1.5">
+                                    <span>{{ client.name }}</span>
+                                    {% if client.phone %}<span>&bull; {{ client.phone }}</span>{% endif %}
+                                </p>
+                            </div>
                         </div>
-                        <span class="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-full font-bold border border-slate-200">
-                            {{ service.client_count }} Client{{ service.client_count|pluralize }}
+
+                        <span class="text-[11px] font-mono font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-0.5 rounded-lg shrink-0">
+                            {{ client.tier }}
                         </span>
                     </div>
-                    <h3 class="font-bold text-slate-900 text-base group-hover:text-brand-600 transition-colors">{{ service.name }}</h3>
-                    <p class="text-xs text-slate-500 mt-2 line-clamp-2">{{ service.description|default:"Active client service line." }}</p>
+
+                    <!-- Monthly Retainer Banner -->
+                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Monthly Retainer</span>
+                            <span class="text-xs text-slate-500 font-mono">{{ client.agreement_end_date }}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-extrabold text-slate-900 font-mono">
+                                ₹{{ client.monthly_retainer|floatformat:0 }}
+                            </span>
+                            <span class="text-[10px] text-slate-400 block">/ month</span>
+                        </div>
+                    </div>
+
+                    <!-- Contracted Services Tags -->
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for svc in client.services %}
+                        <span class="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-medium border border-slate-200/60">
+                            {{ svc }}
+                        </span>
+                        {% endfor %}
+                    </div>
                 </div>
-                <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
-                    <span class="text-slate-500 font-medium">Pipeline Value</span>
-                    <span class="font-bold text-brand-600 text-sm">₹{{ service.total_value|floatformat:0 }}</span>
+
+                <!-- Footer: Operational Stats & View Action -->
+                <div class="pt-3 border-t border-slate-100 space-y-2">
+                    <div class="flex items-center justify-between text-xs text-slate-500 font-mono">
+                        <span class="flex items-center gap-1">
+                            <i data-lucide="folder-kanban" class="w-3.5 h-3.5 text-slate-400"></i>
+                            {{ client.projects_count }} Projects &bull; {{ client.active_tasks_count }} Tasks
+                        </span>
+                        <span class="text-sky-600 font-bold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                            View <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        </span>
+                    </div>
+
+                    <!-- Deliverables Completion Progress Bar -->
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-sky-500 h-full rounded-full transition-all duration-300" style="width: {{ client.deliverables_progress }}%;"></div>
+                    </div>
                 </div>
-            </a>
+            </div>
             {% empty %}
-            <div class="col-span-full bg-white p-12 rounded-2xl border border-slate-200/80 text-center text-slate-400">
-                <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-3 text-slate-300"></i>
-                <p class="text-sm font-semibold text-slate-700">No Services Found</p>
-                <p class="text-xs text-slate-400 mt-1">Add services in settings to categorize clients.</p>
+            <div class="col-span-full bg-white p-12 rounded-2xl border border-slate-200/90 text-center space-y-3">
+                <div class="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mx-auto">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-900">No client accounts yet</h3>
+                <p class="text-xs text-slate-500 max-w-sm mx-auto">
+                    Onboard corporate accounts to track retainers, project delivery roadmaps, and client events.
+                </p>
+                <button type="button" onclick="openClientModal()" class="px-4 py-2 bg-sky-600 text-white text-xs font-bold rounded-xl hover:bg-sky-700 transition-all inline-flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Onboard Your First Client</span>
+                </button>
             </div>
             {% endfor %}
         </div>
+
+        <div id="no-filter-results" class="hidden bg-white p-12 rounded-2xl border border-slate-200/90 text-center space-y-2">
+            <i data-lucide="search-x" class="w-8 h-8 text-slate-400 mx-auto"></i>
+            <h4 class="text-sm font-bold text-slate-900">No matching clients</h4>
+            <p class="text-xs text-slate-500">Try adjusting your search query or filter criteria.</p>
+        </div>
+
+    </div>
+</div>
+
+<!-- SLIDE-OVER CLIENT DETAIL DRAWER (XenoPlan Architecture) -->
+<div id="drawer-backdrop" onclick="closeClientDrawer()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[100] hidden transition-opacity duration-200"></div>
+
+<div id="client-detail-drawer" class="fixed top-0 right-0 w-full max-w-xl h-full bg-white border-l border-slate-200 shadow-2xl z-[101] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col overflow-hidden">
+    <!-- Drawer Header -->
+    <div class="p-6 border-b border-slate-200 flex items-start justify-between bg-slate-50/60">
+        <div class="min-w-0">
+            <span class="text-[10px] font-bold text-sky-600 uppercase tracking-wider font-mono block">Client Account Details</span>
+            <h2 id="drawer-company-name" class="text-xl font-bold text-slate-900 mt-0.5 truncate">Client Name</h2>
+            <p id="drawer-contact-subtitle" class="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                <span id="drawer-contact-name">-</span>
+                <span id="drawer-tier-badge" class="px-2 py-0.2 rounded text-[10px] font-mono font-bold text-sky-700 bg-sky-50 border border-sky-200">Growth</span>
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="triggerEditFromDrawer()" class="p-2 text-slate-400 hover:text-sky-600 hover:bg-slate-100 rounded-xl transition-colors" title="Edit Client">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </button>
+            <button type="button" onclick="closeClientDrawer()" class="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Drawer Content Scrollable Area -->
+    <div class="p-6 flex-1 overflow-y-auto space-y-6 custom-scrollbar">
+
+        <!-- Action Shortcuts -->
+        <div class="grid grid-cols-2 gap-2.5">
+            <a id="drawer-full-profile-link" href="#" class="px-3.5 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors">
+                <i data-lucide="user" class="w-4 h-4 text-slate-500"></i>
+                <span>Open Full Profile</span>
+            </a>
+            <a id="drawer-schedule-sync-link" href="{% url 'calendar' %}" class="px-3.5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs">
+                <i data-lucide="calendar" class="w-4 h-4"></i>
+                <span>Schedule Meeting</span>
+            </a>
+        </div>
+
+        <!-- Retainer & Billing Terms Card -->
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-200/80">
+                <span class="text-xs font-bold text-slate-900">Contract & Billing Terms</span>
+                <span id="drawer-retainer-badge" class="text-xs font-bold text-emerald-600 font-mono">₹0 / month</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-600">
+                <div><span class="text-slate-400 block font-sans text-[10px]">Start Date:</span> <span id="drawer-start-date">-</span></div>
+                <div><span class="text-slate-400 block font-sans text-[10px]">End Date:</span> <span id="drawer-end-date">Perpetual</span></div>
+                <div><span class="text-slate-400 block font-sans text-[10px]">Primary Contact:</span> <span id="drawer-contact-person">-</span></div>
+                <div><span class="text-slate-400 block font-sans text-[10px]">Phone:</span> <span id="drawer-contact-phone">-</span></div>
+                <div class="col-span-2"><span class="text-slate-400 block font-sans text-[10px]">Email:</span> <span id="drawer-contact-email">-</span></div>
+            </div>
+        </div>
+
+        <!-- Contracted Service Packages -->
+        <div class="space-y-2">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-sky-600"></i>
+                <span>Contracted Service Packages</span>
+            </h4>
+            <div id="drawer-services-container" class="flex flex-wrap gap-1.5"></div>
+        </div>
+
+        <!-- Active Projects Tab/Section -->
+        <div class="space-y-3">
+            <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="folder-kanban" class="w-3.5 h-3.5 text-sky-600"></i>
+                    <span>Active Projects (<span id="drawer-projects-count">0</span>)</span>
+                </h4>
+                <a href="{% url 'projects' %}" class="text-[11px] font-bold text-sky-600 hover:underline">View All</a>
+            </div>
+            <div id="drawer-projects-list" class="space-y-2.5">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Scheduled Meetings / Calendar Events -->
+        <div class="space-y-3">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-600"></i>
+                <span>Upcoming Client Syncs (<span id="drawer-events-count">0</span>)</span>
+            </h4>
+            <div id="drawer-events-list" class="space-y-2">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Client Notes -->
+        <div id="drawer-notes-section" class="space-y-2">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Account Notes</h4>
+            <div id="drawer-notes-content" class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 leading-relaxed font-sans">
+                No internal notes recorded.
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- QUICK ONBOARD & EDIT CLIENT MODAL -->
+<div id="client-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-[150] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
+        <!-- Modal Header -->
+        <div class="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div>
+                <h3 id="modal-title" class="text-base font-bold text-slate-900">Onboard New Corporate Client</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Configure brand details, retainer terms, and services.</p>
+            </div>
+            <button type="button" onclick="closeClientModal()" class="p-1.5 text-slate-400 hover:text-slate-800 rounded-xl hover:bg-slate-200/50 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Modal Form -->
+        <form id="client-form" onsubmit="submitClientForm(event)" class="p-5 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" id="modal-client-id" value="" />
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Company / Brand Name <span class="text-rose-500">*</span></label>
+                    <input type="text" id="modal-company" required placeholder="e.g. Nivin Garments" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Primary Contact Name <span class="text-rose-500">*</span></label>
+                    <input type="text" id="modal-name" required placeholder="e.g. Saranya Predeep" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                    <input type="email" id="modal-email" placeholder="contact@company.com" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+                    <input type="text" id="modal-phone" placeholder="+91 98765 43210" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Status</label>
+                    <select id="modal-status" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                        <option value="Active">Active</option>
+                        <option value="Contracted">Contracted</option>
+                        <option value="Qualified">Qualified (Onboarding)</option>
+                        <option value="Suspended">Suspended</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tier</label>
+                    <select id="modal-tier" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                        <option value="Growth">Growth</option>
+                        <option value="Enterprise">Enterprise</option>
+                        <option value="Pro">Pro</option>
+                        <option value="Starter">Starter</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Monthly Retainer (₹)</label>
+                    <input type="number" id="modal-retainer" value="25000" step="1000" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500" />
+                </div>
+            </div>
+
+            <!-- Services Multi-Check -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Contracted Service Lines</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                        <input type="checkbox" name="services" value="Digital Marketing" checked class="rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
+                        <span>Digital Marketing</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                        <input type="checkbox" name="services" value="SEO Retainer" checked class="rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
+                        <span>SEO Retainer</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                        <input type="checkbox" name="services" value="Website Development" class="rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
+                        <span>Web Dev</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                        <input type="checkbox" name="services" value="Performance Marketing" class="rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
+                        <span>Performance</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                        <input type="checkbox" name="services" value="Social Media" class="rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
+                        <span>Social Media</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                        <input type="checkbox" name="services" value="Content Strategy" class="rounded border-slate-300 text-sky-600 focus:ring-sky-500" />
+                        <span>Content Strategy</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Account Notes & Terms</label>
+                <textarea id="modal-notes" rows="2" placeholder="Agreed deliverables, special terms, contact timings..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"></textarea>
+            </div>
+
+            <div id="modal-error" class="hidden text-xs text-rose-600 font-semibold p-2 bg-rose-50 rounded-lg border border-rose-200"></div>
+
+            <!-- Modal Footer -->
+            <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeClientModal()" class="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-100 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="modal-submit-btn" class="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5">
+                    <span>Save Client</span>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // Client Store serialized directly from Django view
+    const CLIENTS_DATA = {{ clients_json|safe|default:"[]" }};
+    let currentDrawerClient = null;
+    let currentStatusTab = 'all';
+
     document.addEventListener('DOMContentLoaded', () => {
         if (window.lucide) lucide.createIcons();
     });
+
+    // Filtering by Tab
+    function filterByTab(tab) {
+        currentStatusTab = tab;
+        document.querySelectorAll('.status-tab-btn').forEach(btn => {
+            btn.classList.remove('status-tab-active');
+            btn.classList.add('text-slate-600');
+        });
+        const activeBtn = document.getElementById(`tab-btn-${tab}`);
+        if (activeBtn) {
+            activeBtn.classList.add('status-tab-active');
+            activeBtn.classList.remove('text-slate-600');
+        }
+        applyClientFilters();
+    }
+
+    // Apply Live Client Filters (Search, Tab, Service)
+    function applyClientFilters() {
+        const query = (document.getElementById('client-search-input')?.value || '').toLowerCase().trim();
+        const selectedService = (document.getElementById('service-filter-select')?.value || 'all').toLowerCase();
+        const cards = document.querySelectorAll('.client-card');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const cardTab = card.getAttribute('data-tab');
+            const cardCompany = card.getAttribute('data-company') || '';
+            const cardName = card.getAttribute('data-name') || '';
+            const cardEmail = card.getAttribute('data-email') || '';
+            const cardServices = card.getAttribute('data-services') || '';
+
+            // Tab check
+            const matchesTab = (currentStatusTab === 'all') || (cardTab === currentStatusTab);
+
+            // Query check
+            const matchesQuery = !query ||
+                cardCompany.includes(query) ||
+                cardName.includes(query) ||
+                cardEmail.includes(query) ||
+                cardServices.includes(query);
+
+            // Service check
+            const matchesService = (selectedService === 'all') || cardServices.includes(selectedService);
+
+            if (matchesTab && matchesQuery && matchesService) {
+                card.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+
+        const noResults = document.getElementById('no-filter-results');
+        if (noResults) {
+            if (visibleCount === 0 && cards.length > 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+            }
+        }
+    }
+
+    // Slide-over Drawer Handler
+    function openClientDrawer(clientId) {
+        const client = CLIENTS_DATA.find(c => String(c.id) === String(clientId));
+        if (!client) return;
+        currentDrawerClient = client;
+
+        document.getElementById('drawer-company-name').textContent = client.company;
+        document.getElementById('drawer-contact-name').textContent = client.name;
+        document.getElementById('drawer-tier-badge').textContent = client.tier;
+        document.getElementById('drawer-retainer-badge').textContent = `₹${Number(client.monthly_retainer).toLocaleString()} / month`;
+        document.getElementById('drawer-start-date').textContent = client.agreement_start_date || 'N/A';
+        document.getElementById('drawer-end-date').textContent = client.agreement_end_date || 'Perpetual';
+        document.getElementById('drawer-contact-person').textContent = client.name || 'N/A';
+        document.getElementById('drawer-contact-phone').textContent = client.phone || 'N/A';
+        document.getElementById('drawer-contact-email').textContent = client.email || 'N/A';
+        document.getElementById('drawer-full-profile-link').href = `/clients/profile/${encodeURIComponent(client.company)}/`;
+        document.getElementById('drawer-notes-content').textContent = client.notes || 'No account notes recorded.';
+
+        // Services Tags
+        const servicesContainer = document.getElementById('drawer-services-container');
+        servicesContainer.innerHTML = '';
+        (client.services || []).forEach(svc => {
+            const span = document.createElement('span');
+            span.className = 'px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 text-xs font-semibold';
+            span.textContent = svc;
+            servicesContainer.appendChild(span);
+        });
+
+        // Active Projects
+        const projectsList = document.getElementById('drawer-projects-list');
+        projectsList.innerHTML = '';
+        document.getElementById('drawer-projects-count').textContent = (client.projects || []).length;
+
+        if (!client.projects || client.projects.length === 0) {
+            projectsList.innerHTML = `
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 text-center">
+                    No active projects linked to this client account yet.
+                </div>
+            `;
+        } else {
+            client.projects.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'p-3 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2';
+                item.innerHTML = `
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-900">${p.name}</span>
+                        <span class="font-mono font-bold text-sky-600">${p.progress}%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-sky-500 h-full rounded-full" style="width: ${p.progress}%"></div>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] text-slate-500 font-mono pt-1">
+                        <span>Target: ${p.target_end_date || 'Ongoing'}</span>
+                        <span class="px-2 py-0.2 rounded bg-white border border-slate-200 text-slate-700 font-bold">${p.status}</span>
+                    </div>
+                `;
+                projectsList.appendChild(item);
+            });
+        }
+
+        // Upcoming Calendar Events
+        const eventsList = document.getElementById('drawer-events-list');
+        eventsList.innerHTML = '';
+        document.getElementById('drawer-events-count').textContent = (client.upcoming_events || []).length;
+
+        if (!client.upcoming_events || client.upcoming_events.length === 0) {
+            eventsList.innerHTML = `
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 text-center">
+                    No syncs or meetings scheduled for this client.
+                </div>
+            `;
+        } else {
+            client.upcoming_events.forEach(e => {
+                const item = document.createElement('div');
+                item.className = 'p-3 rounded-xl bg-slate-50 border border-slate-200/80 border-l-4 space-y-1';
+                item.style.borderLeftColor = e.color || '#00BAFF';
+                item.innerHTML = `
+                    <div class="font-bold text-xs text-slate-900">${e.title}</div>
+                    <div class="text-[11px] font-mono text-slate-500 flex items-center gap-1.5">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+                        <span>${e.start_time}</span>
+                    </div>
+                `;
+                eventsList.appendChild(item);
+            });
+        }
+
+        // Open Drawer
+        document.getElementById('drawer-backdrop').classList.remove('hidden');
+        document.getElementById('client-detail-drawer').classList.add('drawer-open');
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function closeClientDrawer() {
+        document.getElementById('drawer-backdrop').classList.add('hidden');
+        document.getElementById('client-detail-drawer').classList.remove('drawer-open');
+    }
+
+    // Modal Handlers
+    function openClientModal(client = null) {
+        document.getElementById('modal-error').classList.add('hidden');
+        document.getElementById('client-form').reset();
+
+        if (client) {
+            document.getElementById('modal-title').textContent = 'Edit Client Account';
+            document.getElementById('modal-client-id').value = client.id;
+            document.getElementById('modal-company').value = client.company || '';
+            document.getElementById('modal-name').value = client.name || '';
+            document.getElementById('modal-email').value = client.email || '';
+            document.getElementById('modal-phone').value = client.phone || '';
+            document.getElementById('modal-status').value = client.status || 'Active';
+            document.getElementById('modal-tier').value = client.tier || 'Growth';
+            document.getElementById('modal-retainer').value = client.monthly_retainer || 25000;
+            document.getElementById('modal-notes').value = client.notes || '';
+
+            // Check checkboxes
+            document.querySelectorAll('input[name="services"]').forEach(cb => {
+                cb.checked = (client.services || []).includes(cb.value);
+            });
+        } else {
+            document.getElementById('modal-title').textContent = 'Onboard New Corporate Client';
+            document.getElementById('modal-client-id').value = '';
+            document.getElementById('modal-retainer').value = 25000;
+        }
+
+        document.getElementById('client-modal').classList.remove('hidden');
+    }
+
+    function closeClientModal() {
+        document.getElementById('client-modal').classList.add('hidden');
+    }
+
+    function triggerEditFromDrawer() {
+        if (!currentDrawerClient) return;
+        closeClientDrawer();
+        openClientModal(currentDrawerClient);
+    }
+
+    // Submit Client Form (Create or Edit)
+    async function submitClientForm(e) {
+        e.preventDefault();
+        const errDiv = document.getElementById('modal-error');
+        errDiv.classList.add('hidden');
+
+        const clientId = document.getElementById('modal-client-id').value;
+        const isEditing = Boolean(clientId);
+        const url = isEditing ? `/clients/edit-ajax/${clientId}/` : `/clients/quick-create-ajax/`;
+
+        const formData = new FormData();
+        formData.append('company', document.getElementById('modal-company').value.trim());
+        formData.append('name', document.getElementById('modal-name').value.trim());
+        formData.append('email', document.getElementById('modal-email').value.trim());
+        formData.append('phone', document.getElementById('modal-phone').value.trim());
+        formData.append('status', document.getElementById('modal-status').value);
+        formData.append('tier', document.getElementById('modal-tier').value);
+        formData.append('monthly_retainer', document.getElementById('modal-retainer').value);
+        formData.append('notes', document.getElementById('modal-notes').value.trim());
+
+        document.querySelectorAll('input[name="services"]:checked').forEach(cb => {
+            formData.append('services[]', cb.value);
+        });
+
+        // CSRF Token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                closeClientModal();
+                window.location.reload();
+            } else {
+                errDiv.textContent = data.error || 'Failed to save client account.';
+                errDiv.classList.remove('hidden');
+            }
+        } catch (err) {
+            errDiv.textContent = 'Network or server error. Please try again.';
+            errDiv.classList.remove('hidden');
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 </script>
 {% endblock %}
