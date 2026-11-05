@@ -141,6 +141,10 @@
                     <span>Paused</span>
                     <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700 font-mono">{{ metrics.paused_clients }}</span>
                 </button>
+                <button type="button" onclick="filterByTab('completed')" id="tab-btn-completed" class="status-tab-btn px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all flex items-center gap-1.5 shrink-0">
+                    <span>Completed</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700 font-mono">{{ metrics.completed_clients }}</span>
+                </button>
             </div>
 
             <!-- Search & Service Filter -->
@@ -192,6 +196,7 @@
                                     </h3>
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono uppercase tracking-tight
                                         {% if client.status_tab == 'active' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                                        {% elif client.status_tab == 'completed' %}bg-teal-50 text-teal-700 border border-teal-200
                                         {% elif client.status_tab == 'onboarding' %}bg-amber-50 text-amber-700 border border-amber-200
                                         {% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
                                         {{ client.status|default:client.status_tab }}
@@ -425,6 +430,7 @@
                         <option value="Contracted">Contracted</option>
                         <option value="Qualified">Qualified (Onboarding)</option>
                         <option value="Suspended">Suspended</option>
+                        <option value="Completed">Completed</option>
                     </select>
                 </div>
                 <div>

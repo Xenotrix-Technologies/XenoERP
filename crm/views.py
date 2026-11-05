@@ -94,6 +94,7 @@ def clients_view(request):
     active_count = 0
     onboarding_count = 0
     paused_count = 0
+    completed_count = 0
 
     for lead in leads:
         company_name = lead.company or lead.name
@@ -115,7 +116,10 @@ def clients_view(request):
 
         # Status normalization matching XenoPlan
         st = (lead.status or '').strip().lower()
-        if st in ['active', 'contracted', 'won', 'completed']:
+        if st in ['completed']:
+            status_tab = 'completed'
+            completed_count += 1
+        elif st in ['active', 'contracted', 'won']:
             status_tab = 'active'
             active_count += 1
             total_mrr += monthly_retainer
@@ -182,7 +186,7 @@ def clients_view(request):
                 'deliverables_total': deliv_count
             })
 
-        overall_progress = int((completed_deliverables / total_deliverables * 100)) if total_deliverables > 0 else (75 if status_tab == 'active' else 25)
+        overall_progress = int((completed_deliverables / total_deliverables * 100)) if total_deliverables > 0 else (100 if status_tab == 'completed' else (75 if status_tab == 'active' else 25))
 
         # Linked upcoming meetings & events
         client_events = []
@@ -238,6 +242,7 @@ def clients_view(request):
             'active_clients': active_count,
             'onboarding_clients': onboarding_count,
             'paused_clients': paused_count,
+            'completed_clients': completed_count,
             'total_mrr': total_mrr,
             'total_contract_value': total_contract_value,
             'avg_retainer': avg_retainer
