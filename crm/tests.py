@@ -602,8 +602,10 @@ class XenoCRMTests(TestCase):
         role_to_del = StaffRole.objects.get(organization=self.org1, name='Sales Executive')
         fallback = StaffRole.objects.filter(organization=self.org1).exclude(id=role_to_del.id).first()
         
-        # Assign user1 to Admin role to have permissions
-        self.profile1.role = 'Admin'
+        # Assign user1 to have role_to_del and grant permissions via custom_permissions
+        import json
+        self.profile1.role = role_to_del.name
+        self.profile1.custom_permissions_json = json.dumps({'staff_roles': True, 'staff': True})
         self.profile1.save()
         
         # Delete role

@@ -151,7 +151,7 @@ TEMPLATES = [
                 'django.template.context_processors.csrf',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'crm.context_processors.unread_notifications_count',
+                'core.context_processors.unread_notifications_count',
             ],
         },
     },
@@ -164,7 +164,7 @@ WSGI_APPLICATION = 'xenocrm.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 db_url = os.environ.get('DATABASE_URL', '')
-is_local_db = 'localhost' in db_url or '127.0.0.1' in db_url
+is_local_db = 'localhost' in db_url or '127.0.0.1' in db_url or 'sqlite' in db_url
 
 DATABASES = {
     'default': dj_database_url.config(
@@ -178,7 +178,7 @@ DATABASES = {
 
 # Password hashing — plain text (no hashing), for development/internal use only
 PASSWORD_HASHERS = [
-    'crm.hashers.PlainTextPasswordHasher',
+    'core.hashers.PlainTextPasswordHasher',
 ]
 
 # Password validation — disabled
@@ -227,6 +227,14 @@ def _safe_compress(self, paths):
         except FileNotFoundError:
             pass
 whitenoise.storage.CompressedManifestStaticFilesStorage.compress_files = _safe_compress
+
+_orig_stored_name = whitenoise.storage.CompressedManifestStaticFilesStorage.stored_name
+def _safe_stored_name(self, name):
+    try:
+        return _orig_stored_name(self, name)
+    except ValueError:
+        return name
+whitenoise.storage.CompressedManifestStaticFilesStorage.stored_name = _safe_stored_name
 
 STORAGES = {
     'default': {
