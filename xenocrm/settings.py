@@ -163,12 +163,15 @@ WSGI_APPLICATION = 'xenocrm.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+db_url = os.environ.get('DATABASE_URL', '')
+is_local_db = 'localhost' in db_url or '127.0.0.1' in db_url
+
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+        default=db_url,
         conn_max_age=600,
         conn_health_checks=True,
-        ssl_require=True,
+        ssl_require=env.bool('DB_SSL_REQUIRE', default=not is_local_db),
     )
 }
 
