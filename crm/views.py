@@ -130,8 +130,10 @@ def clients_view(request):
             status_tab = 'paused'
             paused_count += 1
 
-        # Tier calculation
-        if total_val >= 100000 or monthly_retainer >= 50000:
+        # Tier calculation: use saved lifecycle_stage if explicitly set, else calculate
+        if lead.lifecycle_stage in ['Enterprise', 'Growth', 'Pro', 'Starter']:
+            tier = lead.lifecycle_stage
+        elif total_val >= 100000 or monthly_retainer >= 50000:
             tier = 'Enterprise'
         elif total_val >= 30000 or monthly_retainer >= 15000:
             tier = 'Growth'
@@ -152,8 +154,9 @@ def clients_view(request):
 
         # Linked tasks / projects for this client
         linked_tasks = Task.objects.filter(
-            Q(lead=lead) | (Q(title__icontains=company_name) if company_name else Q(id=0)),
-            organization=org
+            Q(lead=lead) | (Q(title__icontains=company_name) if company_name else Q(id=0))
+        ).filter(
+            Q(organization=org) | Q(organization__isnull=True)
         ).order_by('-created_at')
 
         projects_data = []
@@ -283,6 +286,7 @@ def quick_create_client_ajax(request):
             stage='Won' if status.lower() in ['active', 'contracted'] else 'New',
             value=monthly_retainer * 12 if monthly_retainer > 0 else 50000.0,
             is_client=True,
+            lifecycle_stage=tier if tier in ['Enterprise', 'Growth', 'Pro', 'Starter'] else 'Growth',
             notes=notes
         )
 
@@ -304,7 +308,7 @@ def quick_create_client_ajax(request):
 
 @login_required
 def edit_client_ajax(request, client_id):
-    """AJAX endpoint for updating an existing client's contact, status, retainer, and services."""
+    """AJAX endpoint for updating an existing client's contact, status, retainer, tier, and services."""
     if request.method == 'POST':
         org = request.user.profile.organization
         lead = get_object_or_404(Lead, id=client_id, organization=org, is_client=True)
@@ -314,6 +318,7 @@ def edit_client_ajax(request, client_id):
         email = request.POST.get('email', '').strip()
         phone = request.POST.get('phone', '').strip()
         status = request.POST.get('status', '').strip()
+        tier = request.POST.get('tier', '').strip()
         notes = request.POST.get('notes', '').strip()
 
         if name:
@@ -328,26 +333,40 @@ def edit_client_ajax(request, client_id):
             lead.status = status
             if status.lower() in ['active', 'contracted']:
                 lead.stage = 'Won'
-        if notes:
+        if tier in ['Enterprise', 'Growth', 'Pro', 'Starter']:
+            lead.lifecycle_stage = tier
+        if notes is not None:
             lead.notes = notes
 
         retainer_val = request.POST.get('monthly_retainer')
-        if retainer_val:
+        if retainer_val is not None and retainer_val != '':
             try:
                 monthly_fee = float(retainer_val)
                 lead.value = monthly_fee * 12
+
+                # Synchronize any linked agreements so retainer remains accurate
+                agreements = Agreement.objects.filter(
+                    Q(lead=lead) | (Q(company_name__iexact=lead.company) if lead.company else Q(id=0)),
+                    organization=org
+                )
+                for agr in agreements:
+                    agr.monthly_fee = monthly_fee
+                    agr.total_value = monthly_fee * 12
+                    agr.save()
             except (ValueError, TypeError):
                 pass
 
         lead.save()
 
-        # Update services if passed
+        # Update services: clear existing and re-attach selected
         selected_services = request.POST.getlist('services[]') or request.POST.getlist('services')
+        lead.services.clear()
         if selected_services:
-            lead.services.clear()
             for s_name in selected_services:
-                service_obj, _ = Service.objects.get_or_create(organization=org, name=s_name.strip())
-                lead.services.add(service_obj)
+                s_name = s_name.strip()
+                if s_name:
+                    service_obj, _ = Service.objects.get_or_create(organization=org, name=s_name)
+                    lead.services.add(service_obj)
 
         return JsonResponse({
             'success': True,
