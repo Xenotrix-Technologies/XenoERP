@@ -88,6 +88,10 @@ class Lead(models.Model):
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, blank=True, null=True)
     owner = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='owned_leads')
     services = models.ManyToManyField('services.Service', blank=True, related_name='leads')
+
+    @property
+    def service(self):
+        return self.services.first()
     lifecycle_stage = models.CharField(max_length=100, default='Prospect')
     annual_revenue = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
     health_score = models.IntegerField(default=50)
