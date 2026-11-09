@@ -179,6 +179,11 @@ DATABASES = {
 # Password hashing — plain text (no hashing), for development/internal use only
 PASSWORD_HASHERS = [
     'core.hashers.PlainTextPasswordHasher',
+    'core.hashers.PlainAliasPasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
 ]
 
 # Password validation — disabled

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}Access Restricted | XenoCRM{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex items-center justify-center p-6 bg-surface-container-low min-h-[60vh]">
+    <div class="max-w-md w-full bg-white rounded-2xl p-8 shadow-sm border border-outline-variant/30 text-center">
+        <div class="w-16 h-16 rounded-full bg-error-container/20 text-error flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-3xl">lock</span>
+        </div>
+        <h2 class="text-xl font-bold text-on-surface mb-2">Access Restricted</h2>
+        <p class="text-sm text-secondary mb-6">{{ error|default:"You do not have permission to view this section. Please contact your administrator to grant access." }}</p>
+        <div class="flex justify-center gap-3">
+            <a href="{% url 'logout' %}" class="px-5 py-2 text-sm font-bold bg-surface-variant text-on-surface-variant hover:bg-surface-variant/80 rounded-lg transition-all">Sign Out</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

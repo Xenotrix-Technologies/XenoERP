@@ -54,6 +54,10 @@ def page_permission_required(permission_name):
                     if perm != permission_name and (getattr(profile, f'has_access_{perm}', False) or profile.check_page_permission(perm)):
                         return redirect(target_name)
 
+            if request.user and request.user.is_authenticated:
+                from django.shortcuts import render
+                return render(request, 'access_denied.html', {'error': 'You do not have permission to access this page. Please contact your organization administrator.'}, status=403)
+
             return redirect('login')
         return wrapper
     return decorator
