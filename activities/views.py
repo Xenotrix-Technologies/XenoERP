@@ -320,10 +320,13 @@ def edit_task_todo(request, todo_id):
             return JsonResponse({'success': False, 'error': 'Access denied.'}, status=403)
 
         title = request.POST.get('title', '').strip()
+        category = request.POST.get('category', '').strip()
         if not title:
             return JsonResponse({'success': False, 'error': 'Title is required.'})
 
         todo.title = title
+        if category:
+            todo.category = category
         todo.save()
 
         return JsonResponse({
@@ -331,6 +334,10 @@ def edit_task_todo(request, todo_id):
             'todo': {
                 'id': todo.id,
                 'title': todo.title,
+                'category': todo.category or 'milestone_deliverable',
+                'category_label': todo.category_label,
+                'category_color': todo.category_color,
+                'category_badge_class': todo.category_badge_class,
                 'completed': todo.completed
             }
         })
@@ -616,6 +623,7 @@ def add_task_milestone(request, task_id):
 
         title = request.POST.get('title', '').strip()
         due_date_str = request.POST.get('due_date', '').strip()
+        category = request.POST.get('category', 'milestone_deliverable').strip() or 'milestone_deliverable'
         if not title:
             return JsonResponse({'success': False, 'error': 'Milestone title is required.'})
 
@@ -629,6 +637,7 @@ def add_task_milestone(request, task_id):
         tm = TaskMilestone.objects.create(
             task=task,
             title=title,
+            category=category,
             due_date=due_date
         )
 
@@ -649,12 +658,59 @@ def add_task_milestone(request, task_id):
                 'id': tm.id,
                 'title': tm.title,
                 'due_date': tm.due_date.strftime('%b %d'),
+                'due_date_iso': tm.due_date.strftime('%Y-%m-%d'),
+                'category': tm.category or 'milestone_deliverable',
+                'category_label': tm.category_label,
+                'category_color': tm.category_color,
+                'category_badge_class': tm.category_badge_class,
                 'completed': tm.completed,
                 'kind': 'milestone'
             },
             'progress': calc_prog,
             'deliverables_done': task.deliverables_done,
             'deliverables_total': task.deliverables_total
+        })
+    return JsonResponse({'success': False, 'error': 'Invalid method.'})
+
+@login_required
+def edit_task_milestone(request, milestone_id):
+    if request.method == 'POST':
+        org = request.user.profile.organization
+        tm = get_object_or_404(TaskMilestone, id=milestone_id)
+        task = tm.task
+        if (task.lead and task.lead.organization != org) or (not task.lead and task.organization != org):
+            return JsonResponse({'success': False, 'error': 'Access denied.'}, status=403)
+
+        title = request.POST.get('title', '').strip()
+        category = request.POST.get('category', '').strip()
+        due_date_str = request.POST.get('due_date', '').strip()
+
+        if title:
+            tm.title = title
+        if category:
+            tm.category = category
+        if due_date_str:
+            try:
+                tm.due_date = datetime.strptime(due_date_str[:10], '%Y-%m-%d').date()
+            except ValueError:
+                pass
+
+        tm.save()
+
+        return JsonResponse({
+            'success': True,
+            'milestone': {
+                'id': tm.id,
+                'title': tm.title,
+                'due_date': tm.due_date.strftime('%b %d'),
+                'due_date_iso': tm.due_date.strftime('%Y-%m-%d'),
+                'category': tm.category or 'milestone_deliverable',
+                'category_label': tm.category_label,
+                'category_color': tm.category_color,
+                'category_badge_class': tm.category_badge_class,
+                'completed': tm.completed,
+                'kind': 'milestone'
+            }
         })
     return JsonResponse({'success': False, 'error': 'Invalid method.'})
 
@@ -686,6 +742,24 @@ def toggle_task_milestone(request, milestone_id):
             'deliverables_total': task.deliverables_total
         })
     return JsonResponse({'success': False, 'error': 'Invalid method.'})
+
+@login_required
+def reschedule_task_milestone(request, milestone_id):
+    if request.method == 'POST':
+        org = request.user.profile.organization
+        tm = get_object_or_404(TaskMilestone, id=milestone_id)
+        task = tm.task
+        if (task.lead and task.lead.organization != org) or (not task.lead and task.organization != org):
+            return JsonResponse({'success': False, 'error': 'Access denied.'}, status=403)
+        due_date_str = request.POST.get('due_date')
+        if due_date_str:
+            try:
+                tm.due_date = datetime.strptime(due_date_str[:10], '%Y-%m-%d').date()
+                tm.save()
+                return JsonResponse({'success': True, 'due_date': str(tm.due_date)})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 @login_required
 def delete_task_milestone(request, milestone_id):
@@ -798,13 +872,32 @@ def calendar_view(request):
     calendar_statuses = CalendarStatus.objects.filter(organization=org)
     clients = Lead.objects.filter(organization=org, is_client=True).order_by('company')
 
-    milestone_count = Task.objects.filter(Q(lead__organization=org) | Q(organization=org), due_date__isnull=False).count()
-    events_count = events.count()
-    total_scheduled = events_count + milestone_count
+    milestones_qs = TaskMilestone.objects.filter(
+        Q(task__lead__organization=org) | Q(task__organization=org),
+        due_date__isnull=False
+    )
+    todos_qs = TaskTodo.objects.filter(
+        Q(task__lead__organization=org) | Q(task__organization=org),
+        task__due_date__isnull=False
+    )
 
-    meetings_count = events.filter(Q(color__in=['#00BAFF', '#004ac6', '#2563EB']) | Q(title__icontains='Meeting')).count()
-    campaigns_count = events.filter(color__in=['#06B6D4', '#00D0C6']).count()
-    followups_count = events.filter(color__in=['#FB923C', '#8b5cf6', '#FBBF24']).count()
+    deliv_meetings_count = milestones_qs.filter(category='client_meeting').count() + todos_qs.filter(category='client_meeting').count()
+    deliv_campaigns_count = milestones_qs.filter(category__in=['ad_campaign', 'social_post']).count() + todos_qs.filter(category__in=['ad_campaign', 'social_post']).count()
+    deliv_followups_count = milestones_qs.filter(category='payment_followup').count() + todos_qs.filter(category='payment_followup').count()
+    deliv_standards_count = milestones_qs.filter(Q(category='milestone_deliverable') | Q(category__isnull=True) | Q(category='')).count() + \
+                            todos_qs.filter(Q(category='milestone_deliverable') | Q(category__isnull=True) | Q(category='')).count()
+
+    target_deadlines_count = Task.objects.filter(
+        Q(lead__organization=org) | Q(organization=org),
+        due_date__isnull=False
+    ).count()
+
+    deliverables_count = deliv_standards_count + target_deadlines_count
+    meetings_count = events.filter(Q(color__in=['#00BAFF', '#004ac6', '#2563EB']) | Q(title__icontains='Meeting')).count() + deliv_meetings_count
+    campaigns_count = events.filter(color__in=['#06B6D4', '#00D0C6']).count() + deliv_campaigns_count
+    followups_count = events.filter(color__in=['#FB923C', '#8b5cf6', '#FBBF24']).count() + deliv_followups_count
+    events_count = events.count()
+    total_scheduled = events_count + milestones_qs.count() + todos_qs.count() + target_deadlines_count
 
     categories_list = [
         {'id': 'client_meeting', 'label': 'Client Meetings', 'color': '#00BAFF', 'badge': 'bg-sky-50 text-sky-700 border-sky-200'},
@@ -825,7 +918,7 @@ def calendar_view(request):
         'analytics': {
             'total_scheduled': total_scheduled,
             'meetings_count': meetings_count,
-            'deliverables_count': milestone_count,
+            'deliverables_count': deliverables_count,
             'campaigns_count': campaigns_count,
             'followups_count': followups_count
         }
@@ -972,41 +1065,176 @@ def calendar_events_json_view(request):
             'owner': event.owner.get_full_name() or event.owner.username if event.owner else 'System'
         })
 
-    # Include tasks when requested or from calendar UI
-    include_tasks = 't' in request.GET or request.GET.get('include_tasks') == 'true' or category_filter in ['milestone_deliverable']
-    if include_tasks:
-        tasks = Task.objects.filter(
-            Q(lead__organization=org) | Q(organization=org),
-            due_date__isnull=False
-        ).select_related('lead', 'status')
+    # Include sprint deliverables and tasks when requested or in calendar views
+    show_deliverables = (not category_filter or category_filter in [
+        'all', 'milestone_deliverable', 'ad_campaign', 'social_post',
+        'client_meeting', 'payment_followup', 'website_milestone'
+    ])
+    if show_deliverables:
+        # Helper for resolving service name
+        def get_service_for_task(task_obj):
+            if task_obj.lead and task_obj.lead.services.exists():
+                matched = [s.name for s in task_obj.lead.services.all() if s.name.lower() in task_obj.title.lower()]
+                return matched[0] if matched else task_obj.lead.services.first().name
+            elif 'website' in task_obj.title.lower():
+                return 'Website Development'
+            elif 'marketing' in task_obj.title.lower() or 'social' in task_obj.title.lower():
+                return 'Digital Marketing'
+            return 'Sprint Deliverable'
 
-        for task in tasks:
+        # 1. Individual Sprint Deliverables (TaskMilestones)
+        milestones = TaskMilestone.objects.filter(
+            Q(task__lead__organization=org) | Q(task__organization=org)
+        ).select_related('task', 'task__lead', 'task__status').prefetch_related('task__lead__services')
+
+        for m in milestones:
+            task = m.task
+            task_due = m.due_date or task.due_date
+            if not task_due:
+                continue
+
             task_client_id = task.lead.id if task.lead else None
-            task_client_name = task.lead.company if task.lead else 'Internal Project'
+            task_client_name = task.lead.company if (task.lead and task.lead.company) else (task.lead.name if task.lead else 'Internal Project')
 
             if client_id_filter and client_id_filter != 'all':
                 if str(task_client_id) != str(client_id_filter):
                     continue
 
-            status_name = task.status.name if task.status else ('Completed' if task.completed else 'In Progress')
+            m_cat = m.category or 'milestone_deliverable'
+            if category_filter and category_filter != 'all':
+                # Allow matching ad_campaign with social_post or exact category
+                if category_filter in ['ad_campaign', 'social_post']:
+                    if m_cat not in ['ad_campaign', 'social_post']:
+                        continue
+                elif category_filter != m_cat:
+                    continue
+
+            service_name = get_service_for_task(task)
+            status_str = 'Completed' if m.completed else 'Pending'
+
             events_data.append({
-                'id': f"milestone-{task.id}",
-                'raw_id': task.id,
-                'title': f"[Deliverable] {task.title}",
-                'start': task.due_date.strftime('%Y-%m-%d'),
-                'end': task.due_date.strftime('%Y-%m-%d'),
-                'description': f"Deliverable Deadline for {task_client_name}. Status: {status_name}. Progress: {task.progress}%.",
-                'color': '#10B981',
+                'id': f"deliverable-milestone-{m.id}",
+                'raw_id': m.id,
+                'kind': 'milestone',
+                'title': m.title,
+                'start': task_due.strftime('%Y-%m-%d'),
+                'end': task_due.strftime('%Y-%m-%d'),
+                'description': f"[{m.category_label}] {m.title} ({service_name} • {task_client_name}). Status: {status_str}.",
+                'color': m.category_color,
                 'is_milestone': True,
+                'is_deliverable': True,
+                'completed': bool(m.completed),
                 'allDay': True,
-                'category': 'milestone_deliverable',
-                'category_label': 'Milestone Deliverable',
+                'category': m_cat,
+                'category_label': m.category_label,
                 'client_id': task_client_id,
                 'client_name': task_client_name,
+                'service_name': service_name,
+                'task_id': task.id,
+                'task_title': task.title,
                 'priority': task.priority,
-                'status': status_name,
+                'status': status_str,
                 'progress': task.progress
             })
+
+        # 2. Sprint Checklist Items (TaskTodos)
+        todos = TaskTodo.objects.filter(
+            Q(task__lead__organization=org) | Q(task__organization=org),
+            task__due_date__isnull=False
+        ).select_related('task', 'task__lead', 'task__status').prefetch_related('task__lead__services')
+
+        for t in todos:
+            task = t.task
+            task_due = task.due_date
+            if not task_due:
+                continue
+
+            task_client_id = task.lead.id if task.lead else None
+            task_client_name = task.lead.company if (task.lead and task.lead.company) else (task.lead.name if task.lead else 'Internal Project')
+
+            if client_id_filter and client_id_filter != 'all':
+                if str(task_client_id) != str(client_id_filter):
+                    continue
+
+            t_cat = t.category or 'milestone_deliverable'
+            if category_filter and category_filter != 'all':
+                if category_filter in ['ad_campaign', 'social_post']:
+                    if t_cat not in ['ad_campaign', 'social_post']:
+                        continue
+                elif category_filter != t_cat:
+                    continue
+
+            service_name = get_service_for_task(task)
+            status_str = 'Completed' if t.completed else 'Pending'
+
+            events_data.append({
+                'id': f"deliverable-todo-{t.id}",
+                'raw_id': t.id,
+                'kind': 'todo',
+                'title': t.title,
+                'start': task_due.strftime('%Y-%m-%d'),
+                'end': task_due.strftime('%Y-%m-%d'),
+                'description': f"[{t.category_label}] {t.title} ({service_name} • {task_client_name}). Status: {status_str}.",
+                'color': t.category_color,
+                'is_milestone': True,
+                'is_deliverable': True,
+                'completed': bool(t.completed),
+                'allDay': True,
+                'category': t_cat,
+                'category_label': t.category_label,
+                'client_id': task_client_id,
+                'client_name': task_client_name,
+                'service_name': service_name,
+                'task_id': task.id,
+                'task_title': task.title,
+                'priority': task.priority,
+                'status': status_str,
+                'progress': task.progress
+            })
+
+        # 3. Project Target Deadlines
+        show_target_deadlines = (not category_filter or category_filter in ['all', 'milestone_deliverable'])
+        if show_target_deadlines:
+            tasks = Task.objects.filter(
+                Q(lead__organization=org) | Q(organization=org),
+                due_date__isnull=False
+            ).select_related('lead', 'status')
+
+            for task in tasks:
+                task_client_id = task.lead.id if task.lead else None
+                task_client_name = task.lead.company if task.lead else 'Internal Project'
+
+                if client_id_filter and client_id_filter != 'all':
+                    if str(task_client_id) != str(client_id_filter):
+                        continue
+
+                service_name = get_service_for_task(task)
+                status_name = task.status.name if task.status else ('Completed' if task.completed else 'In Progress')
+
+                events_data.append({
+                    'id': f"task-target-{task.id}",
+                    'raw_id': task.id,
+                    'kind': 'task_target',
+                    'title': f"[Target Deadline] {task.title}",
+                    'start': task.due_date.strftime('%Y-%m-%d'),
+                    'end': task.due_date.strftime('%Y-%m-%d'),
+                    'description': f"Target Delivery Date for {task_client_name} ({task.title}). Status: {status_name}. Progress: {task.progress}%.",
+                    'color': '#059669',
+                    'is_milestone': True,
+                    'is_deliverable': False,
+                    'completed': bool(task.completed),
+                    'allDay': True,
+                    'category': 'milestone_deliverable',
+                    'category_label': 'Target Deadline',
+                    'client_id': task_client_id,
+                    'client_name': task_client_name,
+                    'service_name': service_name,
+                    'task_id': task.id,
+                    'task_title': task.title,
+                    'priority': task.priority,
+                    'status': status_name,
+                    'progress': task.progress
+                })
 
     return JsonResponse(events_data, safe=False)
 

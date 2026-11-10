@@ -27,12 +27,28 @@ def get_or_create_default_roles(org):
         qs = StaffRole.objects.filter(organization=org)
     return qs
 
+def _get_landing_page_for_user(user):
+    """Determine the first permitted landing page for an employee based on permissions."""
+    if not user or not user.is_authenticated:
+        return 'login'
+    if user.is_superuser:
+        return 'dashboard'
+    profile = getattr(user, 'profile', None)
+    if profile:
+        from .permissions import PERM_REDIRECT_ORDER
+        if profile.check_page_permission('dashboard'):
+            return 'dashboard'
+        for perm, target_name in PERM_REDIRECT_ORDER:
+            if profile.check_page_permission(perm):
+                return target_name
+    return 'dashboard'
+
 def signup_view(request):
     return redirect('login')
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect(_get_landing_page_for_user(request.user))
 
     if request.method == 'POST':
         u = request.POST.get('username')
@@ -48,7 +64,7 @@ def login_view(request):
             next_url = request.POST.get('next') or request.GET.get('next')
             if next_url and next_url.startswith('/') and not next_url.startswith('//'):
                 return redirect(next_url)
-            return redirect('dashboard')
+            return redirect(_get_landing_page_for_user(user))
         else:
             messages.error(request, "Invalid username or password.")
             return render(request, 'registration/login.html')
@@ -174,7 +190,11 @@ def add_staff_view(request):
                     location=location or None,
                     department=dept
                 )
-                SystemNotification.objects.create(user=request.user, message=f"Staff member '{first_name or username}' created successfully.", type='success')
+                try:
+                    SystemNotification.objects.create(user=request.user, message=f"Staff member '{first_name or username}' created successfully.", type='success')
+                except Exception:
+                    pass
+                messages.success(request, f"Staff member '{first_name or username}' created successfully.")
                 return redirect('staff')
             except Exception as e:
                 messages.error(request, str(e))
@@ -268,7 +288,11 @@ def edit_staff_view(request, profile_id):
                 profile.department = dept
                 profile.save()
 
-                SystemNotification.objects.create(user=request.user, message=f"Staff member '{first_name or username}' updated successfully.", type='success')
+                try:
+                    SystemNotification.objects.create(user=request.user, message=f"Staff member '{first_name or username}' updated successfully.", type='success')
+                except Exception:
+                    pass
+                messages.success(request, f"Staff member '{first_name or username}' updated successfully.")
                 return redirect('staff')
             except Exception as e:
                 messages.error(request, str(e))

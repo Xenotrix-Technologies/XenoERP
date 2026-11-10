@@ -20,6 +20,8 @@ urlpatterns = [
     path('task/file/<int:file_id>/delete/', views.delete_task_file, name='delete_task_file'),
     path('task/<int:task_id>/milestone/add/', views.add_task_milestone, name='add_task_milestone'),
     path('task/milestone/<int:milestone_id>/toggle/', views.toggle_task_milestone, name='toggle_task_milestone'),
+    path('task/milestone/<int:milestone_id>/reschedule/', views.reschedule_task_milestone, name='reschedule_task_milestone'),
+    path('task/milestone/<int:milestone_id>/edit/', views.edit_task_milestone, name='edit_task_milestone'),
     path('task/milestone/<int:milestone_id>/delete/', views.delete_task_milestone, name='delete_task_milestone'),
 
     # Activity Log
