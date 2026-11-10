@@ -85,21 +85,61 @@
     border-radius: 6px;
   }
 
-  /* Event Pills */
+  /* Event Pills & Custom Cards */
   .fc-event {
+    background: transparent !important;
     border: none !important;
-    border-radius: 6px !important;
-    padding: 3px 6px !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
+    padding: 0 !important;
     cursor: pointer !important;
     transition: all 0.15s ease !important;
-    margin-bottom: 2px !important;
+    margin-bottom: 2.5px !important;
+    box-shadow: none !important;
   }
   .fc-event:hover {
     transform: translateY(-1px) !important;
-    box-shadow: 0 4px 8px -1px rgb(0 0 0 / 0.12) !important;
     z-index: 5 !important;
+  }
+  .fc-event-main {
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  /* Sprint Deliverable Cards (Image 3 Style) */
+  .deliverable-card {
+    background-color: #064e3b;
+    border: 1px solid #10b981;
+    border-radius: 7px;
+    padding: 4px 6px;
+    color: #ecfdf5;
+    transition: all 0.15s ease;
+  }
+  .deliverable-card:hover {
+    background-color: #047857;
+    border-color: #34d399;
+    box-shadow: 0 4px 12px -2px rgba(16, 185, 129, 0.3);
+  }
+  .deliverable-card.completed {
+    background-color: #022c22 !important;
+    border-color: #065f46 !important;
+    opacity: 0.82;
+  }
+  .deliverable-card.completed:hover {
+    opacity: 1;
+    background-color: #033c2e !important;
+  }
+
+  /* Target Deadline Card */
+  .target-deadline-card {
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 7px;
+    padding: 4px 6px;
+    color: #f8fafc;
+    transition: all 0.15s ease;
+  }
+  .target-deadline-card:hover {
+    border-color: #64748b;
+    box-shadow: 0 4px 10px -2px rgba(15, 23, 42, 0.3);
   }
   
   .category-pill-active {
@@ -391,6 +431,114 @@
     </form>
   </div>
 </div>
+
+<!-- DELIVERABLE DETAIL & ACTION MODAL -->
+<div id="deliverable-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-[160] hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-150">
+    <div class="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+      <div class="flex items-center gap-2.5">
+        <div id="deliv-modal-icon-wrap" class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center font-black">
+          ✓
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 id="deliv-modal-title" class="text-base font-bold text-slate-900 truncate max-w-[220px]">Sprint Deliverable</h3>
+            <span id="deliv-modal-cat-badge" class="text-[9.5px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 bg-emerald-50 text-emerald-700 border-emerald-200">Deliverable</span>
+          </div>
+          <p id="deliv-modal-subtitle" class="text-xs text-slate-500 mt-0.5">Project Sprint Task</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeDeliverableModal()" class="p-1.5 text-slate-400 hover:text-slate-800 rounded-xl hover:bg-slate-200/50 transition-colors">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <div class="p-5 space-y-4 text-xs">
+      <!-- Status Banner -->
+      <div id="deliv-status-banner" class="p-3 rounded-xl border flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span id="deliv-status-indicator" class="w-2.5 h-2.5 rounded-full"></span>
+          <span id="deliv-status-text" class="font-bold text-sm">Pending</span>
+        </div>
+        <span id="deliv-due-date" class="font-mono text-slate-500 font-semibold"></span>
+      </div>
+
+      <!-- Details View -->
+      <div id="deliv-view-section" class="space-y-2.5 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500 font-semibold">Type / Category:</span>
+          <span id="deliv-type-name" class="font-bold text-slate-800">Deliverable Deadline</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500 font-semibold">Parent Project:</span>
+          <span id="deliv-task-title" class="font-bold text-slate-800 truncate max-w-[200px]"></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500 font-semibold">Client:</span>
+          <span id="deliv-client-name" class="font-bold text-slate-800 truncate max-w-[200px]"></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500 font-semibold">Service:</span>
+          <span id="deliv-service-name" class="font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200"></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-500 font-semibold">Project Progress:</span>
+          <span id="deliv-project-progress" class="font-mono font-bold text-slate-800"></span>
+        </div>
+      </div>
+
+      <!-- Edit Form (Inline Toggle) -->
+      <form id="deliv-edit-section" onsubmit="submitDeliverableModalEdit(event)" class="hidden space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Deliverable Title</label>
+          <input type="text" id="deliv-edit-title-input" required class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-sky-500" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Type / Category</label>
+            <select id="deliv-edit-category-select" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <option value="milestone_deliverable">📦 Deliverable</option>
+              <option value="ad_campaign">📢 Ad / Campaign</option>
+              <option value="client_meeting">🤝 Client Meeting</option>
+              <option value="payment_followup">🔄 Follow-up / Sync</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Due Date</label>
+            <input type="date" id="deliv-edit-date-input" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500" />
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-1">
+          <button type="button" onclick="toggleDelivModalEdit(false)" class="px-3 py-1 border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-100">
+            Cancel
+          </button>
+          <button type="submit" class="px-3.5 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold shadow-xs">
+            Save
+          </button>
+        </div>
+      </form>
+
+      <div id="deliv-modal-error" class="hidden text-xs text-rose-600 font-semibold p-2 bg-rose-50 rounded-lg border border-rose-200"></div>
+
+      <!-- Actions -->
+      <div class="pt-2 flex items-center justify-between gap-2 border-t border-slate-200">
+        <div class="flex items-center gap-1.5">
+          <a id="deliv-project-link" href="#" class="px-3 py-2 border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            <span>Project</span>
+          </a>
+          <button type="button" id="deliv-edit-btn" onclick="toggleDelivModalEdit(true)" class="px-3 py-2 border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            <span>Edit</span>
+          </button>
+        </div>
+        <button type="button" id="deliv-toggle-btn" onclick="toggleCurrentDeliverableModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5">
+          <span id="deliv-toggle-btn-text">Mark as Completed</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -399,6 +547,7 @@
   let calendar = null;
   let activeCategory = 'all';
   let activeClientId = 'all';
+  let currentDeliverableData = null;
 
   document.addEventListener('DOMContentLoaded', () => {
     if (window.lucide) lucide.createIcons();
@@ -435,11 +584,97 @@
             failureCallback(err);
           });
       },
+      eventContent: function(arg) {
+        const props = arg.event.extendedProps || {};
+        if (props.is_deliverable) {
+          const isDone = Boolean(props.completed);
+          const serviceName = props.service_name || 'Deliverable';
+          const clientName = props.client_name || '';
+          const subtitle = clientName ? `${serviceName} • ${clientName}` : serviceName;
+          const cat = props.category || 'milestone_deliverable';
+
+          let bgStyle = 'background-color: #064e3b; border-color: #10b981; color: #ecfdf5;';
+          let doneStyle = 'background-color: #022c22; border-color: #065f46; color: #a7f3d0;';
+          let chkClass = isDone ? 'bg-emerald-400 text-slate-950 font-black' : 'border border-emerald-400 text-emerald-300 hover:bg-emerald-400 hover:text-slate-950';
+          let subClass = 'text-emerald-300/80';
+
+          if (cat === 'ad_campaign' || cat === 'social_post') {
+            bgStyle = 'background-color: #083344; border-color: #06b6d4; color: #ecfeff;';
+            doneStyle = 'background-color: #041f29; border-color: #0e7490; color: #a5f3fc;';
+            chkClass = isDone ? 'bg-cyan-400 text-slate-950 font-black' : 'border border-cyan-400 text-cyan-300 hover:bg-cyan-400 hover:text-slate-950';
+            subClass = 'text-cyan-300/80';
+          } else if (cat === 'client_meeting') {
+            bgStyle = 'background-color: #082f49; border-color: #0284c7; color: #f0f9ff;';
+            doneStyle = 'background-color: #031d2e; border-color: #0369a1; color: #bae6fd;';
+            chkClass = isDone ? 'bg-sky-400 text-slate-950 font-black' : 'border border-sky-400 text-sky-300 hover:bg-sky-400 hover:text-slate-950';
+            subClass = 'text-sky-300/80';
+          } else if (cat === 'payment_followup') {
+            bgStyle = 'background-color: #431407; border-color: #f97316; color: #fff7ed;';
+            doneStyle = 'background-color: #270b04; border-color: #c2410c; color: #fed7aa;';
+            chkClass = isDone ? 'bg-orange-400 text-slate-950 font-black' : 'border border-orange-400 text-orange-300 hover:bg-orange-400 hover:text-slate-950';
+            subClass = 'text-orange-300/80';
+          }
+
+          const wrap = document.createElement('div');
+          wrap.className = `w-full text-left overflow-hidden select-none rounded-lg border p-1.5 transition-all shadow-xs ${isDone ? 'opacity-80' : ''}`;
+          wrap.style.cssText = `${isDone ? doneStyle : bgStyle} line-height: 1.25; cursor: pointer; margin-bottom: 2.5px;`;
+
+          wrap.innerHTML = `
+            <div class="flex items-center gap-1.5 min-w-0">
+              <button type="button" class="deliv-quick-chk shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] transition-all ${chkClass}" title="${isDone ? 'Click to mark as pending' : 'Click to mark as completed'}">
+                ✓
+              </button>
+              <span class="text-[11px] font-bold truncate tracking-tight ${isDone ? 'line-through opacity-70' : ''}">
+                ${arg.event.title}
+              </span>
+            </div>
+            <div class="text-[9.5px] font-medium ${subClass} truncate pl-5 mt-0.5">
+              ${subtitle}
+            </div>
+          `;
+
+          const chk = wrap.querySelector('.deliv-quick-chk');
+          if (chk) {
+            chk.addEventListener('click', (e) => {
+              e.stopPropagation();
+              toggleDeliverableQuick(props.kind, props.raw_id);
+            });
+          }
+
+          return { domNodes: [wrap] };
+        } else if (props.kind === 'task_target') {
+          const wrap = document.createElement('div');
+          wrap.className = 'target-deadline-card w-full text-left overflow-hidden select-none';
+          wrap.style.cssText = 'line-height: 1.25; cursor: pointer;';
+          wrap.innerHTML = `
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="text-xs shrink-0">🎯</span>
+              <span class="text-[11px] font-bold text-slate-200 truncate">${arg.event.title}</span>
+            </div>
+            <div class="text-[9.5px] font-medium text-slate-400 truncate pl-4.5 mt-0.5">
+              ${props.client_name || 'Project Deadline'} • ${props.progress || 0}% Done
+            </div>
+          `;
+          return { domNodes: [wrap] };
+        }
+
+        // Standard Calendar Event
+        const color = arg.event.backgroundColor || '#0284c7';
+        const wrap = document.createElement('div');
+        wrap.className = 'w-full text-left overflow-hidden py-1 px-2 rounded-lg text-white font-bold text-[11px] truncate shadow-xs select-none';
+        wrap.style.backgroundColor = color;
+        wrap.innerHTML = `<span class="truncate">${arg.event.title}</span>`;
+        return { domNodes: [wrap] };
+      },
       eventClick: function(info) {
         const ev = info.event;
-        if (ev.extendedProps.is_milestone) {
-          // Open project milestone notice
-          alert(`Milestone Deliverable:\n${ev.title}\nClient: ${ev.extendedProps.client_name}\nStatus: ${ev.extendedProps.status}\nProgress: ${ev.extendedProps.progress}%\nDue Date: ${ev.startStr}`);
+        const props = ev.extendedProps || {};
+        if (props.is_deliverable) {
+          openDeliverableModal(ev);
+        } else if (props.kind === 'task_target') {
+          if (props.task_title) {
+            window.location.href = `/projects/?search=${encodeURIComponent(props.task_title)}`;
+          }
         } else {
           openEditModal(ev);
         }
@@ -466,16 +701,250 @@
     if (calendar) calendar.refetchEvents();
   }
 
+  // Deliverable Quick Toggle & Modal Handlers
+  async function toggleDeliverableQuick(kind, rawId) {
+    const url = kind === 'todo' ? `/task/todo/${rawId}/toggle/` : `/task/milestone/${rawId}/toggle/`;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (calendar) calendar.refetchEvents();
+      } else {
+        alert(data.error || 'Failed to toggle deliverable status.');
+      }
+    } catch(err) {
+      console.error(err);
+      alert('Network error while toggling deliverable.');
+    }
+  }
+
+  function openDeliverableModal(ev) {
+    const props = ev.extendedProps || {};
+    currentDeliverableData = {
+      kind: props.kind,
+      rawId: props.raw_id,
+      title: ev.title,
+      category: props.category || 'milestone_deliverable',
+      categoryLabel: props.category_label || 'Deliverable',
+      completed: Boolean(props.completed),
+      clientName: props.client_name,
+      serviceName: props.service_name,
+      taskTitle: props.task_title,
+      dueDate: ev.startStr,
+      progress: props.progress
+    };
+
+    document.getElementById('deliv-modal-title').textContent = ev.title;
+    document.getElementById('deliv-modal-subtitle').textContent = `${props.service_name || 'Deliverable'} Sprint Task`;
+    document.getElementById('deliv-type-name').textContent = props.category_label || 'Deliverable Deadline';
+    document.getElementById('deliv-task-title').textContent = props.task_title || 'N/A';
+    document.getElementById('deliv-client-name').textContent = props.client_name || 'Internal';
+    document.getElementById('deliv-service-name').textContent = props.service_name || 'Deliverable';
+    document.getElementById('deliv-due-date').textContent = `Due: ${ev.startStr}`;
+    document.getElementById('deliv-project-progress').textContent = `${props.progress || 0}%`;
+
+    const catBadge = document.getElementById('deliv-modal-cat-badge');
+    if (catBadge) {
+      catBadge.textContent = props.category_label || 'Deliverable';
+      if (props.category === 'ad_campaign' || props.category === 'social_post') {
+        catBadge.className = 'text-[9.5px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 bg-cyan-50 text-cyan-700 border-cyan-200';
+      } else if (props.category === 'client_meeting') {
+        catBadge.className = 'text-[9.5px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 bg-sky-50 text-sky-700 border-sky-200';
+      } else if (props.category === 'payment_followup') {
+        catBadge.className = 'text-[9.5px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 bg-orange-50 text-orange-700 border-orange-200';
+      } else {
+        catBadge.className = 'text-[9.5px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 bg-emerald-50 text-emerald-700 border-emerald-200';
+      }
+    }
+
+    // Prefill edit inputs
+    document.getElementById('deliv-edit-title-input').value = ev.title;
+    document.getElementById('deliv-edit-category-select').value = props.category || 'milestone_deliverable';
+    document.getElementById('deliv-edit-date-input').value = ev.startStr ? ev.startStr.slice(0, 10) : '';
+
+    toggleDelivModalEdit(false);
+
+    const projectLink = document.getElementById('deliv-project-link');
+    if (props.task_title) {
+      projectLink.href = `/projects/?search=${encodeURIComponent(props.task_title)}`;
+      projectLink.classList.remove('hidden');
+    } else {
+      projectLink.classList.add('hidden');
+    }
+
+    renderDeliverableStatusInModal(currentDeliverableData.completed);
+
+    document.getElementById('deliv-modal-error').classList.add('hidden');
+    document.getElementById('deliverable-modal').classList.remove('hidden');
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function toggleDelivModalEdit(show) {
+    const viewSec = document.getElementById('deliv-view-section');
+    const editSec = document.getElementById('deliv-edit-section');
+    const editBtn = document.getElementById('deliv-edit-btn');
+    if (show) {
+      viewSec.classList.add('hidden');
+      editSec.classList.remove('hidden');
+      editBtn.classList.add('hidden');
+    } else {
+      viewSec.classList.remove('hidden');
+      editSec.classList.add('hidden');
+      editBtn.classList.remove('hidden');
+    }
+  }
+
+  async function submitDeliverableModalEdit(e) {
+    e.preventDefault();
+    if (!currentDeliverableData) return;
+    const { kind, rawId } = currentDeliverableData;
+    const title = document.getElementById('deliv-edit-title-input').value.trim();
+    const category = document.getElementById('deliv-edit-category-select').value;
+    const dueDate = document.getElementById('deliv-edit-date-input').value;
+
+    const url = kind === 'milestone' ? `/task/milestone/${rawId}/edit/` : `/task/todo/${rawId}/edit/`;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('category', category);
+    if (dueDate) formData.append('due_date', dueDate);
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        const item = data.milestone || data.todo;
+        currentDeliverableData.title = item.title;
+        currentDeliverableData.category = item.category;
+        currentDeliverableData.categoryLabel = item.category_label;
+        document.getElementById('deliv-modal-title').textContent = item.title;
+        document.getElementById('deliv-type-name').textContent = item.category_label;
+        document.getElementById('deliv-modal-cat-badge').textContent = item.category_label;
+        if (item.due_date) {
+          document.getElementById('deliv-due-date').textContent = `Due: ${item.due_date}`;
+        }
+        toggleDelivModalEdit(false);
+        if (calendar) calendar.refetchEvents();
+      } else {
+        const errDiv = document.getElementById('deliv-modal-error');
+        errDiv.textContent = data.error || 'Failed to update deliverable.';
+        errDiv.classList.remove('hidden');
+      }
+    } catch(err) {
+      const errDiv = document.getElementById('deliv-modal-error');
+      errDiv.textContent = 'Server error updating deliverable.';
+      errDiv.classList.remove('hidden');
+    }
+  }
+
+  function renderDeliverableStatusInModal(isCompleted) {
+    const banner = document.getElementById('deliv-status-banner');
+    const indicator = document.getElementById('deliv-status-indicator');
+    const text = document.getElementById('deliv-status-text');
+    const btn = document.getElementById('deliv-toggle-btn');
+    const btnText = document.getElementById('deliv-toggle-btn-text');
+
+    if (isCompleted) {
+      banner.className = 'p-3 rounded-xl border flex items-center justify-between bg-emerald-50 border-emerald-200 text-emerald-800';
+      indicator.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+      text.textContent = 'Completed (Crossed Out)';
+      btn.className = 'px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5';
+      btnText.textContent = 'Mark as Pending';
+    } else {
+      banner.className = 'p-3 rounded-xl border flex items-center justify-between bg-amber-50 border-amber-200 text-amber-800';
+      indicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+      text.textContent = 'Pending Execution';
+      btn.className = 'px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5';
+      btnText.textContent = 'Mark as Completed';
+    }
+  }
+
+  function closeDeliverableModal() {
+    document.getElementById('deliverable-modal').classList.add('hidden');
+    currentDeliverableData = null;
+  }
+
+  async function toggleCurrentDeliverableModal() {
+    if (!currentDeliverableData) return;
+    const { kind, rawId } = currentDeliverableData;
+    const url = kind === 'todo' ? `/task/todo/${rawId}/toggle/` : `/task/milestone/${rawId}/toggle/`;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        currentDeliverableData.completed = data.completed;
+        renderDeliverableStatusInModal(data.completed);
+        if (calendar) calendar.refetchEvents();
+      } else {
+        const errDiv = document.getElementById('deliv-modal-error');
+        errDiv.textContent = data.error || 'Failed to update deliverable.';
+        errDiv.classList.remove('hidden');
+      }
+    } catch(err) {
+      const errDiv = document.getElementById('deliv-modal-error');
+      errDiv.textContent = 'Network error while updating deliverable.';
+      errDiv.classList.remove('hidden');
+    }
+  }
+
   // Handle Event Drag & Drop / Resize Rescheduling
   async function handleEventDragResize(info) {
     const ev = info.event;
-    if (ev.extendedProps.is_milestone) {
-      alert('Milestone deliverables are synchronized directly with project tasks.');
+    const props = ev.extendedProps || {};
+
+    if (props.is_deliverable && props.kind === 'milestone') {
+      const url = `/task/milestone/${props.raw_id}/reschedule/`;
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+      const formData = new FormData();
+      formData.append('due_date', ev.startStr.slice(0, 10));
+
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrfToken
+          },
+          body: formData
+        });
+        const data = await res.json();
+        if (!data.success) {
+          info.revert();
+          alert(data.error || 'Failed to reschedule deliverable.');
+        }
+      } catch(e) {
+        info.revert();
+      }
+      return;
+    }
+
+    if (props.is_milestone) {
+      alert('Target project deadlines are synchronized directly with project tasks.');
       info.revert();
       return;
     }
 
-    const rawId = ev.extendedProps.raw_id || ev.id.replace('event-', '');
+    const rawId = props.raw_id || ev.id.replace('event-', '');
     const url = `/calendar/edit-ajax/${rawId}/`;
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
 

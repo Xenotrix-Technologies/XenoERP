@@ -1,4 +1,6 @@
 from datetime import datetime
+from decimal import Decimal
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
@@ -355,12 +357,117 @@ def hr_payroll(request):
     else:
         form = PayrollForm(organization=org)
         
-    payrolls = Payroll.objects.filter(organization=org)
-    
+    all_payrolls = Payroll.objects.filter(organization=org).select_related(
+        'user_profile__user', 'user_profile__department'
+    ).order_by('-cycle_end_date', '-processed_on')
+
+    # Organization-wide Payroll Spendings aggregates
+    org_aggregates = all_payrolls.aggregate(
+        total_net=Sum('net_pay'),
+        total_base=Sum('base_salary'),
+        total_bonuses=Sum('bonuses'),
+        total_advance=Sum('advance'),
+        total_deductions=Sum('deductions'),
+        total_count=Count('id'),
+    )
+    org_total_net = org_aggregates['total_net'] or Decimal('0.00')
+    org_total_base = org_aggregates['total_base'] or Decimal('0.00')
+    org_total_bonuses = org_aggregates['total_bonuses'] or Decimal('0.00')
+    org_total_advance = org_aggregates['total_advance'] or Decimal('0.00')
+    org_total_deductions = org_aggregates['total_deductions'] or Decimal('0.00')
+
+    # Employee-based total spendings aggregation
+    emp_aggregates = all_payrolls.values(
+        'user_profile__id',
+        'user_profile__user__first_name',
+        'user_profile__user__last_name',
+        'user_profile__user__username',
+        'user_profile__role',
+        'user_profile__department__name'
+    ).annotate(
+        total_net=Sum('net_pay'),
+        total_base=Sum('base_salary'),
+        total_bonuses=Sum('bonuses'),
+        total_advance=Sum('advance'),
+        total_deductions=Sum('deductions'),
+        cycle_count=Count('id'),
+        paid_count=Count('id', filter=Q(status='Paid')),
+        pending_count=Count('id', filter=~Q(status='Paid')),
+    ).order_by('-total_net')
+
+    employee_spendings = []
+    emp_spend_lookup = {}
+    for item in emp_aggregates:
+        emp_id = item['user_profile__id']
+        first = item['user_profile__user__first_name'] or ''
+        last = item['user_profile__user__last_name'] or ''
+        full_name = f"{first} {last}".strip() or item['user_profile__user__username']
+        role = item['user_profile__role'] or 'Staff'
+        department = item['user_profile__department__name'] or 'General'
+        tot_net = item['total_net'] or Decimal('0.00')
+        tot_base = item['total_base'] or Decimal('0.00')
+        tot_bonuses = item['total_bonuses'] or Decimal('0.00')
+        tot_advance = item['total_advance'] or Decimal('0.00')
+        tot_deductions = item['total_deductions'] or Decimal('0.00')
+        cycles = item['cycle_count'] or 0
+        avg_cycle = round(float(tot_net) / cycles, 2) if cycles > 0 else 0.0
+        pct = round((float(tot_net) / float(org_total_net)) * 100, 1) if org_total_net > 0 else 0.0
+
+        emp_dict = {
+            'id': emp_id,
+            'name': full_name,
+            'role': role,
+            'department': department,
+            'total_net': float(tot_net),
+            'total_base': float(tot_base),
+            'total_bonuses': float(tot_bonuses),
+            'total_advance': float(tot_advance),
+            'total_deductions': float(tot_deductions),
+            'cycle_count': cycles,
+            'paid_count': item['paid_count'],
+            'pending_count': item['pending_count'],
+            'avg_cycle': avg_cycle,
+            'percentage': pct,
+        }
+        employee_spendings.append(emp_dict)
+        emp_spend_lookup[emp_id] = emp_dict
+
+    # Filtering by employee if selected
+    selected_employee_id = request.GET.get('employee', '').strip()
+    selected_employee = None
+    if selected_employee_id and selected_employee_id != 'all':
+        try:
+            emp_id_int = int(selected_employee_id)
+            payrolls = all_payrolls.filter(user_profile_id=emp_id_int)
+            selected_employee = emp_spend_lookup.get(emp_id_int)
+        except (ValueError, TypeError):
+            payrolls = all_payrolls
+    else:
+        payrolls = all_payrolls
+
+    # Attach employee spending summary directly to each payroll record for template ease
+    for p in payrolls:
+        p.employee_spending = emp_spend_lookup.get(p.user_profile_id)
+
+    # All active staff in organization for filter dropdown
+    all_employees = UserProfile.objects.filter(organization=org).select_related('user').order_by('user__first_name', 'user__username')
+    employee_spendings_json = json.dumps(employee_spendings)
+
     return render(request, 'hr_payroll.html', {
         'page_title': 'Payroll Processing',
         'payrolls': payrolls,
-        'form': form
+        'all_payrolls_count': all_payrolls.count(),
+        'form': form,
+        'org_total_net': org_total_net,
+        'org_total_base': org_total_base,
+        'org_total_bonuses': org_total_bonuses,
+        'org_total_advance': org_total_advance,
+        'org_total_deductions': org_total_deductions,
+        'employee_spendings': employee_spendings,
+        'employee_spendings_json': employee_spendings_json,
+        'selected_employee': selected_employee,
+        'selected_employee_id': selected_employee_id,
+        'all_employees': all_employees,
     })
 
 

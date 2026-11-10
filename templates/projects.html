@@ -420,14 +420,18 @@
                             <div id="card-milestones-list-{{ task.id }}" class="hidden space-y-2 mt-3 pt-3 border-t border-slate-100 animate-in fade-in duration-150">
                                 {% for d in task.unified_deliverables %}
                                 <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs gap-2.5 hover:bg-white hover:shadow-xs transition-all" id="deliv-row-{{ d.kind }}-{{ d.id }}">
-                                    <label class="flex items-center gap-2.5 cursor-pointer min-w-0 flex-1">
+                                    <label class="flex items-center gap-2 cursor-pointer min-w-0 flex-1">
                                         <input type="checkbox" {% if d.completed %}checked{% endif %} onchange="toggleDeliverableAjax('{{ d.kind }}', '{{ d.id }}', '{{ task.id }}', this)" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0" />
+                                        <span id="deliv-badge-{{ d.kind }}-{{ d.id }}" class="text-[9.5px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 {{ d.category_badge_class }}">{{ d.category_label }}</span>
                                         <span class="truncate {% if d.completed %}line-through text-slate-400{% else %}text-slate-700 font-medium{% endif %}" id="deliv-title-{{ d.kind }}-{{ d.id }}">{{ d.title }}</span>
                                     </label>
-                                    <div class="flex items-center gap-2 shrink-0">
+                                    <div class="flex items-center gap-1.5 shrink-0">
                                         {% if d.due_date %}
-                                        <span class="text-[10px] font-mono text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200/60">{{ d.due_date|date:"M d" }}</span>
+                                        <span id="deliv-date-{{ d.kind }}-{{ d.id }}" class="text-[10px] font-mono text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200/60">{{ d.due_date|date:"M d" }}</span>
                                         {% endif %}
+                                        <button type="button" id="deliv-edit-btn-{{ d.kind }}-{{ d.id }}" onclick="openEditDeliverableModal('{{ d.kind }}', '{{ d.id }}', '{{ task.id }}', '{{ d.title|escapejs }}', '{{ d.category }}', '{{ d.due_date|date:'Y-m-d' }}')" class="text-slate-400 hover:text-blue-600 p-1 rounded transition-colors" title="Edit deliverable">
+                                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                        </button>
                                         <button type="button" onclick="deleteDeliverableAjax('{{ d.kind }}', '{{ d.id }}', '{{ task.id }}')" class="text-slate-300 hover:text-rose-500 p-1 rounded transition-colors" title="Delete deliverable">
                                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                                         </button>
@@ -441,7 +445,19 @@
 
                                 <!-- Inline Add Form -->
                                 <div id="inline-add-m-{{ task.id }}" class="hidden mt-2.5 p-3 bg-slate-100 rounded-xl space-y-2.5 border border-slate-200">
-                                    <input type="text" id="inline-m-title-{{ task.id }}" placeholder="Deliverable / Milestone title..." class="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 placeholder-slate-400" />
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        <div class="sm:col-span-2">
+                                            <input type="text" id="inline-m-title-{{ task.id }}" placeholder="Deliverable / Milestone title..." class="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 placeholder-slate-400 font-medium" />
+                                        </div>
+                                        <div>
+                                            <select id="inline-m-cat-{{ task.id }}" class="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                                <option value="milestone_deliverable">📦 Deliverable</option>
+                                                <option value="ad_campaign">📢 Ad / Campaign</option>
+                                                <option value="client_meeting">🤝 Client Meeting</option>
+                                                <option value="payment_followup">🔄 Follow-up / Sync</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                     <div class="flex items-center gap-2">
                                         <input type="date" id="inline-m-date-{{ task.id }}" value="{{ task.due_date|date:'Y-m-d' }}" class="px-2.5 py-1 text-xs bg-white border border-slate-200 rounded-lg text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                                         <button type="button" onclick="submitInlineDeliverable('{{ task.id }}')" class="px-3.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors ml-auto shadow-xs flex items-center gap-1">
@@ -2624,8 +2640,10 @@
     async function submitInlineDeliverable(taskId) {
         const titleInput = document.getElementById(`inline-m-title-${taskId}`);
         const dateInput = document.getElementById(`inline-m-date-${taskId}`);
+        const catInput = document.getElementById(`inline-m-cat-${taskId}`);
         const title = (titleInput?.value || '').trim();
         const dueDate = dateInput?.value || '';
+        const category = catInput?.value || 'milestone_deliverable';
 
         if (!title) return;
 
@@ -2633,6 +2651,7 @@
         const formData = new FormData();
         formData.append('title', title);
         formData.append('due_date', dueDate);
+        formData.append('category', category);
 
         try {
             const res = await fetch(`/task/${taskId}/milestone/add/`, {
@@ -2651,6 +2670,86 @@
         }
     }
 
+    function openEditDeliverableModal(kind, id, taskId, title, category, dueDate) {
+        document.getElementById('edit-deliv-kind').value = kind;
+        document.getElementById('edit-deliv-id').value = id;
+        document.getElementById('edit-deliv-task-id').value = taskId;
+        document.getElementById('edit-deliv-title').value = title;
+        document.getElementById('edit-deliv-category').value = category || 'milestone_deliverable';
+        document.getElementById('edit-deliv-date').value = dueDate || '';
+        document.getElementById('edit-deliv-error').classList.add('hidden');
+        document.getElementById('edit-deliverable-modal').classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function closeEditDeliverableModal() {
+        document.getElementById('edit-deliverable-modal').classList.add('hidden');
+    }
+
+    async function submitEditDeliverableModal(e) {
+        e.preventDefault();
+        const kind = document.getElementById('edit-deliv-kind').value;
+        const id = document.getElementById('edit-deliv-id').value;
+        const taskId = document.getElementById('edit-deliv-task-id').value;
+        const title = document.getElementById('edit-deliv-title').value.trim();
+        const category = document.getElementById('edit-deliv-category').value;
+        const dueDate = document.getElementById('edit-deliv-date').value;
+
+        const url = kind === 'milestone' ? `/task/milestone/${id}/edit/` : `/task/todo/${id}/edit/`;
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('category', category);
+        if (dueDate) formData.append('due_date', dueDate);
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                const item = data.milestone || data.todo;
+                // Update title
+                const titleElem = document.getElementById(`deliv-title-${kind}-${id}`);
+                if (titleElem) titleElem.textContent = item.title;
+
+                // Update badge
+                const badgeElem = document.getElementById(`deliv-badge-${kind}-${id}`);
+                if (badgeElem) {
+                    badgeElem.className = `text-[9.5px] font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${item.category_badge_class}`;
+                    badgeElem.textContent = item.category_label;
+                }
+
+                // Update date
+                const dateElem = document.getElementById(`deliv-date-${kind}-${id}`);
+                if (dateElem && item.due_date) {
+                    dateElem.textContent = item.due_date;
+                }
+
+                // Update edit button onclick args
+                const editBtn = document.getElementById(`deliv-edit-btn-${kind}-${id}`);
+                if (editBtn) {
+                    const safeTitle = item.title.replace(/'/g, "\\'");
+                    const safeDate = item.due_date_iso || dueDate;
+                    editBtn.setAttribute('onclick', `openEditDeliverableModal('${kind}', '${id}', '${taskId}', '${safeTitle}', '${item.category}', '${safeDate}')`);
+                }
+
+                closeEditDeliverableModal();
+            } else {
+                const errDiv = document.getElementById('edit-deliv-error');
+                errDiv.textContent = data.error || 'Failed to update deliverable.';
+                errDiv.classList.remove('hidden');
+            }
+        } catch(err) {
+            const errDiv = document.getElementById('edit-deliv-error');
+            errDiv.textContent = 'Server error updating deliverable.';
+            errDiv.classList.remove('hidden');
+        }
+    }
+
     // Compatibility wrappers
     function toggleMilestoneAjax(milestoneId, taskId, cb) {
         return toggleDeliverableAjax('milestone', milestoneId, taskId, cb);
@@ -2659,4 +2758,63 @@
         return submitInlineDeliverable(taskId);
     }
 </script>
+
+<!-- EDIT DELIVERABLE MODAL -->
+<div id="edit-deliverable-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-[160] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-150">
+        <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900">Edit Sprint Deliverable</h3>
+                    <p class="text-[11px] text-slate-500">Update title, type (Ad, Meeting, Deliverable), or date</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeEditDeliverableModal()" class="p-1 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-200/50 transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form id="edit-deliverable-form" onsubmit="submitEditDeliverableModal(event)" class="p-5 space-y-3.5 text-xs">
+            {% csrf_token %}
+            <input type="hidden" id="edit-deliv-kind" value="" />
+            <input type="hidden" id="edit-deliv-id" value="" />
+            <input type="hidden" id="edit-deliv-task-id" value="" />
+
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Deliverable Title <span class="text-rose-500">*</span></label>
+                <input type="text" id="edit-deliv-title" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 font-medium" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Type / Category</label>
+                    <select id="edit-deliv-category" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800 font-semibold">
+                        <option value="milestone_deliverable">📦 Deliverable Deadline</option>
+                        <option value="ad_campaign">📢 Ad & Social Campaign</option>
+                        <option value="client_meeting">🤝 Client Meeting</option>
+                        <option value="payment_followup">🔄 Follow-up & Sync</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Due Date</label>
+                    <input type="date" id="edit-deliv-date" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-800" />
+                </div>
+            </div>
+
+            <div id="edit-deliv-error" class="hidden text-xs text-rose-600 font-semibold p-2 bg-rose-50 rounded-lg border border-rose-200"></div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeEditDeliverableModal()" class="px-3.5 py-1.5 border border-slate-200 text-slate-600 text-xs font-semibold rounded-xl hover:bg-slate-100 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="edit-deliv-save-btn" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5">
+                    <span>Save Changes</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

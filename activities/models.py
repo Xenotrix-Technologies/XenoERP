@@ -126,6 +126,10 @@ class Task(models.Model):
                 'title': m.title,
                 'completed': m.completed,
                 'due_date': m.due_date,
+                'category': m.category or 'milestone_deliverable',
+                'category_label': m.category_label,
+                'category_color': m.category_color,
+                'category_badge_class': m.category_badge_class,
             })
         for t in self.todos.all().order_by('created_at', 'id'):
             items.append({
@@ -134,13 +138,25 @@ class Task(models.Model):
                 'title': t.title,
                 'completed': t.completed,
                 'due_date': self.due_date,
+                'category': t.category or 'milestone_deliverable',
+                'category_label': t.category_label,
+                'category_color': t.category_color,
+                'category_badge_class': t.category_badge_class,
             })
         return items
 
 
 class TaskTodo(models.Model):
+    CATEGORY_CHOICES = [
+        ('milestone_deliverable', 'Deliverable Deadline'),
+        ('ad_campaign', 'Ad & Social Campaign'),
+        ('client_meeting', 'Client Meeting'),
+        ('payment_followup', 'Follow-up & Sync'),
+    ]
+
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='todos')
     title = models.CharField(max_length=255)
+    category = models.CharField(max_length=50, default='milestone_deliverable', blank=True, null=True)
     completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -150,6 +166,42 @@ class TaskTodo(models.Model):
 
     def __str__(self):
         return f"{self.title} ({'Completed' if self.completed else 'Pending'})"
+
+    @property
+    def category_label(self):
+        labels = {
+            'ad_campaign': 'Ad / Campaign',
+            'social_post': 'Social Post',
+            'client_meeting': 'Meeting',
+            'payment_followup': 'Follow-up',
+            'website_milestone': 'Website',
+            'milestone_deliverable': 'Deliverable',
+        }
+        return labels.get(self.category or 'milestone_deliverable', 'Deliverable')
+
+    @property
+    def category_color(self):
+        colors = {
+            'ad_campaign': '#06B6D4',
+            'social_post': '#00D0C6',
+            'client_meeting': '#00BAFF',
+            'payment_followup': '#FB923C',
+            'website_milestone': '#34D399',
+            'milestone_deliverable': '#10B981',
+        }
+        return colors.get(self.category or 'milestone_deliverable', '#10B981')
+
+    @property
+    def category_badge_class(self):
+        classes = {
+            'ad_campaign': 'bg-cyan-50 text-cyan-700 border-cyan-200',
+            'social_post': 'bg-teal-50 text-teal-700 border-teal-200',
+            'client_meeting': 'bg-sky-50 text-sky-700 border-sky-200',
+            'payment_followup': 'bg-orange-50 text-orange-700 border-orange-200',
+            'website_milestone': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            'milestone_deliverable': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        }
+        return classes.get(self.category or 'milestone_deliverable', 'bg-emerald-50 text-emerald-700 border-emerald-200')
 
 
 class TaskFile(models.Model):
@@ -169,8 +221,16 @@ class TaskFile(models.Model):
 
 
 class TaskMilestone(models.Model):
+    CATEGORY_CHOICES = [
+        ('milestone_deliverable', 'Deliverable Deadline'),
+        ('ad_campaign', 'Ad & Social Campaign'),
+        ('client_meeting', 'Client Meeting'),
+        ('payment_followup', 'Follow-up & Sync'),
+    ]
+
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='milestones')
     title = models.CharField(max_length=255)
+    category = models.CharField(max_length=50, default='milestone_deliverable', blank=True, null=True)
     due_date = models.DateField()
     completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -181,6 +241,42 @@ class TaskMilestone(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.task.title}"
+
+    @property
+    def category_label(self):
+        labels = {
+            'ad_campaign': 'Ad / Campaign',
+            'social_post': 'Social Post',
+            'client_meeting': 'Meeting',
+            'payment_followup': 'Follow-up',
+            'website_milestone': 'Website',
+            'milestone_deliverable': 'Deliverable',
+        }
+        return labels.get(self.category or 'milestone_deliverable', 'Deliverable')
+
+    @property
+    def category_color(self):
+        colors = {
+            'ad_campaign': '#06B6D4',
+            'social_post': '#00D0C6',
+            'client_meeting': '#00BAFF',
+            'payment_followup': '#FB923C',
+            'website_milestone': '#34D399',
+            'milestone_deliverable': '#10B981',
+        }
+        return colors.get(self.category or 'milestone_deliverable', '#10B981')
+
+    @property
+    def category_badge_class(self):
+        classes = {
+            'ad_campaign': 'bg-cyan-50 text-cyan-700 border-cyan-200',
+            'social_post': 'bg-teal-50 text-teal-700 border-teal-200',
+            'client_meeting': 'bg-sky-50 text-sky-700 border-sky-200',
+            'payment_followup': 'bg-orange-50 text-orange-700 border-orange-200',
+            'website_milestone': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            'milestone_deliverable': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        }
+        return classes.get(self.category or 'milestone_deliverable', 'bg-emerald-50 text-emerald-700 border-emerald-200')
 
 
 class TaskComment(models.Model):
