@@ -409,7 +409,7 @@ def finance_income_view(request):
             
         return redirect('finance_income')
 
-    incomes = Income.objects.filter(organization=request.user.profile.organization)
+    incomes = Income.objects.filter(organization=request.user.profile.organization).select_related('payment_method')
     
     day = request.GET.get('day')
     month = request.GET.get('month')
@@ -597,7 +597,7 @@ def finance_expenses_view(request):
             
         return redirect('finance_expenses')
 
-    expenses = Expense.objects.filter(organization=request.user.profile.organization)
+    expenses = Expense.objects.filter(organization=request.user.profile.organization).select_related('category', 'payment_method')
     
     day = request.GET.get('day')
     month = request.GET.get('month')
@@ -782,7 +782,7 @@ def finance_reports_view(request):
 @login_required
 def partner_payout_view(request):
     org = request.user.profile.organization
-    payouts_qs = PartnerPayout.objects.filter(organization=org)
+    payouts_qs = PartnerPayout.objects.filter(organization=org).select_related('status', 'payment_method', 'commission_type')
     
     # Filtering logic
     search_query = request.GET.get('search', '').strip()

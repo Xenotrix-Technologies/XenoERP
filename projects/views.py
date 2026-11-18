@@ -456,7 +456,7 @@ def client_status_settings(request):
 @page_permission_required('projects')
 def projects_view(request):
     org = request.user.profile.organization
-    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).order_by('due_date')
+    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).select_related('lead', 'status').prefetch_related('assignees', 'milestones', 'todos').order_by('due_date')
     staff = UserProfile.objects.filter(organization=org)
     leads = Lead.objects.filter(organization=org)
     clients = Lead.objects.filter(organization=org, is_client=True).order_by('company')
@@ -575,7 +575,7 @@ def projects_view(request):
 @page_permission_required('projects')
 def project_board_view(request):
     org = request.user.profile.organization
-    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).order_by('due_date')
+    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).select_related('lead', 'status').prefetch_related('assignees', 'milestones', 'todos').order_by('due_date')
     staff = UserProfile.objects.filter(organization=org)
     leads = Lead.objects.filter(organization=org)
     project_statuses = ProjectStatus.objects.filter(organization=org).order_by('position')
@@ -614,7 +614,7 @@ def project_board_view(request):
 @page_permission_required('projects')
 def project_timeline_view(request):
     org = request.user.profile.organization
-    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).order_by('due_date')
+    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).select_related('lead', 'status').prefetch_related('assignees', 'milestones', 'todos').order_by('due_date')
     staff = UserProfile.objects.filter(organization=org)
     leads = Lead.objects.filter(organization=org)
     project_statuses = ProjectStatus.objects.filter(organization=org).order_by('position')
@@ -664,7 +664,7 @@ def project_reports_view(request):
 @page_permission_required('projects')
 def project_tasks_view(request):
     org = request.user.profile.organization
-    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).order_by('due_date')
+    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).select_related('lead', 'status').prefetch_related('assignees', 'milestones', 'todos').order_by('due_date')
     staff = UserProfile.objects.filter(organization=org)
     leads = Lead.objects.filter(organization=org)
     project_statuses = ProjectStatus.objects.filter(organization=org).order_by('position')
@@ -680,7 +680,7 @@ def project_tasks_view(request):
 @page_permission_required('projects')
 def project_milestones_view(request):
     org = request.user.profile.organization
-    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).order_by('due_date')
+    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).select_related('lead', 'status').prefetch_related('assignees', 'milestones', 'todos').order_by('due_date')
     staff = UserProfile.objects.filter(organization=org)
     leads = Lead.objects.filter(organization=org)
 
@@ -694,7 +694,7 @@ def project_milestones_view(request):
 @page_permission_required('projects')
 def project_files_view(request):
     org = request.user.profile.organization
-    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).order_by('due_date')
+    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).select_related('lead', 'status').prefetch_related('assignees', 'milestones', 'todos').order_by('due_date')
     staff = UserProfile.objects.filter(organization=org)
 
     return render(request, 'project_files.html', {
@@ -706,7 +706,7 @@ def project_files_view(request):
 @page_permission_required('projects')
 def project_time_tracking_view(request):
     org = request.user.profile.organization
-    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).order_by('due_date')
+    tasks = Task.objects.filter(Q(lead__organization=org) | Q(organization=org)).select_related('lead', 'status').prefetch_related('assignees', 'milestones', 'todos').order_by('due_date')
     staff = UserProfile.objects.filter(organization=org)
 
     return render(request, 'project_time_tracking.html', {
