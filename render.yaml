@@ -3,7 +3,7 @@ services:
     name: xenocrm-web
     env: python
     buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py resync_sequences"
-    startCommand: "gunicorn xenocrm.wsgi:application"
+    startCommand: "gunicorn xenocrm.wsgi:application --timeout 120"
     envVars:
       - key: DATABASE_URL
         sync: false

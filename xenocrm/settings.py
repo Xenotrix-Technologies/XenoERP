@@ -165,15 +165,18 @@ WSGI_APPLICATION = 'xenocrm.wsgi.application'
 
 db_url = os.environ.get('DATABASE_URL', '')
 is_local_db = 'localhost' in db_url or '127.0.0.1' in db_url or 'sqlite' in db_url
+is_pooler = ':6543' in db_url or 'pooler.supabase.com' in db_url
 
 DATABASES = {
     'default': dj_database_url.config(
         default=db_url,
-        conn_max_age=600,
+        conn_max_age=0 if is_pooler or not is_local_db else env.int('CONN_MAX_AGE', default=600),
         conn_health_checks=True,
         ssl_require=env.bool('DB_SSL_REQUIRE', default=not is_local_db),
     )
 }
+if is_pooler or not is_local_db:
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
 
 # Password hashing — plain text (no hashing), for development/internal use only
