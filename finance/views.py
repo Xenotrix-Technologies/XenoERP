@@ -839,7 +839,7 @@ def finance_reports_view(request):
         profit_data.append(float(inc - exp))
         
     client_incomes = Income.objects.filter(organization=org).values('client_name').annotate(total=Sum('amount')).order_by('-total')[:5]
-    client_labels = [c['client_name'] for c in client_incomes]
+    client_labels = [c['client_name'] or 'Unknown' for c in client_incomes]
     client_revenue = [float(c['total']) for c in client_incomes]
     
     total_inc = Income.objects.filter(organization=org).aggregate(total=Sum('amount'))['total'] or 0
@@ -849,6 +849,23 @@ def finance_reports_view(request):
     pay_methods_labels = [pm['payment_method__name'] for pm in pm_incomes]
     pay_methods_data = [float(pm['total']) for pm in pm_incomes]
     
+    # 4 Weeks Cash Flow (Net Cash Flow = Income - Expense)
+    cash_flow_labels = []
+    cash_flow_ranges = []
+    cash_flow_data = []
+    for i in range(3, -1, -1):
+        w_end = today - timedelta(days=i * 7)
+        w_start = w_end - timedelta(days=6)
+        
+        week_num = 4 - i
+        cash_flow_labels.append(f"Week {week_num}")
+        cash_flow_ranges.append(f"{w_start.strftime('%b %d')} - {w_end.strftime('%b %d')}")
+        
+        inc = Income.objects.filter(organization=org, date__gte=w_start, date__lte=w_end).aggregate(total=Sum('amount'))['total'] or 0
+        exp = Expense.objects.filter(organization=org, date__gte=w_start, date__lte=w_end).aggregate(total=Sum('amount'))['total'] or 0
+        net = float(inc - exp)
+        cash_flow_data.append(round(net, 2))
+    
     context = {
         'months': json.dumps(months_labels),
         'revenue_data': json.dumps(revenue_data),
@@ -856,8 +873,9 @@ def finance_reports_view(request):
         'profit_data': json.dumps(profit_data),
         'client_labels': json.dumps(client_labels),
         'client_revenue': json.dumps(client_revenue),
-        'cash_flow_labels': json.dumps(['Week 1', 'Week 2', 'Week 3', 'Week 4']),
-        'cash_flow_data': json.dumps([0, 0, 0, 0]),
+        'cash_flow_labels': json.dumps(cash_flow_labels),
+        'cash_flow_ranges': json.dumps(cash_flow_ranges),
+        'cash_flow_data': json.dumps(cash_flow_data),
         'inc_exp_labels': json.dumps(['Income', 'Expense']),
         'inc_exp_data': json.dumps([float(total_inc), float(total_exp)]),
         'inv_status_labels': json.dumps(['Paid', 'Pending', 'Overdue']),

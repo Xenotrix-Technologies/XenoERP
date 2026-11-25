@@ -142,6 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 4. Cash Flow
+    const cashFlowRanges = {{ cash_flow_ranges|default:"[]"|safe }};
     new Chart(document.getElementById('cashFlowChart').getContext('2d'), {
         type: 'line',
         data: {
@@ -150,11 +151,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 label: 'Cash Flow',
                 data: {{ cash_flow_data|default:"[]"|safe }},
                 borderColor: '#F59E0B', // warning
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
                 borderWidth: 2,
-                tension: 0.2
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 6
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        title: function(items) {
+                            if (!items.length) return '';
+                            const idx = items[0].dataIndex;
+                            const range = cashFlowRanges[idx] ? ` (${cashFlowRanges[idx]})` : '';
+                            return items[0].label + range;
+                        },
+                        label: function(context) {
+                            let val = context.parsed.y;
+                            let sign = val < 0 ? '-' : '';
+                            return ' ' + context.dataset.label + ': ' + sign + '$' + Math.abs(val).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        }
+                    }
+                }
+            }
+        }
     });
 
     // 5. Income vs Expense
