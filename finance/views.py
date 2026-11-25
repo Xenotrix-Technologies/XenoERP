@@ -434,6 +434,49 @@ def finance_income_view(request):
     return render(request, 'finance_income.html', context)
 
 @login_required
+def export_incomes_csv(request):
+    org = request.user.profile.organization
+    incomes = Income.objects.filter(organization=org).select_related('payment_method')
+
+    day = request.GET.get('day')
+    month = request.GET.get('month')
+    year = request.GET.get('year')
+    sort_by = request.GET.get('sort')
+
+    if day:
+        incomes = incomes.filter(date__day=day)
+    if month:
+        incomes = incomes.filter(date__month=month)
+    if year:
+        incomes = incomes.filter(date__year=year)
+
+    if sort_by == 'highest':
+        incomes = incomes.order_by('-amount')
+    elif sort_by == 'lowest':
+        incomes = incomes.order_by('amount')
+    else:
+        incomes = incomes.order_by('-date')
+
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="incomes_export_{timestamp}.csv"'
+
+    response.write('\ufeff')  # BOM for Excel utf-8
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Client Name', 'Project Name', 'Payment Method', 'Amount'])
+
+    for inc in incomes:
+        writer.writerow([
+            inc.date.strftime('%Y-%m-%d') if inc.date else '',
+            inc.client_name or '',
+            inc.project_name or '',
+            inc.payment_method.name if inc.payment_method else '',
+            f"{inc.amount:.2f}" if inc.amount is not None else '0.00'
+        ])
+
+    return response
+
+@login_required
 def finance_add_income_view(request):
     org = request.user.profile.organization
     if request.method == 'POST':
@@ -626,6 +669,53 @@ def finance_expenses_view(request):
     return render(request, 'finance_expenses.html', context)
 
 @login_required
+def export_expenses_csv(request):
+    org = request.user.profile.organization
+    expenses = Expense.objects.filter(organization=org).select_related('category', 'payment_method')
+
+    day = request.GET.get('day')
+    month = request.GET.get('month')
+    year = request.GET.get('year')
+    cost_center = request.GET.get('cost_center')
+    sort_by = request.GET.get('sort')
+
+    if day:
+        expenses = expenses.filter(date__day=day)
+    if month:
+        expenses = expenses.filter(date__month=month)
+    if year:
+        expenses = expenses.filter(date__year=year)
+    if cost_center:
+        expenses = expenses.filter(cost_center__icontains=cost_center)
+
+    if sort_by == 'highest':
+        expenses = expenses.order_by('-amount')
+    elif sort_by == 'lowest':
+        expenses = expenses.order_by('amount')
+    else:
+        expenses = expenses.order_by('-date')
+
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="expenses_export_{timestamp}.csv"'
+
+    response.write('\ufeff')  # BOM for Excel utf-8
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Category', 'Description', 'Cost Center', 'Payment Method', 'Amount'])
+
+    for exp in expenses:
+        writer.writerow([
+            exp.date.strftime('%Y-%m-%d') if exp.date else '',
+            exp.category.name if exp.category else '',
+            exp.description or '',
+            exp.cost_center or '',
+            exp.payment_method.name if exp.payment_method else '',
+            f"{exp.amount:.2f}" if exp.amount is not None else '0.00'
+        ])
+
+    return response
+
+@login_required
 def finance_add_expense_view(request):
     org = request.user.profile.organization
     if request.method == 'POST':
@@ -749,7 +839,7 @@ def finance_reports_view(request):
         profit_data.append(float(inc - exp))
         
     client_incomes = Income.objects.filter(organization=org).values('client_name').annotate(total=Sum('amount')).order_by('-total')[:5]
-    client_labels = [c['client_name'] for c in client_incomes]
+    client_labels = [c['client_name'] or 'Unknown' for c in client_incomes]
     client_revenue = [float(c['total']) for c in client_incomes]
     
     total_inc = Income.objects.filter(organization=org).aggregate(total=Sum('amount'))['total'] or 0
@@ -759,6 +849,23 @@ def finance_reports_view(request):
     pay_methods_labels = [pm['payment_method__name'] for pm in pm_incomes]
     pay_methods_data = [float(pm['total']) for pm in pm_incomes]
     
+    # 4 Weeks Cash Flow (Net Cash Flow = Income - Expense)
+    cash_flow_labels = []
+    cash_flow_ranges = []
+    cash_flow_data = []
+    for i in range(3, -1, -1):
+        w_end = today - timedelta(days=i * 7)
+        w_start = w_end - timedelta(days=6)
+        
+        week_num = 4 - i
+        cash_flow_labels.append(f"Week {week_num}")
+        cash_flow_ranges.append(f"{w_start.strftime('%b %d')} - {w_end.strftime('%b %d')}")
+        
+        inc = Income.objects.filter(organization=org, date__gte=w_start, date__lte=w_end).aggregate(total=Sum('amount'))['total'] or 0
+        exp = Expense.objects.filter(organization=org, date__gte=w_start, date__lte=w_end).aggregate(total=Sum('amount'))['total'] or 0
+        net = float(inc - exp)
+        cash_flow_data.append(round(net, 2))
+    
     context = {
         'months': json.dumps(months_labels),
         'revenue_data': json.dumps(revenue_data),
@@ -766,8 +873,9 @@ def finance_reports_view(request):
         'profit_data': json.dumps(profit_data),
         'client_labels': json.dumps(client_labels),
         'client_revenue': json.dumps(client_revenue),
-        'cash_flow_labels': json.dumps(['Week 1', 'Week 2', 'Week 3', 'Week 4']),
-        'cash_flow_data': json.dumps([0, 0, 0, 0]),
+        'cash_flow_labels': json.dumps(cash_flow_labels),
+        'cash_flow_ranges': json.dumps(cash_flow_ranges),
+        'cash_flow_data': json.dumps(cash_flow_data),
         'inc_exp_labels': json.dumps(['Income', 'Expense']),
         'inc_exp_data': json.dumps([float(total_inc), float(total_exp)]),
         'inv_status_labels': json.dumps(['Paid', 'Pending', 'Overdue']),

@@ -7,12 +7,14 @@ urlpatterns = [
     # Finance Dashboard & Ledger
     path('finance/dashboard/', views.finance_dashboard_view, name='finance_dashboard'),
     path('finance/income/', views.finance_income_view, name='finance_income'),
+    path('finance/income/export/', views.export_incomes_csv, name='export_incomes_csv'),
     path('finance/income/add/', views.finance_add_income_view, name='finance_add_income'),
     path('finance/income/edit/<int:income_id>/', views.finance_edit_income, name='finance_edit_income'),
     path('finance/income/bulk-delete/', views.bulk_delete_incomes, name='bulk_delete_incomes'),
     path('finance/income/restore/<int:deleted_id>/', views.restore_deleted_income, name='restore_deleted_income'),
 
     path('finance/expenses/', views.finance_expenses_view, name='finance_expenses'),
+    path('finance/expenses/export/', views.export_expenses_csv, name='export_expenses_csv'),
     path('finance/expenses/add/', views.finance_add_expense_view, name='finance_add_expense'),
     path('finance/expenses/edit/<int:expense_id>/', views.finance_edit_expense, name='finance_edit_expense'),
     path('finance/expenses/bulk-delete/', views.bulk_delete_expenses, name='bulk_delete_expenses'),
