@@ -20,6 +20,10 @@
                 <span class="material-symbols-outlined text-[18px]">download</span>
                 Template
             </a>
+            <a href="{% url 'export_incomes_csv' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" class="flex items-center gap-1.5 px-4 py-2 bg-white border border-outline-variant text-on-surface font-bold text-sm rounded-lg hover:bg-slate-50 transition-all shadow-sm">
+                <span class="material-symbols-outlined text-[18px]">file_download</span>
+                Export Data
+            </a>
             <form method="POST" enctype="multipart/form-data" class="m-0">
                 {% csrf_token %}
                 <input type="file" name="csv_file" id="income_csv_upload" accept=".csv" class="hidden" onchange="this.form.submit()">

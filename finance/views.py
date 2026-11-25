@@ -434,6 +434,49 @@ def finance_income_view(request):
     return render(request, 'finance_income.html', context)
 
 @login_required
+def export_incomes_csv(request):
+    org = request.user.profile.organization
+    incomes = Income.objects.filter(organization=org).select_related('payment_method')
+
+    day = request.GET.get('day')
+    month = request.GET.get('month')
+    year = request.GET.get('year')
+    sort_by = request.GET.get('sort')
+
+    if day:
+        incomes = incomes.filter(date__day=day)
+    if month:
+        incomes = incomes.filter(date__month=month)
+    if year:
+        incomes = incomes.filter(date__year=year)
+
+    if sort_by == 'highest':
+        incomes = incomes.order_by('-amount')
+    elif sort_by == 'lowest':
+        incomes = incomes.order_by('amount')
+    else:
+        incomes = incomes.order_by('-date')
+
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="incomes_export_{timestamp}.csv"'
+
+    response.write('\ufeff')  # BOM for Excel utf-8
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Client Name', 'Project Name', 'Payment Method', 'Amount'])
+
+    for inc in incomes:
+        writer.writerow([
+            inc.date.strftime('%Y-%m-%d') if inc.date else '',
+            inc.client_name or '',
+            inc.project_name or '',
+            inc.payment_method.name if inc.payment_method else '',
+            f"{inc.amount:.2f}" if inc.amount is not None else '0.00'
+        ])
+
+    return response
+
+@login_required
 def finance_add_income_view(request):
     org = request.user.profile.organization
     if request.method == 'POST':
@@ -624,6 +667,53 @@ def finance_expenses_view(request):
     finance_categories = FinanceExpenseCategory.objects.filter(organization=request.user.profile.organization).order_by('name')
     context = {'expenses': expenses, 'finance_methods': finance_methods, 'finance_categories': finance_categories}
     return render(request, 'finance_expenses.html', context)
+
+@login_required
+def export_expenses_csv(request):
+    org = request.user.profile.organization
+    expenses = Expense.objects.filter(organization=org).select_related('category', 'payment_method')
+
+    day = request.GET.get('day')
+    month = request.GET.get('month')
+    year = request.GET.get('year')
+    cost_center = request.GET.get('cost_center')
+    sort_by = request.GET.get('sort')
+
+    if day:
+        expenses = expenses.filter(date__day=day)
+    if month:
+        expenses = expenses.filter(date__month=month)
+    if year:
+        expenses = expenses.filter(date__year=year)
+    if cost_center:
+        expenses = expenses.filter(cost_center__icontains=cost_center)
+
+    if sort_by == 'highest':
+        expenses = expenses.order_by('-amount')
+    elif sort_by == 'lowest':
+        expenses = expenses.order_by('amount')
+    else:
+        expenses = expenses.order_by('-date')
+
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="expenses_export_{timestamp}.csv"'
+
+    response.write('\ufeff')  # BOM for Excel utf-8
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Category', 'Description', 'Cost Center', 'Payment Method', 'Amount'])
+
+    for exp in expenses:
+        writer.writerow([
+            exp.date.strftime('%Y-%m-%d') if exp.date else '',
+            exp.category.name if exp.category else '',
+            exp.description or '',
+            exp.cost_center or '',
+            exp.payment_method.name if exp.payment_method else '',
+            f"{exp.amount:.2f}" if exp.amount is not None else '0.00'
+        ])
+
+    return response
 
 @login_required
 def finance_add_expense_view(request):
