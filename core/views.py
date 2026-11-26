@@ -827,3 +827,37 @@ def notifications_view(request):
         'now': now,
     }
     return render(request, 'notifications.html', context)
+
+
+import logging
+csrf_logger = logging.getLogger('django.security.csrf')
+
+def csrf_failure(request, reason=""):
+    """
+    Custom CSRF failure view providing structured diagnostics and user-friendly recovery.
+    """
+    host = request.get_host() if hasattr(request, 'get_host') else 'unknown'
+    origin = request.META.get('HTTP_ORIGIN', 'none')
+    referer = request.META.get('HTTP_REFERER', 'none')
+    csrf_logger.warning(
+        f"CSRF failure on {request.method} {request.path}: reason='{reason}' | host='{host}' | origin='{origin}' | referer='{referer}'"
+    )
+
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+        request.content_type == 'application/json' or
+        request.accepts('application/json')
+    )
+    if is_ajax:
+        return JsonResponse({
+            'success': False,
+            'error': f'Session security verification expired or token mismatched ({reason}). Please refresh the page and try again.',
+            'csrf_error': True
+        }, status=403)
+
+    return render(request, '403_csrf.html', {
+        'reason': reason,
+        'host': host,
+        'origin': origin,
+    }, status=403)
+
