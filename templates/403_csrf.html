@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Session Security Notice | XenoCRM ERP{% endblock %}
+
+{% block auth_content %}
+<div class="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-white rounded-2xl p-8 border border-slate-200/80 shadow-xl text-center">
+        <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl mx-auto flex items-center justify-center mb-5 shadow-sm">
+            <span class="material-symbols-outlined text-[36px]">security</span>
+        </div>
+
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight mb-2">Session Security Verification</h1>
+        <p class="text-sm text-slate-600 mb-6 leading-relaxed">
+            Your request could not be processed because your security verification token expired or was modified. This protects your account against unauthorized requests.
+        </p>
+
+        {% if reason and debug %}
+        <div class="mb-6 p-3 bg-slate-100 rounded-lg text-xs font-mono text-slate-700 text-left overflow-x-auto">
+            <strong>Detail:</strong> {{ reason }}
+        </div>
+        {% endif %}
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button onclick="window.location.reload(true)" class="w-full sm:w-auto px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">refresh</span>
+                Refresh & Try Again
+            </button>
+            <a href="{% url 'dashboard' %}" class="w-full sm:w-auto px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-all">
+                Return to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

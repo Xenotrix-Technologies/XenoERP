@@ -231,7 +231,7 @@ function deleteSingleIncome(id) {
         headers: {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': '{{ csrf_token }}'
+            'X-CSRFToken': (typeof window.getCSRFToken === 'function' ? window.getCSRFToken() : '{{ csrf_token }}')
         },
         body: JSON.stringify({ ids: [id] })
     })
@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}'
+                    'X-CSRFToken': (typeof window.getCSRFToken === 'function' ? window.getCSRFToken() : '{{ csrf_token }}')
                 },
                 body: JSON.stringify({ ids: selectedIds })
             })

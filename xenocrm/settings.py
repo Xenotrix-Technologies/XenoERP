@@ -39,6 +39,7 @@ if DEBUG or '*' in ALLOWED_HOSTS or env.bool('ALLOW_ALL_HOSTS', default=False):
     ALLOWED_HOSTS = ['*']
 
 RENDER_EXTERNAL_HOSTNAME = env('RENDER_EXTERNAL_HOSTNAME', default=None)
+RENDER_EXTERNAL_URL = env('RENDER_EXTERNAL_URL', default=None)
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
@@ -47,10 +48,10 @@ CSRF_TRUSTED_ORIGINS = [
     'http://xeno.xenotrix.in',
     'https://www.xeno.xenotrix.in',
     'http://www.xeno.xenotrix.in',
-    'https://*.xenotrix.in',
-    'http://*.xenotrix.in',
     'https://*.onrender.com',
     'http://*.onrender.com',
+    'https://onrender.com',
+    'http://onrender.com',
 ]
 
 # Allow any custom origins specified in environment
@@ -82,15 +83,39 @@ if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
     CSRF_TRUSTED_ORIGINS.append(f"http://{RENDER_EXTERNAL_HOSTNAME}")
 
+if RENDER_EXTERNAL_URL:
+    _clean_rurl = RENDER_EXTERNAL_URL.rstrip('/')
+    CSRF_TRUSTED_ORIGINS.append(_clean_rurl)
+    if _clean_rurl.startswith('https://'):
+        CSRF_TRUSTED_ORIGINS.append(_clean_rurl.replace('https://', 'http://'))
+    elif _clean_rurl.startswith('http://'):
+        CSRF_TRUSTED_ORIGINS.append(_clean_rurl.replace('http://', 'https://'))
+
+# Dynamically ensure all non-wildcard ALLOWED_HOSTS are trusted for CSRF
+for _h in ALLOWED_HOSTS:
+    if _h and _h not in ['*', 'testserver']:
+        _clean_h = _h.lstrip('.')
+        CSRF_TRUSTED_ORIGINS.append(f"https://{_clean_h}")
+        CSRF_TRUSTED_ORIGINS.append(f"http://{_clean_h}")
+        CSRF_TRUSTED_ORIGINS.append(f"https://*.{_clean_h}")
+        CSRF_TRUSTED_ORIGINS.append(f"http://*.{_clean_h}")
+
 # Remove duplicates while preserving order
 CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS))
+
+# Proxy header configuration for reverse proxies (Render, Cloudflare, Nginx, ALB)
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CSRF_COOKIE_HTTPONLY = False  # Allows client-side JS (fetch/AJAX) to read csrftoken
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
 
 import sys
 
 if not DEBUG and 'test' not in sys.argv:
-    # Tell Django it's secure if Render's proxy forwards it as HTTPS
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    
     SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
     SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
     CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=True)
